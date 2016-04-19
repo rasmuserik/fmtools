@@ -1,3 +1,6 @@
+[![Stories in Ready](https://badge.waffle.io/solsort/fmtools.png?label=ready&title=Ready)](https://waffle.io/solsort/mobibl)
+[![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/mobibl)
+
 # FM-Tools
 
 Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-tools.

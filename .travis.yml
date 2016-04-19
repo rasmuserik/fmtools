@@ -3,4 +3,4 @@ lein: lein2
 script: 
   - lein2 cljsbuild once dist
   - lein2 bikeshed
-  - lein2 kibit
+#  - lein2 kibit
