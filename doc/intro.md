@@ -16,7 +16,8 @@ Krav til app'en:
 - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
 
-# Næste trin
+# General notes
+## Næste trin
 
 Første trin er at vi laver et udkast til hvordan datamodel / API kunne se ud.
 
@@ -24,18 +25,21 @@ Hvis jeg skal gå i gang med dette, har jeg brug for adgang til web-applikatione
 
 Nå vi er enige om et første udkast på datamodellen kan Kasper gå i gang med APIet, og jeg kan gå i gang med App'en parallelt.
 
-# Datamodel / API - udkast in progress
+# API and data model
 
 - Skabeloner består af linjer med felter
 - Enheder ligger i en træstruktur med et antal niveauer
 - Rapporter er skabelon der er ved at blive udfyldt, og representeret ved en event-log over indtastninger
 
-## API - udkast in progress
+### API
 
-Overblik over nødvendig API-funktionalitet:
+Notes about actual api:
 
-- Login brugernavn+password -> token
-- Rapporter.
+- Login brugernavn+password, using basic auth
+- `/help` gives overview of the api
+- first step is to get an endpoint for skabeloner
+
+- Rapporter/skabeloner
     - timestamp - last-change for rapportskabelon
     - download af rapportskabelon (liste af linjer, hvor hver linje har info, samt en liste af felter)
     - liste af raporter
@@ -47,4 +51,3 @@ Overblik over nødvendig API-funktionalitet:
     - upload: linjeid, billeddata ->
     - liste: linjeid -> liste over billeder vedhæftet den pågældende linje, m. url'er
 
-Det enkleste for mig er hvis data leveres som JSON. 
