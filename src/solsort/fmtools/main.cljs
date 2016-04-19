@@ -51,6 +51,7 @@
       [:div.camera-input
       [:label {:for id}
        [:img.camera-button {:src "assets/camera.png"}]]
+      ; TODO apparently :camera might not be a supported property in react
       [:input {:type "file" :capture "camera" :accept "image/*" :id id}]
       ])))
 ;;
