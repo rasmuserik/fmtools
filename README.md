@@ -89,7 +89,7 @@ Currently just dummy to get project started
         :border-radius 6
         }
        ".camera-input input"
-       { :display :none }
+       {}
        }
       "basic-style")
 
