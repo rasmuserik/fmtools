@@ -21,12 +21,47 @@
 ;;
 ;; ## Synchronization with API
 ;;
+;; ## Styling
+;;
+(load-style!
+  {:.float-right
+   {:float :right}
+   :.right
+   {:text-align :right}
+   ".camera-input img"
+   {:height 44
+    :width 44
+    :padding 4
+    :border "2px solid black"
+    :border-radius 6
+    }
+   ".camera-input input"
+   { :display :none }
+   }
+  "basic-style")
+
+
 ;; ## Components
+;;
+;; ### Camera button
+;;
+(defn camera-button []
+  (let [id (str "camera" (js/Math.random))]
+    (fn []
+      [:div.camera-input
+      [:label {:for id}
+       [:img.camera-button {:src "assets/camera.png"}]]
+      [:input {:type "file" :capture "camera" :accept "image/*" :id id}]
+      ])))
 ;;
 ;; ### Main App entry point
 ;;
 (defn app []
-  [:h1 "FM-Tools"])
+  [:div.ui.container
+   [:h1 "FM-Tools"]
+   [:hr]
+   [:div.right [camera-button]]
+   [:hr]])
 
 ;; ### Execute and events
 
