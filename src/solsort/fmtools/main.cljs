@@ -82,8 +82,12 @@
                        (nth 4)
                        (get "TemplateGuid"))
         template (<! (<api (str "ReportTemplate?templateGuid=" templateId)))
-        fields (-> template (get "ReportTemplateTable") (get "ReportTemplateFields"))
-        parts (-> template (get "ReportTemplateTable") (get "ReportTemplateParts"))
+        fields (-> template
+                   (get "ReportTemplateTable")
+                   (get "ReportTemplateFields"))
+        parts (-> template
+                  (get "ReportTemplateTable")
+                  (get "ReportTemplateParts"))
 
         ]
   (log (<! (<api "ReportTemplate/Control")))
