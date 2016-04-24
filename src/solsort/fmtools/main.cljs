@@ -67,3 +67,28 @@
 ;; ### Execute and events
 
 (render [app])
+
+(defn <api [endpoint]
+    (<ajax (str "https://"
+                (js/location.hash.slice 1)
+                "@fmproxy.solsort.com/api/v1/"
+                endpoint)))
+
+(go
+  (let [areas (<! (<api "Area"))
+        templates (<! (<api "ReportTemplate"))
+        templateId (-> templates
+                       (get "ReportTemplateTables")
+                       (nth 4)
+                       (get "TemplateGuid"))
+        template (<! (<api (str "ReportTemplate?templateGuid=" templateId)))
+        fields (-> template (get "ReportTemplateTable") (get "ReportTemplateFields"))
+        parts (-> template (get "ReportTemplateTable") (get "ReportTemplateParts"))
+
+        ]
+  (log (<! (<api "ReportTemplate/Control")))
+  (log areas)
+  (log templates)
+  (log fields, parts)
+  )
+)
