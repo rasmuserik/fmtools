@@ -14,12 +14,18 @@
     [reagent.core :as reagent :refer []]
     [clojure.walk :refer [keywordize-keys]]
     [re-frame.core :as re-frame
-     :refer [register-sub subscribe register-handler dispatch dispatch-sync]]
+     :refer [register-sub subscribe register-handler
+             dispatch dispatch-sync]]
     [clojure.string :as string :refer [replace split blank?]]
     [cljs.core.async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(register-sub :template (fn  [db  [_ id]]  (reaction (get @db :template []))))
-(register-handler :template (fn  [db  [_ template]] (assoc db :template template)))
+(register-sub
+  :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
+(register-sub
+  :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
+(register-handler
+  :template
+  (fn  [db  [_ id template]] (assoc-in db [:templates id] template)))
 
 
 ;; ## Application database
@@ -63,19 +69,27 @@
 ;; ### Main App entry point
 ;;
 (defn field [field]
-  [:span.field (:FieldValue field) " "])
+  [:em.field (:FieldValue field) " "])
+
 (defn line [line]
   [:p.line
-           (into [:div] (map field (:fields line)))
-           [:div {:style {:font-size 8 :line-height "8px"}} (str line)]]
+   [:div (:TaskDescription line)]
+   (into [:div] (map field (:fields line)))
+   [:div {:style {:font-size 9 :line-height "8px"}} (str line)]])
 
-  )
-(defn form []
-  (let [template @(subscribe [:template])]
+(defn render-template [id]
+  (let [template @(subscribe [:template id])]
     (into
-      [:div]
-      (map line template)))
-  )
+      [:div
+       [:h1 (:Description template)]]
+      (map line (:rows template)))))
+
+(defn form []
+  (let [templates @(subscribe [:templates])]
+    (into [:div]
+          (for [template-id templates]
+            [render-template template-id]))))
+
 (defn app []
   [:div.ui.container
    [:h1 "FM-Tools"]
@@ -93,34 +107,35 @@
               (js/location.hash.slice 1)
               "@fmproxy.solsort.com/api/v1/"
               endpoint)
-         :credentials true
-         ))
+         :credentials true))
+
+(defn load-template [template-id]
+  (go
+    (let [template (keywordize-keys
+                     (<! (<api (str "ReportTemplate?templateGuid="
+                                    template-id))))
+          template (:ReportTemplateTable template)
+          fields (-> template
+                     (:ReportTemplateFields )
+                     (->>
+                       (sort-by :DisplayOrer)
+                       (group-by :PartGuid)))
+          parts (-> template
+                    (:ReportTemplateParts))
+          parts (map
+                  (fn [part]
+                    (assoc part :fields
+                           (get fields (:PartGuid part))))
+                  (sort-by :DisplayOrder parts))]
+      (log fields)
+      (log parts)
+      (dispatch [:template template-id (assoc template :rows parts)]))))
 
 (go
   (let [templates (<! (<api "ReportTemplate"))
-        templateId (-> templates
-                       (get "ReportTemplateTables")
-                       (nth 4)
-                       (get "TemplateGuid")
-                       )
-        template-table (:ReportTemplateTable
-                   (keywordize-keys
-                     (<! (<api (str "ReportTemplate?templateGuid=" templateId)))))
-        fields (-> template-table
-                   (:ReportTemplateFields )
-                   (->>
-                     (sort-by :DisplayOrer)
-                     (group-by :PartGuid)))
-        parts (-> template-table
-                  (:ReportTemplateParts))
-        parts (map
-                (fn [part]
-                  (assoc part :fields
-                         (get fields (:PartGuid part))))
-                (sort-by :DisplayOrder parts))
-
-        ]
-    (log templates)
-    (log fields)
-    (log parts)
-    (dispatch [:template parts])))
+        template-id (-> templates
+                        (get "ReportTemplateTables")
+                        (nth 0)
+                        (get "TemplateGuid"))]
+    (doall (for [template (get templates "ReportTemplateTables")]
+             (load-template (get template "TemplateGuid"))))))
