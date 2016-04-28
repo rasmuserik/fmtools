@@ -148,7 +148,7 @@ Currently just dummy to get project started
        [:h1 "FM-Tools"]
        [:hr]
        [form]
-       [:div.right [camera-button]]
+       ;[:div.right [camera-button]]
        [:hr]])
 
 ### Execute and events
