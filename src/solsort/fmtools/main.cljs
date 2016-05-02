@@ -82,7 +82,7 @@
    {;:display :inline-block
     ;:margin "1em"
     ;:padding "1em"
-   ; :border "1px solid black"
+    ; :border "1px solid black"
 
     }
    ".line"
@@ -127,39 +127,44 @@
   )
 (defn field [field]
   (let [id (:FieldGuid field)]
-   [:span.fmfield {:key id
-   :on-click (fn [] (js/alert (str field)) false)}
-   (case (:FieldType field)
-     :text-fixed [:span.text-fixed-frame (:FieldValue field)]
-     :text-input [:input {:type :text :name (:FieldGuid field)}]
-     :decimal-2-digit
-     [:div.ui.input
-      [:input {:type :text :size 2 :max-length 2 :name (:FieldGuid field)}]]
-     :checkbox
-     (if (:DoubleField field)
-     [:span [checkbox (:FieldGuid field)] " / " [checkbox (:FieldGuid field)] ]
-     [checkbox (:FieldGuid field)])
-     :text-fixed-noframe [:span.text-fixed-noframe (:FieldValue field)]
-     [:strong "unhandled field:" (str (:FieldType field)) " "  (:FieldValue field)])
-  ; [:div {:style {:font-size 9 :line-height "8px"}} (str field)]
+    [:span.fmfield {:key id
+                    :on-click (fn [] (js/alert (str field)) false)}
+     (case (:FieldType field)
+       :text-fixed [:span.text-fixed-frame (:FieldValue field)]
+       :text-input [:input {:type :text :name (:FieldGuid field)}]
+       :decimal-2-digit
+       [:div.ui.input
+        [:input {:type :text :size 2 :max-length 2 :name (:FieldGuid field)}]]
+       :checkbox
+       (if (:DoubleField field)
+         [:span [checkbox (:FieldGuid field)] " / " [checkbox (:FieldGuid field)] ]
+         [checkbox (:FieldGuid field)])
+       :text-fixed-noframe [:span.text-fixed-noframe (:FieldValue field)]
+       [:strong "unhandled field:"
+        (str (:FieldType field)) " "  (:FieldValue field)])
+     ; [:div {:style {:font-size 9 :line-height "8px"}} (str field)]
 
-   ]))
+     ]))
 
 (defn line [line]
   (let [id (:PartGuid line)]
-   [:div.line
-   {:key id
-    :on-click #(js/alert (str (dissoc line :fields)))}
-   (case (:LineType line)
-     :simple-headline [:h3 "_ " (:TaskDescription line)]
-     ;:vertical-headline [:h3.vertical (:TaskDescription line)]
-     :vertical-headline (into [:div [:h3.vertical ". " (:TaskDescription line)]]
-                            (map field (:fields line)))
-     :horizontal-headline (into [:div [:h3.vertical ", " (:TaskDescription line)]]
-                            (map field (:fields line)))
-     :multi-field-line (into [:div "* " (:TaskDescription line) [:br]] (map field (:fields line)))
-     [:strong {:key id} "unhandled line " (str (:LineType line)) " "  (:FieldValue field)])
-   ]))
+    [:div.line
+     {:key id
+      :on-click #(js/alert (str (dissoc line :fields)))}
+     (case (:LineType line)
+       :simple-headline [:h3 "_ " (:TaskDescription line)]
+       ;:vertical-headline [:h3.vertical (:TaskDescription line)]
+       :vertical-headline (into [:div [:h3.vertical ". "
+                                       (:TaskDescription line)]]
+                                (map field (:fields line)))
+       :horizontal-headline (into [:div [:h3.vertical ", "
+                                         (:TaskDescription line)]]
+                                  (map field (:fields line)))
+       :multi-field-line (into [:div "* " (:TaskDescription line) [:br]]
+                               (map field (:fields line)))
+       [:strong {:key id} "unhandled line " (str (:LineType line)) " "
+        (:FieldValue field)])
+     ]))
 
 (defn render-template [id]
   (let [template @(subscribe [:template id])]
@@ -177,8 +182,8 @@
 (defn form []
   (let [templates @(subscribe [:templates])]
     #_(into [:div]
-          (for [template-id templates]
-            [render-template template-id]))
+            (for [template-id templates]
+              [render-template template-id]))
     [render-template (nth templates 3)]
 
     ))
@@ -229,11 +234,11 @@
       (dispatch [:template template-id (assoc template :rows parts)]))))
 
 (defonce fetch
-(go
-  (let [templates (<! (<api "ReportTemplate"))
-        template-id (-> templates
-                        (get "ReportTemplateTables")
-                        (nth 0)
-                        (get "TemplateGuid"))]
-    (doall (for [template (get templates "ReportTemplateTables")]
-             (load-template (get template "TemplateGuid")))))))
+  (go
+    (let [templates (<! (<api "ReportTemplate"))
+          template-id (-> templates
+                          (get "ReportTemplateTables")
+                          (nth 0)
+                          (get "TemplateGuid"))]
+      (doall (for [template (get templates "ReportTemplateTables")]
+               (load-template (get template "TemplateGuid")))))))
