@@ -137,7 +137,9 @@
         [:input {:type :text :size 2 :max-length 2 :name (:FieldGuid field)}]]
        :checkbox
        (if (:DoubleField field)
-         [:span [checkbox (:FieldGuid field)] " / " [checkbox (:FieldGuid field)] ]
+         [:span
+          [checkbox (:FieldGuid field)] " / "
+          [checkbox (:FieldGuid field)] ]
          [checkbox (:FieldGuid field)])
        :text-fixed-noframe [:span.text-fixed-noframe (:FieldValue field)]
        [:strong "unhandled field:"
