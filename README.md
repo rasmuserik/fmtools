@@ -60,6 +60,7 @@ Currently just dummy to get project started
         [cljs.core.async.macros :refer [go go-loop alt!]]
         [reagent.ratom :as ratom :refer  [reaction]])
       (:require
+        [cljs.pprint]
         [solsort.util
          :refer
          [<ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -80,7 +81,36 @@ Currently just dummy to get project started
       :template
       (fn  [db  [_ id template]] (assoc-in db [:templates id] template)))
 
+## Definitions
 
+    (defonce field-types
+      {0   :none
+       1   :text-fixed
+       2   :text-input
+       3   :checkbox
+       4   :integer
+       5   :decimal-2-digit
+       6   :decimal-4-digit
+       7   :date
+       8   :time
+       9   :text-fixed-noframe
+       10  :text-input-noframe
+       11  :approve-reject
+       12  :fetch-from
+       13  :remark
+       100 :case-no-from-location})
+    (defonce part-types
+      {0 :none
+       1 :header
+       2 :line
+       3 :footer})
+    (defonce line-types
+      {0  :simple-headline
+       1  :vertical-headline
+       2  :horizontal-headline
+       4  :multi-field-line
+       5  :description-line
+       10 :template-control})
 ## Application database
 
 ## Synchronization with API
@@ -101,6 +131,27 @@ Currently just dummy to get project started
         }
        ".camera-input input"
        {}
+       ".fmfield"
+       {;:display :inline-block
+        ;:margin "1em"
+        ;:padding "1em"
+        ; :border "1px solid black"
+
+        }
+       ".line"
+       {:margin "1em"
+        :padding "1em"
+        :border "1px solid black" }
+       ".checkbox"
+       {:display :inline-block
+        :border "2px solid black"
+        :border-radius 8
+        :font-size 32
+        :line-height 28
+        :margin 8
+        :width "32px"
+        :height "32px"
+        }
        }
       "basic-style")
 
@@ -121,27 +172,74 @@ Currently just dummy to get project started
 
 ### Main App entry point
 
+    (defn checkbox [id]
+      [:span.checkbox
+       ;"✓"
+       (if (< 0.9 (js/Math.random)) "\u00a0" "✔")
+       ]
+      )
     (defn field [field]
-      [:em.field (:FieldValue field) " "])
+      (let [id (:FieldGuid field)]
+        [:span.fmfield {:key id
+                        :on-click (fn [] (js/alert (str field)) false)}
+         (case (:FieldType field)
+           :text-fixed [:span.text-fixed-frame (:FieldValue field)]
+           :text-input [:input {:type :text :name (:FieldGuid field)}]
+           :decimal-2-digit
+           [:div.ui.input
+            [:input {:type :text :size 2 :max-length 2 :name (:FieldGuid field)}]]
+           :checkbox
+           (if (:DoubleField field)
+             [:span [checkbox (:FieldGuid field)] " / " [checkbox (:FieldGuid field)] ]
+             [checkbox (:FieldGuid field)])
+           :text-fixed-noframe [:span.text-fixed-noframe (:FieldValue field)]
+           [:strong "unhandled field:"
+            (str (:FieldType field)) " "  (:FieldValue field)])
+         ; [:div {:style {:font-size 9 :line-height "8px"}} (str field)]
+
+         ]))
 
     (defn line [line]
-      [:p.line
-       [:div (:TaskDescription line)]
-       (into [:div] (map field (:fields line)))
-       [:div {:style {:font-size 9 :line-height "8px"}} (str line)]])
+      (let [id (:PartGuid line)]
+        [:div.line
+         {:key id
+          :on-click #(js/alert (str (dissoc line :fields)))}
+         (case (:LineType line)
+           :simple-headline [:h3 "_ " (:TaskDescription line)]
+           ;:vertical-headline [:h3.vertical (:TaskDescription line)]
+           :vertical-headline (into [:div [:h3.vertical ". "
+                                           (:TaskDescription line)]]
+                                    (map field (:fields line)))
+           :horizontal-headline (into [:div [:h3.vertical ", "
+                                             (:TaskDescription line)]]
+                                      (map field (:fields line)))
+           :multi-field-line (into [:div "* " (:TaskDescription line) [:br]]
+                                   (map field (:fields line)))
+           [:strong {:key id} "unhandled line " (str (:LineType line)) " "
+            (:FieldValue field)])
+         ]))
 
     (defn render-template [id]
       (let [template @(subscribe [:template id])]
-        (into
-          [:div
+        ;(log (with-out-str (cljs.pprint/pprint template)))
+        (merge
+          [:div.ui.form
            [:h1 (:Description template)]]
-          (map line (:rows template)))))
+          (map line (:rows template))
+          [:pre
+           (js/JSON.stringify (clj->js template) nil 2)]
+          ;[:pre (str (cljs.pprint/pprint template))]
+
+          )))
 
     (defn form []
       (let [templates @(subscribe [:templates])]
-        (into [:div]
-              (for [template-id templates]
-                [render-template template-id]))))
+        #_(into [:div]
+                (for [template-id templates]
+                  [render-template template-id]))
+        [render-template (nth templates 3)]
+
+        ))
 
     (defn app []
       [:div.ui.container
@@ -159,6 +257,7 @@ Currently just dummy to get project started
       (<ajax (str "https://"
                   (js/location.hash.slice 1)
                   "@fmproxy.solsort.com/api/v1/"
+                  ;"@fmproxy.solsort.com/api/v1/"
                   endpoint)
              :credentials true))
 
@@ -171,6 +270,7 @@ Currently just dummy to get project started
               fields (-> template
                          (:ReportTemplateFields )
                          (->>
+                           (map #(assoc % :FieldType (field-types (:FieldType %))))
                            (sort-by :DisplayOrer)
                            (group-by :PartGuid)))
               parts (-> template
@@ -178,17 +278,20 @@ Currently just dummy to get project started
               parts (map
                       (fn [part]
                         (assoc part :fields
-                               (get fields (:PartGuid part))))
-                      (sort-by :DisplayOrder parts))]
-          (log fields)
-          (log parts)
+                               (sort-by :DisplayOrder
+                                        (get fields (:PartGuid part)))))
+                      (sort-by :DisplayOrder parts))
+              parts (map #(assoc % :LineType (line-types (:LineType %))) parts)
+              parts (map #(assoc % :PartType (part-types (:PartType %))) parts)
+              ]
           (dispatch [:template template-id (assoc template :rows parts)]))))
 
-    (go
-      (let [templates (<! (<api "ReportTemplate"))
-            template-id (-> templates
-                            (get "ReportTemplateTables")
-                            (nth 0)
-                            (get "TemplateGuid"))]
-        (doall (for [template (get templates "ReportTemplateTables")]
-                 (load-template (get template "TemplateGuid"))))))
+    (defonce fetch
+      (go
+        (let [templates (<! (<api "ReportTemplate"))
+              template-id (-> templates
+                              (get "ReportTemplateTables")
+                              (nth 0)
+                              (get "TemplateGuid"))]
+          (doall (for [template (get templates "ReportTemplateTables")]
+                   (load-template (get template "TemplateGuid")))))))
