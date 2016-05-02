@@ -27,7 +27,36 @@
   :template
   (fn  [db  [_ id template]] (assoc-in db [:templates id] template)))
 
-
+;; ## Definitions
+;;
+(defonce field-types
+  {0   :none
+   1   :text-fixed
+   2   :text-input
+   3   :checkbox
+   4   :integer
+   5   :decimal-2-digit
+   6   :decimal-4-digit
+   7   :date
+   8   :time
+   9   :text-fixed-noframe
+   10  :text-input-noframe
+   11  :approve-reject
+   12  :fetch-from
+   13  :remark
+   100 :case-no-from-location})
+(defonce part-types
+  {0 :none
+   1 :header
+   2 :line
+   3 :footer})
+(defonce line-types
+  {0  :simple-headline
+   1  :vertical-headline
+   2  :horizontal-headline
+   4  :multi-field-line
+   5  :description-line
+   10 :template-control})
 ;; ## Application database
 ;;
 ;; ## Synchronization with API
@@ -106,6 +135,7 @@
   (<ajax (str "https://"
               (js/location.hash.slice 1)
               "@fmproxy.solsort.com/api/v1/"
+              ;"@fmproxy.solsort.com/api/v1/"
               endpoint)
          :credentials true))
 
@@ -118,6 +148,7 @@
           fields (-> template
                      (:ReportTemplateFields )
                      (->>
+                       (map #(assoc % :FieldType (field-types (:FieldType %))))
                        (sort-by :DisplayOrer)
                        (group-by :PartGuid)))
           parts (-> template
@@ -126,7 +157,10 @@
                   (fn [part]
                     (assoc part :fields
                            (get fields (:PartGuid part))))
-                  (sort-by :DisplayOrder parts))]
+                  (sort-by :DisplayOrder parts))
+          parts (map #(assoc % :LineType (line-types (:LineType %))) parts)
+          parts (map #(assoc % :PartType (part-types (:PartType %))) parts)
+          ]
       (log fields)
       (log parts)
       (dispatch [:template template-id (assoc template :rows parts)]))))
