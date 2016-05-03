@@ -100,7 +100,7 @@
         :position :absolute
         :right 0
         }
-       :.fmfield 
+       :.fmfield
        {:clear :right }
        :.checkbox
        { :display :inline-block
@@ -113,16 +113,16 @@
         :height unit}
        :.multifield
        {:border-bottom "0.5px solid #ccc"}
-      ".camera-input img"
-      {:height unit
-       :width unit
-       :padding 4
-       :border "2px solid black"
-       :border-radius 6
-       :opacity "0.5"
-       }
-      :.fields
-      {:text-align :center }
+       ".camera-input img"
+       {:height unit
+        :width unit
+        :padding 4
+        :border "2px solid black"
+        :border-radius 6
+        :opacity "0.5"
+        }
+       :.fields
+       {:text-align :center }
        }
       "check-style"
       ))
@@ -148,7 +148,7 @@
 (defn field [field cols]
   (let [id (:FieldGuid field) ]
     [:span.fmfield {:key id
-                    :style 
+                    :style
                     {:width (* 12 @unit (/ (:Columns field) cols))
                      :vertical-align :top
                      :display :inline-block
@@ -194,7 +194,7 @@
        ;:vertical-headline [:h3.vertical (:TaskDescription line)]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc ] fields]
-       :multi-field-line [:div.multifield desc [camera-button id ] 
+       :multi-field-line [:div.multifield desc [camera-button id ]
                           fields ]
        :description-line [:div desc [:input {:type :text}]]
        [:span {:key id} "unhandled line " (str (:LineType line)) " "
