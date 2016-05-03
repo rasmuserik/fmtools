@@ -8,6 +8,7 @@
     [reagent.ratom :as ratom :refer  [reaction]])
   (:require
     [cljs.pprint]
+    [cognitect.transit :as transit]
     [solsort.util
      :refer
      [<ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -26,7 +27,27 @@
   :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
 (register-handler
   :template
-  (fn  [db  [_ id template]] (assoc-in db [:templates id] template)))
+  (fn  [db  [_ id template]]
+    (log 'here)
+    (dispatch [:sync-to-disk])
+    (assoc-in db [:templates id] template)))
+
+(defn clj->json [s] (transit/write (transit/writer :json) s))
+(defn json->clj [s] (transit/read (transit/reader :json) s))
+
+(register-handler
+  :sync-to-disk
+  (fn  [db]
+    ; currently just a hack, needs reimplementation on localforage
+    ; only syncing part of structure that is changed
+    (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+    db))
+
+(register-handler
+  :restore-from-disk
+  (fn  [db]
+    (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
+(dispatch [:restore-from-disk])
 
 ;; ## Definitions
 ;;
@@ -198,7 +219,7 @@
    ;[:div.right [camera-button]]
    [:hr]])
 
-;; ### Execute and events
+;; ## Execute and events
 
 (render [app])
 

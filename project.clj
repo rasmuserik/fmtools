@@ -6,6 +6,7 @@
    [org.clojure/core.async "0.2.374"]
    [cljsjs/pouchdb "5.2.1-0"]
    [solsort/util "0.1.2"]
+   [com.cognitect/transit-cljs "0.8.237"]
    [reagent "0.5.1"]
    [re-frame "0.6.0"]]
 
