@@ -138,8 +138,6 @@ Currently just dummy to get project started
 
 ## Components
 
-### Main App entry point
-
 
     (declare app)
     (defonce unit (atom 10))
@@ -266,10 +264,10 @@ Currently just dummy to get project started
 
     (defn form []
       (let [templates @(subscribe [:templates])]
-        #_(into [:div]
+        (into [:div]
                 (for [template-id templates]
                   [render-template template-id]))
-        [render-template (nth templates 3)]
+        ;[render-template (nth templates 3)]
 
         ))
 
