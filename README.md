@@ -240,7 +240,7 @@ Currently just dummy to get project started
           :key id
           :on-click #(log (dissoc line :fields))}
          (case (:LineType line)
-           :basic [:h3 "." (:TaskDescription line)]
+           :basic [:h3 "" (:TaskDescription line)]
            :simple-headline [:h3 (:TaskDescription line)]
            ;:vertical-headline [:h3.vertical (:TaskDescription line)]
            :vertical-headline [:div [:h3 desc] fields]
