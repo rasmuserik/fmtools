@@ -151,6 +151,27 @@ Currently just dummy to get project started
             :position :absolute
             :right 0
             }
+           :.xouter-vertical
+           {
+            :display :inline-block
+            :height 80
+            ;:background "green"
+            :position :relative
+            ;:vertical-align :top
+            }
+           :.xinner-vertical
+           {:display :inline-block
+            :top "50%"
+            :bottom 0
+            :position :relative
+            ;:vertical-align :bottom
+           ; :transform  "translateY(50%);"
+            :transform "rotate(-90deg);"
+            :width 80
+            ;:transform-origin "50% 50%"
+            ;:background "red"
+            :line-height 12
+            }
            :.fmfield
            {:clear :right }
            :.checkbox
@@ -161,6 +182,7 @@ Currently just dummy to get project started
             :line-height (* unit .8)
             :margin (* unit .25)
             :width unit
+            :max-width "95%"
             :height unit}
            :.multifield
            {:border-bottom "0.5px solid #ccc"}
@@ -208,7 +230,18 @@ Currently just dummy to get project started
                          :text-align :center}
                         :on-click (fn [] (log field) false)}
          (case (:FieldType field)
-           :text-fixed [:span.text-fixed-frame (:FieldValue field)]
+           :fetch-from "Komponent-id"
+           :approve-reject
+           (if (:DoubleField field)
+             [:span
+              [checkbox (:FieldGuid field)] " / "
+              [checkbox (:FieldGuid field)] " \u00a0 "]
+             [checkbox (:FieldGuid field)])
+           :text-fixed [:span.text-fixed-frame.outer-vertical
+                        [:span.inner-vertical (:FieldValue field)]]
+           :time [:input {:type :text :name (:FieldGuid field)}]
+           :remark [:input {:type :text :name (:FieldGuid field)}]
+           :text-input-noframe [:input {:type :text :name (:FieldGuid field)}]
            :text-input [:input {:type :text :name (:FieldGuid field)}]
            :decimal-2-digit
            [:div.ui.input
