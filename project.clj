@@ -33,7 +33,7 @@
    [{:id "dev"
      :source-paths ["src/"]
      :figwheel
-     {:websocket-host ~(.getHostAddress (java.net.InetAddress/getLocalHost))
+     {:websocket-host ~(or (System/getenv "FIGWHEEL_HOST") (.getHostAddress (java.net.InetAddress/getLocalHost)))
       ; :on-jsload ""
       }
      :compiler
