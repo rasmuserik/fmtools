@@ -268,20 +268,21 @@
               endpoint)
          :credentials true))
 
+;; # Data
 (defn load-template [template-id]
   (go
     (let [template (keywordize-keys
                      (<! (<api (str "ReportTemplate?templateGuid="
                                     template-id))))
           template (:ReportTemplateTable template)
+          ; TODO: (group-by :ControlGuid (api/v1/ReportTemplate/Control :ReportControls)) into :template-control lines
           fields (-> template
                      (:ReportTemplateFields )
                      (->>
                        (map #(assoc % :FieldType (field-types (:FieldType %))))
                        (sort-by :DisplayOrer)
                        (group-by :PartGuid)))
-          parts (-> template
-                    (:ReportTemplateParts))
+          parts (-> template (:ReportTemplateParts))
           parts (map
                   (fn [part]
                     (assoc part :fields
@@ -289,16 +290,33 @@
                                     (get fields (:PartGuid part)))))
                   (sort-by :DisplayOrder parts))
           parts (map #(assoc % :LineType (or (line-types (:LineType %)) (log "invalid-LintType" %))) parts)
-          parts (map #(assoc % :PartType (part-types (:PartType %))) parts)
-          ]
+          parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
       (dispatch [:template template-id (assoc template :rows parts)]))))
 
-(defonce fetch
+(defn load-area [area]
   (go
+    (let [object (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))]
+      (log  (str "Object?areaGuid=" (:AreaGuid area))    object area)
+      )))
+
+(defn fetch []
+  #_(go
     (let [templates (<! (<api "ReportTemplate"))
           template-id (-> templates
                           (get "ReportTemplateTables")
                           (nth 0)
                           (get "TemplateGuid"))]
       (doall (for [template (get templates "ReportTemplateTables")]
-               (load-template (get template "TemplateGuid")))))))
+               (load-template (get template "TemplateGuid"))))))
+  (go (let [user (keywordize-keys (<! (<api "User")))]
+      (log 'user user)
+      (dispatch [:user user])))
+  ; TODO: reports
+  (go (let [areas (keywordize-keys (<! (<api "Area")))]
+        (log 'areas (:Areas areas))
+        (doall (for [area (:Areas areas)]
+          (load-area area)
+          )))))
+
+
+(fetch)
