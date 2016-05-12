@@ -21,34 +21,7 @@
     [clojure.string :as string :refer [replace split blank?]]
     [cljs.core.async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(register-sub
-  :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
-(register-sub
-  :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
-(register-handler
-  :template
-  (fn  [db  [_ id template]]
-    (dispatch [:sync-to-disk])
-    (assoc-in db [:templates id] template)))
-
-(defn clj->json [s] (transit/write (transit/writer :json) s))
-(defn json->clj [s] (transit/read (transit/reader :json) s))
-
-(register-handler
-  :sync-to-disk
-  (fn  [db]
-    ; currently just a hack, needs reimplementation on localforage
-    ; only syncing part of structure that is changed
-    (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
-    db))
-
-(register-handler
-  :restore-from-disk
-  (fn  [db]
-    (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
-(dispatch [:restore-from-disk])
-
-;; ## Definitions
+;; # Definitions
 ;;
 (defonce field-types
   {0   :none
@@ -79,12 +52,49 @@
    4  :multi-field-line
    5  :description-line
    10 :template-control})
-;; ## Application database
-;;
-;; ## Synchronization with API
-;;
-;; ## Components
-;;
+
+;; # Application database
+;; ## Templates
+(register-sub
+  :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
+(register-sub
+  :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
+(register-handler
+  :template
+  (fn  [db  [_ id template]]
+    (dispatch [:sync-to-disk])
+    (assoc-in db [:templates id] template)))
+
+;; ## Objects
+(register-handler
+  :area-object
+  (fn  [db  [_ id object]]
+    (assoc-in db [:objects id] object)))
+(register-handler
+  :area-object-graph
+  (fn  [db  [_ from to]]
+    (assoc-in db [:object-graph from to] true)))
+
+;; ## Simple disk-sync
+(defn clj->json [s] (transit/write (transit/writer :json) s))
+(defn json->clj [s] (transit/read (transit/reader :json) s))
+
+(register-handler
+  :sync-to-disk
+  (fn  [db]
+    ; currently just a hack, needs reimplementation on localforage
+    ; only syncing part of structure that is changed
+    (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+    db))
+
+(register-handler
+  :restore-from-disk
+  (fn  [db]
+    (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
+(dispatch [:restore-from-disk])
+
+;; # Components
+;; ## Styling
 
 (declare app)
 (defonce unit (atom 10))
@@ -97,27 +107,6 @@
        {:display :inline-block
         :position :absolute
         :right 0
-        }
-       :.xouter-vertical
-       {
-        :display :inline-block
-        :height 80
-        ;:background "green"
-        :position :relative
-        ;:vertical-align :top
-        }
-       :.xinner-vertical
-       {:display :inline-block
-        :top "50%"
-        :bottom 0
-        :position :relative
-        ;:vertical-align :bottom
-       ; :transform  "translateY(50%);"
-        :transform "rotate(-90deg);"
-        :width 80
-        ;:transform-origin "50% 50%"
-        ;:background "red"
-        :line-height 12
         }
        :.fmfield
        {:clear :right }
@@ -144,12 +133,12 @@
        :.fields
        {:text-align :center }
        }
-      "check-style"
-      ))
-  (render [app])
-  )
+      "check-style"))
+  (render [app]))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
+
+;; ## Camera button
 
 (defn camera-button []
   (let [id (str "camera" (js/Math.random))]
@@ -160,6 +149,8 @@
        ; TODO apparently :camera might not be a supported property in react
        [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
        ])))
+
+;; Item components
 
 (defn checkbox [id]
   [:span.checkbox
@@ -268,7 +259,8 @@
               endpoint)
          :credentials true))
 
-;; # Data
+;; # Loading-Data
+;; ## Templates
 (defn load-template [template-id]
   (go
     (let [template (keywordize-keys
@@ -289,34 +281,63 @@
                            (sort-by :DisplayOrder
                                     (get fields (:PartGuid part)))))
                   (sort-by :DisplayOrder parts))
-          parts (map #(assoc % :LineType (or (line-types (:LineType %)) (log "invalid-LintType" %))) parts)
+          parts (map #(assoc % :LineType (or (line-types (:LineType %))
+                                             (log "invalid-LintType" %))) parts)
           parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
       (dispatch [:template template-id (assoc template :rows parts)]))))
 
-(defn load-area [area]
+(defn load-templates []
   (go
-    (let [object (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))]
-      (log  (str "Object?areaGuid=" (:AreaGuid area))    object area)
-      )))
-
-(defn fetch []
-  #_(go
     (let [templates (<! (<api "ReportTemplate"))
           template-id (-> templates
                           (get "ReportTemplateTables")
                           (nth 0)
                           (get "TemplateGuid"))]
       (doall (for [template (get templates "ReportTemplateTables")]
-               (load-template (get template "TemplateGuid"))))))
-  (go (let [user (keywordize-keys (<! (<api "User")))]
-      (log 'user user)
-      (dispatch [:user user])))
-  ; TODO: reports
+               (load-template (get template "TemplateGuid")))))))
+
+;; ## Objects
+(defn load-area [area]
+  (go
+    (let [objects (:Objects (keywordize-keys
+                              (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
+      (doall
+        (for [object objects]
+          (let [object (assoc object :AreaName (:Name area))]
+            (dispatch [:area-object (:ObjectId object) object])
+            (dispatch [:area-object-graph (:ParentId object) (:ObjectId object)])
+            ))))))
+
+(defn load-objects []
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
         (log 'areas (:Areas areas))
         (doall (for [area (:Areas areas)]
           (load-area area)
           )))))
+;; ## Report
+
+
+(defn load-report [report]
+  (go
+    (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
+          role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
+      (log report data role))))
+(defn load-reports []
+  (go
+    (let [reports (keywordize-keys (<! (<api "Report")))]
+      (doall
+        (for [report (:ReportTables reports)]
+          (load-report report))))))
+
+;; ## User
+
+(defn fetch []
+  ;(load-templates)
+  ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
+ ; (load-objects)
+  (load-reports)
+  ; TODO: reports
+  )
 
 
 (fetch)
