@@ -1,6 +1,40 @@
+;; # General notes
+;; ## Næste trin
+;; 
+;; Første trin er at vi laver et udkast til hvordan datamodel / API kunne se ud.
+;; 
+;; Hvis jeg skal gå i gang med dette, har jeg brug for adgang til web-applikationen, så jeg kan se præcist hvilke felter etc. der er.
+;; 
+;; Nå vi er enige om et første udkast på datamodellen kan Kasper gå i gang med APIet, og jeg kan gå i gang med App'en parallelt.
+;; 
+;; # API and data model
+;; 
+;; - Skabeloner består af linjer med felter
+;; - Enheder ligger i en træstruktur med et antal niveauer
+;; - Rapporter er skabelon der er ved at blive udfyldt, og representeret ved en event-log over indtastninger
+;; 
+;; ### API
+;; 
+;; Notes about actual api:
+;; 
+;; - Login brugernavn+password, using basic auth
+;; - `/help` gives overview of the api
+;; - first step is to get an endpoint for skabeloner
+;; 
+;; - Rapporter/skabeloner
+;;     - timestamp - last-change for rapportskabelon
+;;     - download af rapportskabelon (liste af linjer, hvor hver linje har info, samt en liste af felter)
+;;     - liste af raporter
+;;     - liste af niveauer / 
+;; - Data for udfyldelse - eventlog bestående af liste af (tidsstempel, sammensat felt-id, værdi). Sammensat felt-id består af reference til felt i skabelonen, rapportid, samt berørt enhed (projekt/tavel/anlæg/komponent). Timestamp gør at det er til at merge. 
+;;     - send event
+;;     - hent events modtaget efter et givent tidsstempel
+;; - Fotos
+;;     - upload: linjeid, billeddata ->
+;;     - liste: linjeid -> liste over billeder vedhæftet den pågældende linje, m. url'er
+;; 
 ;; # Literate source code
 ;;
-;; Currently just dummy to get project started
 ;;
 (ns solsort.fmtools.main
   (:require-macros
