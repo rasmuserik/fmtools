@@ -16,44 +16,23 @@ Krav til app'en:
 - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
 
-# General notes
-## Næste trin
+# Task
 
-Første trin er at vi laver et udkast til hvordan datamodel / API kunne se ud.
+## Done
 
-Hvis jeg skal gå i gang med dette, har jeg brug for adgang til web-applikationen, så jeg kan se præcist hvilke felter etc. der er.
+- basic communication with api
+- simple buggy rendition of templates, test that table-format also works on mobile (mostly)
 
-Nå vi er enige om et første udkast på datamodellen kan Kasper gå i gang med APIet, og jeg kan gå i gang med App'en parallelt.
+## Next
 
-# API and data model
-
-- Skabeloner består af linjer med felter
-- Enheder ligger i en træstruktur med et antal niveauer
-- Rapporter er skabelon der er ved at blive udfyldt, og representeret ved en event-log over indtastninger
-
-### API
-
-Notes about actual api:
-
-- Login brugernavn+password, using basic auth
-- `/help` gives overview of the api
-- first step is to get an endpoint for skabeloner
-
-- Rapporter/skabeloner
-    - timestamp - last-change for rapportskabelon
-    - download af rapportskabelon (liste af linjer, hvor hver linje har info, samt en liste af felter)
-    - liste af raporter
-    - liste af niveauer / 
-- Data for udfyldelse - eventlog bestående af liste af (tidsstempel, sammensat felt-id, værdi). Sammensat felt-id består af reference til felt i skabelonen, rapportid, samt berørt enhed (projekt/tavel/anlæg/komponent). Timestamp gør at det er til at merge. 
-    - send event
-    - hent events modtaget efter et givent tidsstempel
-- Fotos
-    - upload: linjeid, billeddata ->
-    - liste: linjeid -> liste over billeder vedhæftet den pågældende linje, m. url'er
+- refactor/update code
+- simplify data from api
+- widgets
+- make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy)
+- proper horizontal labels
 
 # Literate source code
 
-Currently just dummy to get project started
 
     (ns solsort.fmtools.main
       (:require-macros
@@ -164,15 +143,17 @@ Currently just dummy to get project started
            :.fmfield
            {:clear :right }
            :.checkbox
-           { :display :inline-block
-            :border "2px solid black"
-            :border-radius (* unit .25)
-            :font-size unit
-            :line-height (* unit .8)
-            :margin (* unit .25)
+           {; :display :inline-block
+            ;:border "2px solid black"
+            ;:border-radius (* unit .25)
+            ;:font-size unit
+            ;:line-height (* unit .8)
+            ;:margin (* unit .25)
             :width unit
             :max-width "95%"
-            :height unit}
+            :height unit
+
+            }
            :.multifield
            {:border-bottom "0.5px solid #ccc"}
            ".camera-input img"
@@ -206,8 +187,8 @@ Currently just dummy to get project started
 Item components
 
     (defn checkbox [id]
-      [:span.checkbox
-       (if (< 0.7 (js/Math.random)) "\u00a0" "✔")])
+      [:img.checkbox
+       {:src (if (< 0.7 (js/Math.random)) "assets/uncheck.png" "assets/check.png")}])
 
     (defn field [field cols]
       (let [id (:FieldGuid field) ]
