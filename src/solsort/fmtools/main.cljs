@@ -1,16 +1,16 @@
 ;; # Task
 ;;
-;; ## Done
+;; ## done 0.0.1
 ;;
 ;; - ui
 ;;   - initial camera button (only currently only working on android)
 ;;   - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+;;   - checkbox component that writes to application database
 ;; - data
 ;;   - basic communication with api - load data
 ;;
 ;; ## Next
 ;;
-;; - checkbox component that writes to application database
 ;; - generic select widget
 ;; - choose current template (should be report later)
 ;; - refactor/update code
@@ -19,6 +19,7 @@
 ;; - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy)
 ;; - proper horizontal labels
 ;; - better sync'ing of data
+;; - separate ids for double-checkboxes
 ;;
 ;; # Literate source code
 ;;
@@ -78,7 +79,7 @@
 ;; ## UI
 
 (register-sub
-  :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id] {}))) )
+  :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
 (register-handler
   :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
 
@@ -171,8 +172,10 @@
 ;; ## checkbox
 
 (defn checkbox [id]
-  [:img.checkbox
-   {:src (if (< 0.7 (js/Math.random)) "assets/uncheck.png" "assets/check.png")}])
+  (let [value @(subscribe [:ui id])]
+    [:img.checkbox
+     {:on-click #(dispatch [:ui id (not value)])
+      :src (if value "assets/check.png" "assets/uncheck.png")}]))
 
 ;; # App layout
 ;; ## Camera button
@@ -269,8 +272,8 @@
 (defn form []
   (let [templates @(subscribe [:templates])]
     (into [:div]
-            (for [template-id templates]
-              [render-template template-id]))
+          (for [template-id templates]
+            [render-template template-id]))
     ;[render-template (nth templates 3)]
     ))
 
@@ -344,8 +347,8 @@
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
         (log 'areas (:Areas areas))
         (doall (for [area (:Areas areas)]
-          (load-area area)
-          )))))
+                 (load-area area)
+                 )))))
 ;; ## Report
 
 
@@ -366,7 +369,7 @@
 (defn fetch []
   ;(load-templates)
   ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
- ; (load-objects)
+  ; (load-objects)
   (load-reports)
   ; TODO: reports
   )
