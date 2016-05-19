@@ -169,6 +169,14 @@
 (js/setTimeout style 0)
 
 ;; # Generic Components
+;; ## select
+(defn select [id options]
+  (into [:select
+         {:onChange
+          #(dispatch [:ui id (.-value (.-target %1))])}]
+        (for [[k v] options]
+          [:option {:key v :value v} k])))
+
 ;; ## checkbox
 
 (defn checkbox [id]
@@ -270,15 +278,23 @@
 
 ;; ## main
 (defn form []
-  (let [templates @(subscribe [:templates])]
-    (into [:div]
-          (for [template-id templates]
-            [render-template template-id]))
-    ;[render-template (nth templates 3)]
-    ))
+  [:div
+   [:div.ui.container
+    [:div.ui.form
+     [:div.field
+      [:label "Skabelon"]
+      [select :current-template
+
+       (for [template-id  @(subscribe [:templates])]
+         [(str (:Name @(subscribe [:template template-id])) " / "
+               (:Description @(subscribe [:template template-id])))
+          template-id])]]]]
+   [:hr]
+   [render-template @(subscribe [:ui :current-template])]])
 
 (defn app []
   [:div
+
    [:h1 "FM-Tools"]
    [:hr]
    [form]
@@ -364,15 +380,14 @@
         (for [report (:ReportTables reports)]
           (load-report report))))))
 
-;; ## User
+;; ## fetch
 
 (defn fetch []
-  ;(load-templates)
+  (load-templates)
   ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
   ; (load-objects)
-  (load-reports)
-  ; TODO: reports
+  ; (load-reports)
   )
 
-
-(fetch)
+(defonce loader
+  (fetch))
