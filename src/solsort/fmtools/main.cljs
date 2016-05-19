@@ -6,13 +6,14 @@
 ;;   - initial camera button (only currently only working on android)
 ;;   - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
 ;;   - checkbox component that writes to application database
+;;   - generic select widget
+;;   - choose current template (should be report later)
 ;; - data
 ;;   - basic communication with api - load data
 ;;
 ;; ## Next
 ;;
-;; - generic select widget
-;; - choose current template (should be report later)
+;; - responsive ui, instead of mobile-portrait oriented
 ;; - refactor/update code
 ;; - simplify data from api
 ;; - widgets
