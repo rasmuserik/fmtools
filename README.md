@@ -18,18 +18,26 @@ Krav til app'en:
 
 # Task
 
-## Done
+## done 0.0.1
 
-- basic communication with api
-- simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+- ui
+  - initial camera button (only currently only working on android)
+  - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+  - checkbox component that writes to application database
+- data
+  - basic communication with api - load data
 
 ## Next
 
+- generic select widget
+- choose current template (should be report later)
 - refactor/update code
 - simplify data from api
 - widgets
 - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy)
 - proper horizontal labels
+- better sync'ing of data
+- separate ids for double-checkboxes
 
 # Literate source code
 
@@ -86,6 +94,13 @@ Krav til app'en:
        10 :template-control})
 
 # Application database
+## UI
+
+    (register-sub
+      :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
+    (register-handler
+      :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
+
 ## Templates
     (register-sub
       :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
@@ -125,8 +140,7 @@ Krav til app'en:
         (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
     (dispatch [:restore-from-disk])
 
-# Components
-## Styling
+# Styling
 
     (declare app)
     (defonce unit (atom 10))
@@ -172,6 +186,24 @@ Krav til app'en:
     (aset js/window "onresize" style)
     (js/setTimeout style 0)
 
+# Generic Components
+## select
+    (defn select [id options]
+      (into [:select
+             {:onChange
+              #(dispatch [:ui id (.-value (.-target %1))])}]
+            (for [[k v] options]
+              [:option {:key v :value v} k])))
+
+## checkbox
+
+    (defn checkbox [id]
+      (let [value @(subscribe [:ui id])]
+        [:img.checkbox
+         {:on-click #(dispatch [:ui id (not value)])
+          :src (if value "assets/check.png" "assets/uncheck.png")}]))
+
+# App layout
 ## Camera button
 
     (defn camera-button []
@@ -184,12 +216,7 @@ Krav til app'en:
            [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
            ])))
 
-Item components
-
-    (defn checkbox [id]
-      [:img.checkbox
-       {:src (if (< 0.7 (js/Math.random)) "assets/uncheck.png" "assets/check.png")}])
-
+## Template rendition
     (defn field [field cols]
       (let [id (:FieldGuid field) ]
         [:span.fmfield {:key id
@@ -267,23 +294,32 @@ Item components
           ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
           )))
 
+## main
     (defn form []
-      (let [templates @(subscribe [:templates])]
-        (into [:div]
-                (for [template-id templates]
-                  [render-template template-id]))
-        ;[render-template (nth templates 3)]
+      [:div
+       [:div.ui.container
+        [:div.ui.form
+         [:div.field
+          [:label "Skabelon"]
+          [select :current-template
 
-        ))
+           (for [template-id  @(subscribe [:templates])]
+             [(str (:Name @(subscribe [:template template-id])) " / "
+                   (:Description @(subscribe [:template template-id])))
+              template-id])]]]]
+       [:hr]
+       [render-template @(subscribe [:ui :current-template])]])
 
     (defn app []
       [:div
+
        [:h1 "FM-Tools"]
        [:hr]
        [form]
        ])
 
-## Execute and events
+# Loading-Data
+## <api
 
     (defn <api [endpoint]
       (<ajax (str "https://"
@@ -293,7 +329,6 @@ Item components
                   endpoint)
              :credentials true))
 
-# Loading-Data
 ## Templates
     (defn load-template [template-id]
       (go
@@ -346,8 +381,8 @@ Item components
       (go (let [areas (keywordize-keys (<! (<api "Area")))]
             (log 'areas (:Areas areas))
             (doall (for [area (:Areas areas)]
-              (load-area area)
-              )))))
+                     (load-area area)
+                     )))))
 ## Report
 
 
@@ -363,15 +398,14 @@ Item components
             (for [report (:ReportTables reports)]
               (load-report report))))))
 
-## User
+## fetch
 
     (defn fetch []
-      ;(load-templates)
+      (load-templates)
       ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
-     ; (load-objects)
-      (load-reports)
-      ; TODO: reports
+      ; (load-objects)
+      ; (load-reports)
       )
 
-
-    (fetch)
+    (defonce loader
+      (fetch))
