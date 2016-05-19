@@ -2,16 +2,23 @@
 ;;
 ;; ## Done
 ;;
-;; - basic communication with api
-;; - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+;; - ui
+;;   - initial camera button (only currently only working on android)
+;;   - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+;; - data
+;;   - basic communication with api - load data
 ;;
 ;; ## Next
 ;;
+;; - checkbox component that writes to application database
+;; - generic select widget
+;; - choose current template (should be report later)
 ;; - refactor/update code
 ;; - simplify data from api
 ;; - widgets
 ;; - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy)
 ;; - proper horizontal labels
+;; - better sync'ing of data
 ;;
 ;; # Literate source code
 ;;
@@ -68,6 +75,13 @@
    10 :template-control})
 
 ;; # Application database
+;; ## UI
+
+(register-sub
+  :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id] {}))) )
+(register-handler
+  :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
+
 ;; ## Templates
 (register-sub
   :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
@@ -107,8 +121,7 @@
     (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
 (dispatch [:restore-from-disk])
 
-;; # Components
-;; ## Styling
+;; # Styling
 
 (declare app)
 (defonce unit (atom 10))
@@ -154,6 +167,14 @@
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 
+;; # Generic Components
+;; ## checkbox
+
+(defn checkbox [id]
+  [:img.checkbox
+   {:src (if (< 0.7 (js/Math.random)) "assets/uncheck.png" "assets/check.png")}])
+
+;; # App layout
 ;; ## Camera button
 
 (defn camera-button []
@@ -166,12 +187,7 @@
        [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
        ])))
 
-;; Item components
-
-(defn checkbox [id]
-  [:img.checkbox
-   {:src (if (< 0.7 (js/Math.random)) "assets/uncheck.png" "assets/check.png")}])
-
+;; ## Template rendition
 (defn field [field cols]
   (let [id (:FieldGuid field) ]
     [:span.fmfield {:key id
@@ -249,13 +265,13 @@
       ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
       )))
 
+;; ## main
 (defn form []
   (let [templates @(subscribe [:templates])]
     (into [:div]
             (for [template-id templates]
               [render-template template-id]))
     ;[render-template (nth templates 3)]
-
     ))
 
 (defn app []
@@ -265,7 +281,8 @@
    [form]
    ])
 
-;; ## Execute and events
+;; # Loading-Data
+;; ## <api
 
 (defn <api [endpoint]
   (<ajax (str "https://"
@@ -275,7 +292,6 @@
               endpoint)
          :credentials true))
 
-;; # Loading-Data
 ;; ## Templates
 (defn load-template [template-id]
   (go
