@@ -129,15 +129,22 @@
 (declare app)
 (defonce unit (atom 40))
 (defn style []
-  (reset! unit (js/Math.floor (* 0.90 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
+  (reset! unit (js/Math.floor (* 0.95 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
   (log 'style @unit)
   (let [unit @unit]
     (load-style!
-      {:.camera-input
+      {:#main
+       {:text-align :center}
+       :.line
+       {:min-height 44}
+       :.main-form
+       {:display :inline-block
+        :text-align :left
+        :width (* unit 12)}
+       :.camera-input
        {:display :inline-block
         :position :absolute
-        :right 0
-        }
+        :right 0 }
        :.fmfield
        {:clear :right }
        :.checkbox
@@ -147,16 +154,16 @@
         ;:font-size unit
         ;:line-height (* unit .8)
         ;:margin (* unit .25)
-        :width unit
+        :width 44
         :max-width "95%"
-        :height unit
+        :height 44
 
         }
        :.multifield
        {:border-bottom "0.5px solid #ccc"}
        ".camera-input img"
-       {:height unit
-        :width unit
+       {:height 40
+        :width 40
         :padding 4
         :border "2px solid black"
         :border-radius 6
@@ -205,7 +212,7 @@
   (let [id (:FieldGuid field) ]
     [:span.fmfield {:key id
                     :style
-                    {:width (* 12 @unit (/ (:Columns field) cols))
+                    {:width (* 11 @unit (/ (:Columns field) cols))
                      :vertical-align :top
                      :display :inline-block
                      ;:border-left "1px solid black"
@@ -280,7 +287,7 @@
 
 ;; ## main
 (defn form []
-  [:div
+  [:div.main-form
    [:div.ui.container
     [:div.ui.form
      [:div.field
