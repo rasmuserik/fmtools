@@ -8,12 +8,13 @@
 ;;   - checkbox component that writes to application database
 ;;   - generic select widget
 ;;   - choose current template (should be report later)
+;;   - more responsive ui, instead of mobile-portrait oriented
 ;; - data
 ;;   - basic communication with api - load data
 ;;
 ;; ## Next
 ;;
-;; - responsive ui, instead of mobile-portrait oriented
+;; - Proxy api on demo-deploy-server
 ;; - refactor/update code
 ;; - simplify data from api
 ;; - widgets
@@ -126,9 +127,9 @@
 ;; # Styling
 
 (declare app)
-(defonce unit (atom 10))
+(defonce unit (atom 40))
 (defn style []
-  (reset! unit (js/Math.floor (* 0.90 (/ 1 12) js/window.innerWidth)))
+  (reset! unit (js/Math.floor (* 0.90 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
   (log 'style @unit)
   (let [unit @unit]
     (load-style!
