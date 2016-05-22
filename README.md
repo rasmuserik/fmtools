@@ -332,8 +332,8 @@ Krav til app'en:
 
     (defn <api [endpoint]
       (<ajax (str "https://"
-                  (js/location.hash.slice 1)
-                  "@fmproxy.solsort.com/api/v1/"
+                  "fmtools.solsort.com/api/v1/"
+                  ;(js/location.hash.slice 1)
                   ;"@fmproxy.solsort.com/api/v1/"
                   endpoint)
              :credentials true))
