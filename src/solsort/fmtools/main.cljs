@@ -315,6 +315,7 @@
 (defn <api [endpoint]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
+              ;"app.fmtools.dk/api/v1/"
               ;(js/location.hash.slice 1)
               ;"@fmproxy.solsort.com/api/v1/"
               endpoint)
