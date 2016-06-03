@@ -1,0 +1,10 @@
+{
+  "name": "FM-Tools",
+  "short_name": "FM-Tools",
+  "display": "standalone",
+  "icons": [{"src": "assets/icon.png", "sizes": "144x144 1200x1200", "type": "image/png"}],
+  "start_url": "./index.html",
+  "orientation": "any",
+  "scope": "/",
+  "theme_color": "white"
+}
