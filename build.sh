@@ -11,11 +11,10 @@ lein cljsbuild once dist
 
 # Manifest file
 #
-#echo "CACHE MANIFEST" > index.appcache
-#echo "# `date`" >> index.appcache
-#find assets -type f >> index.appcache
-#echo "index.js" >> index.appcache
-#find */config.xml >> index.appcache
+echo "CACHE MANIFEST" > index.appcache
+echo "# `date`" >> index.appcache
+find assets -type f >> index.appcache
+echo "index.js" >> index.appcache
 
 cat doc/intro.md > README.md
 for SRC in main
