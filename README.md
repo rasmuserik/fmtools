@@ -63,6 +63,10 @@ Krav til app'en:
         [clojure.string :as string :refer [replace split blank?]]
         [cljs.core.async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+# Util
+
+    (when js/window.applicationCache
+      (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 # Definitions
 
     (defonce field-types
@@ -333,6 +337,7 @@ Krav til app'en:
     (defn <api [endpoint]
       (<ajax (str "https://"
                   "fmtools.solsort.com/api/v1/"
+                  ;"app.fmtools.dk/api/v1/"
                   ;(js/location.hash.slice 1)
                   ;"@fmproxy.solsort.com/api/v1/"
                   endpoint)
