@@ -17,6 +17,8 @@ find assets -type f >> index.appcache
 echo "index.js" >> index.appcache
 echo "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css" >> index.appcache
 echo "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic|Open+Sans+Condensed:300,300italic,700" >> index.appcache
+echo "NETWORK:" >> index.appcache
+echo "*" >> index.appcache
 
 cat doc/intro.md > README.md
 for SRC in main

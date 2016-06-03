@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Fri Jun  3 15:18:19 CEST 2016
+# Fri Jun  3 15:25:16 CEST 2016
 assets/check.png
 assets/noun_23824.svg
 assets/noun_23824.png
@@ -10,3 +10,7 @@ assets/checkbox-noun_3879.svg
 assets/uncheck.png
 assets/checkbox-noun_3879-uncheck.svg
 index.js
+https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css
+https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic|Open+Sans+Condensed:300,300italic,700
+NETWORK:
+*
