@@ -16,3 +16,5 @@ Object.prototype.header = function() {};
 Object.prototype.removeHeader = function() {};
 Object.prototype.parseFromString = function() {};
 window.onSolsortReady = function() {};
+window.applicationCache = {};
+window.applicattionCache.onupdateready = function() {};

@@ -45,6 +45,10 @@
     [clojure.string :as string :refer [replace split blank?]]
     [cljs.core.async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+;; # Util
+;;
+(when js/window.applicationCache
+  (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 ;; # Definitions
 ;;
 (defonce field-types
