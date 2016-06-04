@@ -1,7 +1,6 @@
-;; # Task
-;;
-;; ## done 0.0.1
-;;
+;; # Roadmap
+;; 
+;; ## Implented / done
 ;; - ui
 ;;   - initial camera button (only currently only working on android)
 ;;   - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
@@ -17,7 +16,7 @@
 ;; - dev
 ;;   - Proxy api on demo-deploy-server
 ;;
-;; ## Next
+;; ## Backlog
 ;;
 ;; - photo capture
 ;; - entity tree
@@ -30,6 +29,38 @@
 ;; - proper horizontal labels
 ;; - better sync'ing of data
 ;; - separate ids for double-checkboxes
+;;
+;; # DB
+;;
+;; notes - intended content
+;;
+;; - `:objects` (NB: root oid)
+;;   - oid
+;;     - `:name`
+;;     - `:parent` oid
+;;     - `:children` oid-list
+;;     - `:api-id` id used to identify it in the api
+;; - `:templates` list
+;;   - `:TemplateGuid`
+;;   - `:Name`
+;;   - `:Description`
+;;   - `:lines` list
+;;     - `:PartId`
+;;     - `:TaskDescription`
+;;     - `:LineType`
+;;     - `:fields` list
+;;       - `:FieldGuid`
+;;       - `:FieldType`
+;;       - `:Columns`
+;;       - `:DoubleField`
+;;       - `:DoubleFieldSeperator` (NB: typo in api)
+;;       - `:FieldValue`
+;;
+;; # Notes about data from API
+;;
+;; I assume the following:
+;;
+;; - ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
 ;;
 ;; # Literate source code
 ;;
@@ -56,6 +87,7 @@
 
 ;; # Util
 ;;
+;; Reload application, when a new versionis available
 (when js/window.applicationCache
   (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 
@@ -92,6 +124,7 @@
    10 :template-control})
 
 ;; # Application database
+(register-sub :db (fn  [db [_ id]]  (reaction @db)))
 ;; ## UI
 
 (register-sub
@@ -212,73 +245,78 @@
        [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
        ])))
 
-;; ## Template rendition
+;; ## field
+
 (defn field [field cols]
-  (let [id (:FieldGuid field) ]
-    [:span.fmfield {:key id
+  (let [field-type (:FieldType field)
+        columns (:Columns field)
+        double-field (:DoubleField field)
+        double-separator (:DoubleFieldSeperator field)
+        guid (:FieldGuid field)
+        value (:FieldValue field)]
+    [:span.fmfield {:key guid
                     :style
-                    {:width (* 11 @unit (/ (:Columns field) cols))
+                    {:width (* 11 @unit (/ columns cols))
                      :vertical-align :top
                      :display :inline-block
                      ;:border-left "1px solid black"
                      ;:border-right "1px solid black"
                      :text-align :center}
                     :on-click (fn [] (log field) false)}
-     (case (:FieldType field)
+     (case field-type
        :fetch-from "Komponent-id"
        :approve-reject
-       (if (:DoubleField field)
-         [:span
-          [checkbox (:FieldGuid field)] " / "
-          [checkbox (:FieldGuid field)] " \u00a0 "]
-         [checkbox (:FieldGuid field)])
+       (if double-field
+         [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
+         [checkbox guid])
        :text-fixed [:span.text-fixed-frame.outer-vertical
-                    [:span.inner-vertical (:FieldValue field)]]
-       :time [:input {:type :text :name (:FieldGuid field)}]
-       :remark [:input {:type :text :name (:FieldGuid field)}]
-       :text-input-noframe [:input {:type :text :name (:FieldGuid field)}]
-       :text-input [:input {:type :text :name (:FieldGuid field)}]
+                    [:span.inner-vertical value]]
+       :time [:input {:type :text :name guid}]
+       :remark [:input {:type :text :name guid}]
+       :text-input-noframe [:input {:type :text :name guid}]
+       :text-input [:input {:type :text :name guid}]
        :decimal-2-digit
        [:div.ui.input
-        [:input {:type :text :size 2 :max-length 2 :name (:FieldGuid field)}]]
+        [:input {:type :text :size 2 :max-length 2 :name guid}]]
        :checkbox
-       (if (:DoubleField field)
-         [:span
-          [checkbox (:FieldGuid field)] " / "
-          [checkbox (:FieldGuid field)] " \u00a0 "]
-         [checkbox (:FieldGuid field)])
-       :text-fixed-noframe [:span.text-fixed-noframe (:FieldValue field)]
+       (if double-field
+         [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
+         [checkbox guid])
+       :text-fixed-noframe [:span.text-fixed-noframe value]
        [:strong "unhandled field:"
-        (str (:FieldType field)) " "  (:FieldValue field)])
-     ; [:div {:style {:font-size 9 :line-height "8px"}} (str field)]
-
+        (str field-type) " " value])
      ]))
+
+
+;; ## line
 
 (defn line [line]
   (let [id (:PartGuid line)
+        line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
+        debug-str (dissoc line :fields)   
         fields (into
                  [:div.fields]
                  (map #(field % cols)  (:fields line)))]
     [:div.line
      {:style
-      {:padding-top 10
-       }
+      {:padding-top 10}
       :key id
-      :on-click #(log (dissoc line :fields))}
-     (case (:LineType line)
-       :basic [:h3 "" (:TaskDescription line)]
-       :simple-headline [:h3 (:TaskDescription line)]
-       ;:vertical-headline [:h3.vertical (:TaskDescription line)]
+      :on-click #(log debug-str)}
+     (case line-type
+       :basic [:h3 "" desc]
+       :simple-headline [:h3 desc]
+       #_:vertical-headline #_[:h3.vertical desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc ] fields]
        :multi-field-line [:div.multifield desc [camera-button id ]
                           fields ]
        :description-line [:div desc [:input {:type :text}]]
-       [:span {:key id} "unhandled line " (str (:LineType line)) " "
-        (str (dissoc line :fields))])
+       [:span {:key id} "unhandled line " (str line-type) " " debug-str])
      ]))
+
+;; ## template
 
 (defn render-template [id]
   (let [template @(subscribe [:template id])]
@@ -387,12 +425,12 @@
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
-      (log 'report report data role))))
+      #_(log 'report report data role))))
 
 (defn load-reports []
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
-      (log 'reports reports)
+      #_(log 'reports reports)
       (doall
         (for [report (:ReportTables reports)]
           (load-report report))))))
@@ -402,10 +440,18 @@
 (defn fetch []
   (load-templates)
   ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
-  ; (load-objects)
-  ;(load-reports)
-  )
+  (load-objects)
+  (load-reports))
 
 ;(fetch)
 
 (defonce loader (fetch))
+
+;; ## Experiments
+(let [db @(subscribe [:db])
+      graph (:objects db)
+      ]
+  #_(log 'experiments db (count graph) (keys (graph 202)) (map (fn [[k v]] [(:AreaGuid v) k (:ObjectId v)]) (seq graph)))
+  (log db)
+  
+  )

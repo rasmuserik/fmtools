@@ -8,6 +8,7 @@ perl -pi -e "s/widget id=\"[^\"]*\" version=\"[^\"]*/widget id=\"$APP_ID\" versi
 # cleanup before building
 lein clean 
 lein cljsbuild once dist 
+lein clean
 
 # Manifest file
 #
