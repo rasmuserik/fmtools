@@ -10,6 +10,7 @@
 ;;   - more responsive ui, instead of mobile-portrait oriented
 ;; - data
 ;;   - basic communication with api - load data
+;;   - documentation of db started
 ;; - system
 ;;   - appcache manifest generation for offline deploy
 ;;   - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy, - that worked)
@@ -17,6 +18,11 @@
 ;;   - Proxy api on demo-deploy-server
 ;;
 ;; ## Backlog
+;;
+;; - make data model match documentation below
+;;   - templates should be list instead of object
+;;   - `:lines` instead of `:rows: in template
+;;   - new objects graph format
 ;;
 ;; - photo capture
 ;; - entity tree
