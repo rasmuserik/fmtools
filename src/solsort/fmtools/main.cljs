@@ -62,11 +62,14 @@
 ;;       - `:DoubleFieldSeperator` (NB: typo in api)
 ;;       - `:FieldValue`
 ;;
-;; # Notes about data from API
+;; # Notes / questions about API
 ;;
 ;; I assume the following:
 ;;
 ;; - ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
+;; - Field/part-data put/get 
+;;   - Might we not need ObjectID? 
+;;   - Why do we need more than one Guid to identify part of template?
 ;;
 ;; # Literate source code
 ;;
