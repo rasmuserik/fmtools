@@ -11,14 +11,22 @@
 ;;   - more responsive ui, instead of mobile-portrait oriented
 ;; - data
 ;;   - basic communication with api - load data
+;; - system
+;;   - appcache manifest generation for offline deploy
+;;   - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy, - that worked)
+;; - dev
+;;   - Proxy api on demo-deploy-server
 ;;
 ;; ## Next
 ;;
-;; - Proxy api on demo-deploy-server
+;; - photo capture
+;; - entity tree
 ;; - refactor/update code
-;; - simplify data from api
+;; - simplify data model
+;;   - document overview of api-data
+;;   - document overview of desired data
+;;   - function for mapping api-data to internal data
 ;; - widgets
-;; - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy)
 ;; - proper horizontal labels
 ;; - better sync'ing of data
 ;; - separate ids for double-checkboxes
@@ -26,6 +34,7 @@
 ;; # Literate source code
 ;;
 ;;
+
 (ns solsort.fmtools.main
   (:require-macros
     [cljs.core.async.macros :refer [go go-loop alt!]]
@@ -49,6 +58,7 @@
 ;;
 (when js/window.applicationCache
   (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
+
 ;; # Definitions
 ;;
 (defonce field-types
@@ -134,7 +144,6 @@
 (defonce unit (atom 40))
 (defn style []
   (reset! unit (js/Math.floor (* 0.95 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
-  (log 'style @unit)
   (let [unit @unit]
     (load-style!
       {:#main
@@ -152,17 +161,9 @@
        :.fmfield
        {:clear :right }
        :.checkbox
-       {; :display :inline-block
-        ;:border "2px solid black"
-        ;:border-radius (* unit .25)
-        ;:font-size unit
-        ;:line-height (* unit .8)
-        ;:margin (* unit .25)
-        :width 44
+       { :width 44
         :max-width "95%"
-        :height 44
-
-        }
+        :height 44 }
        :.multifield
        {:border-bottom "0.5px solid #ccc"}
        ".camera-input img"
@@ -386,10 +387,12 @@
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
-      (log report data role))))
+      (log 'report report data role))))
+
 (defn load-reports []
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
+      (log 'reports reports)
       (doall
         (for [report (:ReportTables reports)]
           (load-report report))))))
@@ -400,8 +403,9 @@
   (load-templates)
   ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
   ; (load-objects)
-  ; (load-reports)
+  ;(load-reports)
   )
 
-(defonce loader
-  (fetch))
+;(fetch)
+
+(defonce loader (fetch))
