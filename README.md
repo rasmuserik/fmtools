@@ -16,43 +16,65 @@ Krav til app'en:
 - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
 
-# Roadmap
+# Changelog
 
-## Implented / done
-- ui
-  - initial camera button (only currently only working on android)
-  - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
-  - checkbox component that writes to application database
-  - generic select widget
-  - choose current template (should be report later)
-  - more responsive ui, instead of mobile-portrait oriented
-- data
-  - basic communication with api - load data
-  - documentation of db started
-- system
-  - appcache manifest generation for offline deploy
-  - make it work on iOS (currently probably CORS-issue, maybe try out proxy through same domain as deploy, - that worked)
-- dev
-  - Proxy api on demo-deploy-server
+v0.0.3
 
-## Backlog
+- changelog/roadmap
+- cors testing
 
-- make data model match documentation below
-  - templates should be list instead of object
-  - `:lines` instead of `:rows: in template
-  - new objects graph format
+## v0.0.2
 
-- photo capture
-- entity tree
-- refactor/update code
-- simplify data model
-  - document overview of api-data
-  - document overview of desired data
-  - function for mapping api-data to internal data
-- widgets
-- proper horizontal labels
-- better sync'ing of data
-- separate ids for double-checkboxes
+- offline version with cache manifest
+- document data structure
+- refactoring
+- issue-tracking in documentation/file
+
+## v0.0.1
+
+- checkbox component that writes to application database
+- initial version of camera button (data not fetched yet)
+- simple buggy rendition of templates, test that table-format also works on mobile (mostly)
+- generic select widget
+- choose current template (should be report later)
+- responsive ui
+- basic communication with api - load data
+- Proxy api on demo-deploy-server
+
+# Roadmap / Tasks
+
+v0.1.0
+
+- general
+  - better data model / data mapping
+    - function for mapping api-data to internal data
+    - make implentation match documentation
+      - templates should be list instead of object
+      - `:lines` instead of `:rows: in template
+      - new objects graph format
+  - refactor/update code
+  - expand this task list, as it gets solved
+- fill out reports (templates of lines / with different kinds of fields)
+  - generic widgets
+  - fields
+    - separate ids for double-checkboxes
+- synchronise / works offline
+  - better performant sync of db to disk
+    - use localforage instead of localstorage
+    - check if async single-blob is ok performancewise
+- dynamic templates (repeat lines based on objects)
+  - draw/choose object from object-graph
+- navigate the object hierachy, and find the relevant report
+- attach/show images for each line in the report
+  - photo capture
+    - make sure react-img has proper properties
+    - fetch data to db
+  - show images
+- works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
+
+## Later
+
+- proper horizontal labels (probably also needs extra option in backend)
 
 # DB
 
@@ -84,7 +106,7 @@ notes - intended content
 
 I assume the following:
 
-- ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
+- √ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
 - Field/part-data put/get 
   - Might we not need ObjectID? 
   - Why do we need more than one Guid to identify part of template?

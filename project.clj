@@ -1,4 +1,4 @@
-(defproject solsort.fmtools/fmtools "0.0.1-SNAPSHOT"
+(defproject solsort.fmtools/fmtools "0.0.3-SNAPSHOT"
 
   :dependencies
   [[org.clojure/clojure "1.8.0"]
