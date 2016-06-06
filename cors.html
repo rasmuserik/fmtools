@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cors test</title>
+  </head>
+  <body>
+    Testing cors on <span id=url>https://fmtools.solsort.com/api/v1/Area</span>: <span id=result>waiting...</span>
+    <script>
+var xhr = new XMLHttpRequest();
+xhr.open('GET', url.innerHTML);
+xhr.onreadystatechange = function() {
+  if (xhr.readyState === 4) {
+    if (xhr.status === 200) {
+      result.innerHTML = 'ok :)';
+    } else {
+      result.innerHTML = 'fail (' + xhr.status + ')';
+    }
+  }
+};
+xhr.send();
+    </script>
+  </body>
+</html>
+
