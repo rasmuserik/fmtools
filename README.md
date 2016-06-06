@@ -1,5 +1,5 @@
-<!-- [![Stories in Ready](https://badge.waffle.io/solsort/fmtools.png?label=ready&title=Ready)](https://waffle.io/solsort/fmtools)
-[![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) -->
+<!-- [![Stories in Ready](https://badge.waffle.io/solsort/fmtools.png?label=ready&title=Ready)](https://waffle.io/solsort/fmtools) -->
+[![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools)
 
 # FM-Tools
 
@@ -80,11 +80,14 @@ notes - intended content
       - `:DoubleFieldSeperator` (NB: typo in api)
       - `:FieldValue`
 
-# Notes about data from API
+# Notes / questions about API
 
 I assume the following:
 
 - ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
+- Field/part-data put/get 
+  - Might we not need ObjectID? 
+  - Why do we need more than one Guid to identify part of template?
 
 # Literate source code
 
