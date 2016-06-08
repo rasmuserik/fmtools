@@ -18,12 +18,16 @@ Krav til app'en:
 
 # Changelog
 
-v0.0.3
+v0.0.4
+
+- ...
+
+## v0.0.3
 
 - try convert camera-image into dataurl for display
 - area/object-tree - choose/show current object/area
 - changelog/roadmap
-- cors testing
+- cors testing/debugging
 
 ## v0.0.2
 
@@ -547,7 +551,7 @@ Reload application, when a new versionis available
 ## fetch
 
     (defn fetch []
-      (log 'fetching)
+    ;  (log 'fetching)
       (load-templates)
       #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
       (load-objects)
@@ -558,10 +562,5 @@ Reload application, when a new versionis available
     (defonce loader (fetch))
 
 ## Experiments
-    (let [db @(subscribe [:db])
-          graph (:objects db)
-          ]
-      #_(log 'experiments db (count graph) (keys (graph 202)) (map (fn [[k v]] [(:AreaGuid v) k (:ObjectId v)]) (seq graph)))
-      (log db)
-
-      )
+    (let [db @(subscribe [:db])]
+      (log db))
