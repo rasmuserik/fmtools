@@ -109,6 +109,7 @@
      [<ajax <seq<! js-seq normalize-css load-style! put!close!
       parse-json-or-nil log page-ready render dom->clj]]
     [reagent.core :as reagent :refer []]
+    [cljs.reader :refer [read-string]]
     [clojure.walk :refer [keywordize-keys]]
     [re-frame.core :as re-frame
      :refer [register-sub subscribe register-handler
@@ -275,11 +276,12 @@
   (let [current @(subscribe [:ui id])]
     (into [:select
            ; TODO: make sure value is not converted dumbly to/from string
-           {:value current
+           {:value (prn-str current)
             :onChange
-            #(dispatch [:ui id (.-value (.-target %1))])}]
+            #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
           (for [[k v] options]
-            [:option {:key v :value v} k]))))
+            (let [v (prn-str v)]
+             [:option {:key v :value v} k])))))
 
 ;; ## checkbox
 
@@ -310,16 +312,13 @@
         selected @(subscribe [:ui id])
         child @(subscribe [:area-object selected])
         ]
-    ;(log id @(subscribe [:area-object id]))
-    (log 'here id selected obj (= id 324) (= id "324"))
-
     (if children
       [:div
        [select id 
-        (for [[child-id] children]
-          [(:ObjectName @(subscribe [:area-object child-id])) child-id])]
-          (areas selected)
-       ]
+        (concat [["· · ·" "all"]]
+         (for [[child-id] children]
+          [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
+          (areas selected)]
       [:div]
       )
     )
