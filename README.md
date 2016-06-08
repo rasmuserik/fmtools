@@ -83,7 +83,7 @@ notes - intended content
 - `:objects` (NB: root oid)
   - oid
     - `:name`
-    - `:parent` oid
+    - `:ParentId` oid
     - `:children` oid-list
     - `:api-id` id used to identify it in the api
 - `:templates` list
@@ -174,6 +174,10 @@ Reload application, when a new versionis available
 
 # Application database
     (register-sub :db (fn  [db [_ id]]  (reaction @db)))
+    (register-handler
+      :db (fn  [_ [_ db]] db))
+    ;(dispatch-sync [:db {}])
+
 ## UI
 
     (register-sub
@@ -193,14 +197,31 @@ Reload application, when a new versionis available
         (assoc-in db [:templates id] template)))
 
 ## Objects
+    (register-sub
+      :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
     (register-handler
       :area-object
-      (fn  [db  [_ id object]]
-        (assoc-in db [:objects id] object)))
-    (register-handler
-      :area-object-graph
-      (fn  [db  [_ from to]]
-        (assoc-in db [:object-graph from to] true)))
+      (fn  [db  [_ obj]]
+        (let [id (:ObjectId obj)
+              obj (into (get-in db [:objects id] {}) obj)
+              area-guid (:AreaGuid obj)
+              parent-id (:ParentId obj)
+              db 
+              (if (zero? parent-id)
+                (-> db
+                    (assoc-in [:objects :root :children area-guid] true)
+                    (assoc-in [:objects area-guid] 
+                              (or (get-in db [:objects area-guid])
+                                  {:ParentId 0
+                                   :AreaGuid area-guid
+                                   :ObjectId area-guid
+                                   :ObjectName (str (:AreaName obj))}))
+                    (assoc-in [:objects area-guid :children id] true)
+                    ; TODO add in-between-node
+                    )
+                (assoc-in db [:objects parent-id :children id] true))
+              ]
+          (assoc-in db [:objects id] obj))))
 
 ## Simple disk-sync
     (defn clj->json [s] (transit/write (transit/writer :json) s))
@@ -211,13 +232,15 @@ Reload application, when a new versionis available
       (fn  [db]
         ; currently just a hack, needs reimplementation on localforage
         ; only syncing part of structure that is changed
-        (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+        ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
         db))
 
     (register-handler
       :restore-from-disk
       (fn  [db]
-        (json->clj (js/JSON.parse (js/localStorage.getItem "db")))))
+        (json->clj (js/JSON.parse (js/localStorage.getItem "db")))
+        db ; disable restore-from-disk
+        ))
     (dispatch [:restore-from-disk])
 
 # Styling
@@ -267,11 +290,14 @@ Reload application, when a new versionis available
 # Generic Components
 ## select
     (defn select [id options]
-      (into [:select
-             {:onChange
-              #(dispatch [:ui id (.-value (.-target %1))])}]
-            (for [[k v] options]
-              [:option {:key v :value v} k])))
+      (let [current @(subscribe [:ui id])]
+        (into [:select
+               ; TODO: make sure value is not converted dumbly to/from string
+               {:value current
+                :onChange
+                #(dispatch [:ui id (.-value (.-target %1))])}]
+              (for [[k v] options]
+                [:option {:key v :value v} k]))))
 
 ## checkbox
 
@@ -294,6 +320,28 @@ Reload application, when a new versionis available
            [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
            ])))
 
+## Objects / areas
+
+    (defn areas [id]
+      (let [obj @(subscribe [:area-object id])
+            children (:children obj)
+            selected @(subscribe [:ui id])
+            child @(subscribe [:area-object selected])
+            ]
+        ;(log id @(subscribe [:area-object id]))
+        (log 'here id selected obj (= id 324) (= id "324"))
+
+        (if children
+          [:div
+           [select id 
+            (for [[child-id] children]
+              [(:ObjectName @(subscribe [:area-object child-id])) child-id])]
+              (areas selected)
+           ]
+          [:div]
+          )
+        )
+      )
 ## field
 
     (defn field [field cols]
@@ -383,6 +431,8 @@ Reload application, when a new versionis available
        [:div.ui.container
         [:div.ui.form
          [:div.field
+          [areas :root]
+          [:hr]
           [:label "Skabelon"]
           [select :current-template
 
@@ -457,13 +507,11 @@ Reload application, when a new versionis available
           (doall
             (for [object objects]
               (let [object (assoc object :AreaName (:Name area))]
-                (dispatch [:area-object (:ObjectId object) object])
-                (dispatch [:area-object-graph (:ParentId object) (:ObjectId object)])
+                (dispatch [:area-object object])
                 ))))))
 
     (defn load-objects []
       (go (let [areas (keywordize-keys (<! (<api "Area")))]
-            (log 'areas (:Areas areas))
             (doall (for [area (:Areas areas)]
                      (load-area area)
                      )))))
@@ -487,12 +535,13 @@ Reload application, when a new versionis available
 ## fetch
 
     (defn fetch []
+      (log 'fetching)
       (load-templates)
-      ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
+      #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
       (load-objects)
       (load-reports))
 
-    ;(fetch)
+    (fetch)
 
     (defonce loader (fetch))
 
@@ -502,5 +551,5 @@ Reload application, when a new versionis available
           ]
       #_(log 'experiments db (count graph) (keys (graph 202)) (map (fn [[k v]] [(:AreaGuid v) k (:ObjectId v)]) (seq graph)))
       (log db)
-      
+
       )
