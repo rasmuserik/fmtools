@@ -158,13 +158,14 @@
 (register-sub :db (fn  [db [_ id]]  (reaction @db)))
 (register-handler
   :db (fn  [_ [_ db]] db))
+;(dispatch-sync [:db {}])
+
 ;; ## UI
 
 (register-sub
   :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
 (register-handler
   :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
-;(dispatch-sync [:db {}])
 
 ;; ## Templates
 (register-sub
@@ -202,7 +203,7 @@
                 )
             (assoc-in db [:objects parent-id :children id] true))
           ]
-    (assoc-in db [:objects id] obj))))
+      (assoc-in db [:objects id] obj))))
 
 ;; ## Simple disk-sync
 (defn clj->json [s] (transit/write (transit/writer :json) s))
@@ -271,11 +272,14 @@
 ;; # Generic Components
 ;; ## select
 (defn select [id options]
-  (into [:select
-         {:onChange
-          #(dispatch [:ui id (.-value (.-target %1))])}]
-        (for [[k v] options]
-          [:option {:key v :value v} k])))
+  (let [current @(subscribe [:ui id])]
+    (into [:select
+           ; TODO: make sure value is not converted dumbly to/from string
+           {:value current
+            :onChange
+            #(dispatch [:ui id (.-value (.-target %1))])}]
+          (for [[k v] options]
+            [:option {:key v :value v} k]))))
 
 ;; ## checkbox
 
@@ -298,21 +302,28 @@
        [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
        ])))
 
-;; Objects / areas
+;; ## Objects / areas
 ;;
 (defn areas [id]
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
+        selected @(subscribe [:ui id])
+        child @(subscribe [:area-object selected])
         ]
     ;(log id @(subscribe [:area-object id]))
-    [:div
-     (if children
-       [select id (for [[child-id] children]
-        [(:ObjectName @(subscribe [:area-object child-id])) child-id]
-      )]
-       ""
-       )]
-    ))
+    (log 'here id selected obj (= id 324) (= id "324"))
+
+    (if children
+      [:div
+       [select id 
+        (for [[child-id] children]
+          [(:ObjectName @(subscribe [:area-object child-id])) child-id])]
+          (areas selected)
+       ]
+      [:div]
+      )
+    )
+  )
 ;; ## field
 
 (defn field [field cols]
@@ -506,12 +517,13 @@
 ;; ## fetch
 
 (defn fetch []
+  (log 'fetching)
   (load-templates)
   #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
   (load-objects)
   (load-reports))
 
-;(fetch)
+(fetch)
 
 (defonce loader (fetch))
 
@@ -521,5 +533,5 @@
       ]
   #_(log 'experiments db (count graph) (keys (graph 202)) (map (fn [[k v]] [(:AreaGuid v) k (:ObjectId v)]) (seq graph)))
   (log db)
-  
+
   )
