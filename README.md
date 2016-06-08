@@ -20,6 +20,8 @@ Krav til app'en:
 
 v0.0.3
 
+- try convert camera-image into dataurl for display
+- area/object-tree - choose/show current object/area
 - changelog/roadmap
 - cors testing
 
@@ -122,11 +124,13 @@ I assume the following:
       (:require
         [cljs.pprint]
         [cognitect.transit :as transit]
+        [solsort.misc :refer [<blob-url]]
         [solsort.util
          :refer
          [<ajax <seq<! js-seq normalize-css load-style! put!close!
           parse-json-or-nil log page-ready render dom->clj]]
         [reagent.core :as reagent :refer []]
+        [cljs.reader :refer [read-string]]
         [clojure.walk :refer [keywordize-keys]]
         [re-frame.core :as re-frame
          :refer [register-sub subscribe register-handler
@@ -293,11 +297,12 @@ Reload application, when a new versionis available
       (let [current @(subscribe [:ui id])]
         (into [:select
                ; TODO: make sure value is not converted dumbly to/from string
-               {:value current
+               {:value (prn-str current)
                 :onChange
-                #(dispatch [:ui id (.-value (.-target %1))])}]
+                #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
               (for [[k v] options]
-                [:option {:key v :value v} k]))))
+                (let [v (prn-str v)]
+                 [:option {:key v :value v} k])))))
 
 ## checkbox
 
@@ -310,14 +315,24 @@ Reload application, when a new versionis available
 # App layout
 ## Camera button
 
+    (defn handle-file [id file]
+      (go
+        (dispatch [:ui :camera-image (<! (<blob-url file))])
+        ))
+
     (defn camera-button []
       (let [id (str "camera" (js/Math.random))]
         (fn []
           [:div.camera-input
            [:label {:for id}
-            [:img.camera-button {:src "assets/camera.png"}]]
+            [:img.camera-button {:src (or @(subscribe [:ui :camera-image]) 
+                                          "assets/camera.png")}]]
            ; TODO apparently :camera might not be a supported property in react
-           [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
+           [:input 
+            {:type "file" :accept "image/*" 
+             :id id :style {:display :none}
+             :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
+             }]
            ])))
 
 ## Objects / areas
@@ -326,18 +341,14 @@ Reload application, when a new versionis available
       (let [obj @(subscribe [:area-object id])
             children (:children obj)
             selected @(subscribe [:ui id])
-            child @(subscribe [:area-object selected])
-            ]
-        ;(log id @(subscribe [:area-object id]))
-        (log 'here id selected obj (= id 324) (= id "324"))
-
+            child @(subscribe [:area-object selected])]
         (if children
           [:div
            [select id 
-            (for [[child-id] children]
-              [(:ObjectName @(subscribe [:area-object child-id])) child-id])]
-              (areas selected)
-           ]
+            (concat [["· · ·" "all"]]
+             (for [[child-id] children]
+              [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
+              (areas selected)]
           [:div]
           )
         )
@@ -431,6 +442,7 @@ Reload application, when a new versionis available
        [:div.ui.container
         [:div.ui.form
          [:div.field
+          [:label "Område"]
           [areas :root]
           [:hr]
           [:label "Skabelon"]
@@ -541,7 +553,7 @@ Reload application, when a new versionis available
       (load-objects)
       (load-reports))
 
-    (fetch)
+    ;(fetch)
 
     (defonce loader (fetch))
 

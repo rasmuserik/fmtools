@@ -2,6 +2,8 @@
 ;;
 ;; v0.0.3
 ;;
+;; - try convert camera-image into dataurl for display
+;; - area/object-tree - choose/show current object/area
 ;; - changelog/roadmap
 ;; - cors testing
 ;;
@@ -104,6 +106,7 @@
   (:require
     [cljs.pprint]
     [cognitect.transit :as transit]
+    [solsort.misc :refer [<blob-url]]
     [solsort.util
      :refer
      [<ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -294,14 +297,24 @@
 ;; # App layout
 ;; ## Camera button
 
+(defn handle-file [id file]
+  (go
+    (dispatch [:ui :camera-image (<! (<blob-url file))])
+    ))
+
 (defn camera-button []
   (let [id (str "camera" (js/Math.random))]
     (fn []
       [:div.camera-input
        [:label {:for id}
-        [:img.camera-button {:src "assets/camera.png"}]]
+        [:img.camera-button {:src (or @(subscribe [:ui :camera-image]) 
+                                      "assets/camera.png")}]]
        ; TODO apparently :camera might not be a supported property in react
-       [:input {:type "file" :capture "camera" :accept "image/*" :id id :style {:display :none}}]
+       [:input 
+        {:type "file" :accept "image/*" 
+         :id id :style {:display :none}
+         :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
+         }]
        ])))
 
 ;; ## Objects / areas
@@ -310,8 +323,7 @@
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
         selected @(subscribe [:ui id])
-        child @(subscribe [:area-object selected])
-        ]
+        child @(subscribe [:area-object selected])]
     (if children
       [:div
        [select id 
@@ -412,6 +424,7 @@
    [:div.ui.container
     [:div.ui.form
      [:div.field
+      [:label "Område"]
       [areas :root]
       [:hr]
       [:label "Skabelon"]
@@ -522,7 +535,7 @@
   (load-objects)
   (load-reports))
 
-(fetch)
+;(fetch)
 
 (defonce loader (fetch))
 
