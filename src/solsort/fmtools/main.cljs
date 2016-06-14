@@ -90,14 +90,19 @@
 ;;       - `:DoubleFieldSeperator` (NB: typo in api)
 ;;       - `:FieldValue`
 ;; - `:raw-report`
+;; - `:data`
+;;   - report-id
+;;     - field-id
+;;       - object-id
+;;         - value
 ;;
 ;; # Notes / questions about API
 ;;
 ;; I assume the following:
 ;;
 ;; - √ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
-;; - Field/part-data put/get 
-;;   - Might we not need ObjectID? 
+;; - Field/part-data put/get
+;;   - Might we not need ObjectID?
 ;;   - Why do we need more than one Guid to identify part of template?
 ;;
 ;; # Literate source code
@@ -164,16 +169,32 @@
    10 :template-control})
 
 ;; # Application database
-(register-sub :db (fn  [db [_ id]]  (reaction @db)))
-(register-handler :db (fn  [_ [_ db]] db))
+(register-sub
+  :db
+  (fn  [db [_ & path]] 
+    (reaction
+      (if path
+        (get-in @db path)
+        @db))))
+
+(register-handler
+  :db
+  (fn  [db [_ & path]]
+    (let [value (last path)
+          path (butlast path)]
+      (if path
+        (assoc-in db path value)
+        value))))
 ;(dispatch-sync [:db {}])
 
+
+
 ;; ## raw-report
-(register-handler 
-  :raw-report 
-  (fn  [db [_ report data role]] 
+(register-handler
+  :raw-report
+  (fn  [db [_ report data role]]
     (dispatch [:sync-to-disk])
-    (assoc-in db [:raw-report (:ReportGuid report)] 
+    (assoc-in db [:raw-report (:ReportGuid report)]
                   {:report report
                    :data data
                    :role role})))
@@ -205,11 +226,11 @@
           obj (into (get-in db [:objects id] {}) obj)
           area-guid (:AreaGuid obj)
           parent-id (:ParentId obj)
-          db 
+          db
           (if (zero? parent-id)
             (-> db
                 (assoc-in [:objects :root :children area-guid] true)
-                (assoc-in [:objects area-guid] 
+                (assoc-in [:objects area-guid]
                           (or (get-in db [:objects area-guid])
                               {:ParentId 0
                                :AreaGuid area-guid
@@ -321,11 +342,11 @@
     (fn []
       [:div.camera-input
        [:label {:for id}
-        [:img.camera-button {:src (or @(subscribe [:ui :camera-image]) 
+        [:img.camera-button {:src (or @(subscribe [:ui :camera-image])
                                       "assets/camera.png")}]]
        ; TODO apparently :camera might not be a supported property in react
-       [:input 
-        {:type "file" :accept "image/*" 
+       [:input
+        {:type "file" :accept "image/*"
          :id id :style {:display :none}
          :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
          }]
@@ -340,7 +361,7 @@
         child @(subscribe [:area-object selected])]
     (if children
       [:div
-       [select id 
+       [select id
         (concat [["· · ·" "all"]]
          (for [[child-id] children]
           [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
@@ -399,7 +420,7 @@
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
-        debug-str (dissoc line :fields)   
+        debug-str (dissoc line :fields)  
         fields (into
                  [:div.fields]
                  (map #(field % cols)  (:fields line)))]
@@ -540,6 +561,18 @@
       (doall
         (for [report (:ReportTables reports)]
           (load-report report))))))
+
+(defn handle-reports []
+  (let [raw-reports (:raw-report @(subscribe [:db]))]
+    (doall
+      (for [[_ raw-report] raw-reports]
+        (let [report (:report raw-report)
+              data (:data raw-report)
+              role (:role raw-report)]
+          (do
+           ; (log 'report report data)
+            ))))))
+(handle-reports)
 
 ;; ## fetch
 
