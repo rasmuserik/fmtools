@@ -89,6 +89,7 @@
 ;;       - `:DoubleField`
 ;;       - `:DoubleFieldSeperator` (NB: typo in api)
 ;;       - `:FieldValue`
+;; - `:raw-report`
 ;;
 ;; # Notes / questions about API
 ;;
@@ -164,10 +165,18 @@
 
 ;; # Application database
 (register-sub :db (fn  [db [_ id]]  (reaction @db)))
-(register-handler
-  :db (fn  [_ [_ db]] db))
+(register-handler :db (fn  [_ [_ db]] db))
 ;(dispatch-sync [:db {}])
 
+;; ## raw-report
+(register-handler 
+  :raw-report 
+  (fn  [db [_ report data role]] 
+    (dispatch [:sync-to-disk])
+    (assoc-in db [:raw-report (:ReportGuid report)] 
+                  {:report report
+                   :data data
+                   :role role})))
 ;; ## UI
 
 (register-sub
@@ -222,7 +231,7 @@
   (fn  [db]
     ; currently just a hack, needs reimplementation on localforage
     ; only syncing part of structure that is changed
-    (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+    ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
     db))
 
 (register-handler
@@ -231,7 +240,8 @@
     (json->clj (js/JSON.parse (js/localStorage.getItem "db")))
     ;db ; disable restore-from-disk
     ))
-(dispatch [:restore-from-disk])
+(defonce restore
+  (dispatch [:restore-from-disk]))
 
 ;; # Styling
 
@@ -520,7 +530,8 @@
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
-      #_(log 'report report data role))))
+      (dispatch [:raw-report report data role])
+      (log 'report report data role))))
 
 (defn load-reports []
   (go
