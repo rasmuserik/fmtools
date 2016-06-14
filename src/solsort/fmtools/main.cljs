@@ -171,7 +171,7 @@
 ;; # Application database
 (register-sub
   :db
-  (fn  [db [_ & path]] 
+  (fn  [db [_ & path]]
     (reaction
       (if path
         (get-in @db path)
@@ -353,6 +353,7 @@
        ])))
 
 ;; ## Objects / areas
+;; ### areas
 ;;
 (defn areas [id]
   (let [obj @(subscribe [:area-object id])
@@ -362,7 +363,7 @@
     (if children
       [:div
        [select id
-        (concat [["· · ·" "all"]]
+        (concat [["· · ·" ]]
                 (for [[child-id] children]
                   [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
        (areas selected)]
@@ -370,6 +371,21 @@
       )
     )
   )
+
+;; ### objects
+(defn selected-object [id]
+  (let [selected @(subscribe [:ui id])]
+    (if selected (selected-object selected) id)))
+
+(defn find-objects [id]
+  (apply concat [id]
+    (map find-objects
+      (keys (get @(subscribe [:db :objects id]) :children {})))))
+
+(defn object-list []
+  (let [selected (selected-object :root)]
+    (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
+
 ;; ## field
 
 (defn field [field cols]
@@ -420,7 +436,7 @@
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
-        debug-str (dissoc line :fields)  
+        debug-str (dissoc line :fields)
         fields (into
                  [:div.fields]
                  (map #(field % cols)  (:fields line)))]
@@ -461,10 +477,10 @@
      [:div.field
       [:label "Område"]
       [areas :root]
+      [object-list]
       [:hr]
       [:label "Skabelon"]
       [select :current-template
-
        (for [template-id  @(subscribe [:templates])]
          [(str (:Name @(subscribe [:template template-id])) " / "
                (:Description @(subscribe [:template template-id])))
@@ -474,7 +490,6 @@
 
 (defn app []
   [:div
-
    [:h1 "FM-Tools"]
    [:hr]
    [form]
@@ -546,7 +561,6 @@
                  )))))
 ;; ## Report
 
-
 (defn load-report [report]
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
@@ -567,12 +581,15 @@
     (doall
       (for [[_ raw-report] raw-reports]
         (let [report (:report raw-report)
-              data (:data raw-report)
+              report-guid (:ReportGuid report)
+              data (:ReportTable (:data raw-report))
               role (:role raw-report)]
           (do
-            ; (log 'report report data)
-            ))))))
-(handle-reports)
+            (log 'report report-guid data)
+            (doall
+              (for [entry (:ReportFields report)]
+                (dispatch [:db report-guid (:FieldGuid entry) ()])))))))))
+;(handle-reports)
 
 ;; ## fetch
 
