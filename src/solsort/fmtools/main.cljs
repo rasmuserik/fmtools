@@ -195,9 +195,9 @@
   (fn  [db [_ report data role]]
     (dispatch [:sync-to-disk])
     (assoc-in db [:raw-report (:ReportGuid report)]
-                  {:report report
-                   :data data
-                   :role role})))
+              {:report report
+               :data data
+               :role role})))
 ;; ## UI
 
 (register-sub
@@ -319,7 +319,7 @@
             #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
           (for [[k v] options]
             (let [v (prn-str v)]
-             [:option {:key v :value v} k])))))
+              [:option {:key v :value v} k])))))
 
 ;; ## checkbox
 
@@ -363,9 +363,9 @@
       [:div
        [select id
         (concat [["· · ·" "all"]]
-         (for [[child-id] children]
-          [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
-          (areas selected)]
+                (for [[child-id] children]
+                  [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
+       (areas selected)]
       [:div]
       )
     )
@@ -570,14 +570,14 @@
               data (:data raw-report)
               role (:role raw-report)]
           (do
-           ; (log 'report report data)
+            ; (log 'report report data)
             ))))))
 (handle-reports)
 
 ;; ## fetch
 
 (defn fetch []
-;  (log 'fetching)
+  ;  (log 'fetching)
   (load-templates)
   #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
   (load-objects)
