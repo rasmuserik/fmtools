@@ -222,14 +222,14 @@
   (fn  [db]
     ; currently just a hack, needs reimplementation on localforage
     ; only syncing part of structure that is changed
-    ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+    (js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
     db))
 
 (register-handler
   :restore-from-disk
   (fn  [db]
     (json->clj (js/JSON.parse (js/localStorage.getItem "db")))
-    db ; disable restore-from-disk
+    ;db ; disable restore-from-disk
     ))
 (dispatch [:restore-from-disk])
 
