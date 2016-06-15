@@ -51,13 +51,13 @@
 ;;   - generic widgets
 ;;   - fields
 ;;     - separate ids for double-checkboxes
-;; - synchronise / works offline
+;; - synchronise to disk / works offline
 ;;   - better performant sync of db to disk
 ;;     - use localforage instead of localstorage
 ;;     - check if async single-blob is ok performancewise
 ;; - dynamic templates (repeat lines based on objects)
 ;;   - repeat lines based on object-graph traversal
-;; - navigate the object hierachy, and find the relevant report
+;; - sync data  to server
 ;; - attach/show images for each line in the report
 ;;   - photo capture
 ;;     - make sure react-img has proper properties
@@ -138,6 +138,7 @@
 ;; # Util
 ;;
 ;; Reload application, when a new versionis available
+
 (when js/window.applicationCache
   (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 
@@ -174,6 +175,7 @@
    10 :template-control})
 
 ;; # Application database
+
 (register-sub
   :db
   (fn  [db [_ & path]]
@@ -195,6 +197,7 @@
 
 
 ;; ## raw-report
+
 (register-handler
   :raw-report
   (fn  [db [_ report data role]]
@@ -211,6 +214,7 @@
   :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
 
 ;; ## Templates
+
 (register-sub
   :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
 (register-sub
@@ -222,6 +226,7 @@
     (assoc-in db [:templates id] template)))
 
 ;; ## Objects
+
 (register-sub
   :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
 (register-handler
@@ -244,11 +249,11 @@
                 (assoc-in [:objects area-guid :children id] true)
                 ; TODO add in-between-node
                 )
-            (assoc-in db [:objects parent-id :children id] true))
-          ]
+            (assoc-in db [:objects parent-id :children id] true))]
       (assoc-in db [:objects id] obj))))
 
 ;; ## Simple disk-sync
+
 (defn clj->json [s] (transit/write (transit/writer :json) s))
 (defn json->clj [s] (transit/read (transit/reader :json) s))
 
@@ -315,10 +320,10 @@
 
 ;; # Generic Components
 ;; ## select
+
 (defn select [id options]
   (let [current @(subscribe [:ui id])]
     (into [:select
-           ; TODO: make sure value is not converted dumbly to/from string
            {:value (prn-str current)
             :onChange
             #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
@@ -339,8 +344,7 @@
 
 (defn handle-file [id file]
   (go
-    (dispatch [:ui :camera-image (<! (<blob-url file))])
-    ))
+    (dispatch [:ui :camera-image (<! (<blob-url file))])))
 
 (defn camera-button []
   (let [id (str "camera" (js/Math.random))]
@@ -349,7 +353,6 @@
        [:label {:for id}
         [:img.camera-button {:src (or @(subscribe [:ui :camera-image])
                                       "assets/camera.png")}]]
-       ; TODO apparently :camera might not be a supported property in react
        [:input
         {:type "file" :accept "image/*"
          :id id :style {:display :none}
@@ -359,7 +362,7 @@
 
 ;; ## Objects / areas
 ;; ### areas
-;;
+
 (defn areas [id]
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
@@ -372,12 +375,10 @@
                 (for [[child-id] children]
                   [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
        (areas selected)]
-      [:div]
-      )
-    )
-  )
+      [:div])))
 
 ;; ### objects
+
 (defn selected-object [id]
   (let [selected @(subscribe [:ui id])]
     (if selected (selected-object selected) id)))
@@ -430,8 +431,7 @@
          [checkbox guid])
        :text-fixed-noframe [:span.text-fixed-noframe value]
        [:strong "unhandled field:"
-        (str field-type) " " value])
-     ]))
+        (str field-type) " " value])]))
 
 
 ;; ## line
@@ -475,6 +475,7 @@
       )))
 
 ;; ## main
+
 (defn form []
   [:div.main-form
    [:div.ui.container
@@ -513,6 +514,7 @@
          :credentials true))
 
 ;; ## Templates
+
 (defn load-template [template-id]
   (go
     (let [template (keywordize-keys
@@ -549,6 +551,7 @@
                (load-template (get template "TemplateGuid")))))))
 
 ;; ## Objects
+
 (defn load-area [area]
   (go
     (let [objects (:Objects (keywordize-keys
@@ -562,8 +565,7 @@
 (defn load-objects []
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
         (doall (for [area (:Areas areas)]
-                 (load-area area)
-                 )))))
+                 (load-area area))))))
 ;; ## Report
 
 (defn load-report [report]
