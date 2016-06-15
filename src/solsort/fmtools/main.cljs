@@ -1,8 +1,13 @@
 ;; # Changelog
-;;
-;; v0.0.4
+;; v0.0.5
 ;;
 ;; - ...
+;;
+;; ## v0.0.4
+;;
+;; - initial traverse/store report data into database, (needs mangling)
+;; - traverse area/object tree structure / object-graph
+;; - find current selected area, and render list of nodes based on this
 ;;
 ;; ## v0.0.3
 ;;
@@ -51,7 +56,7 @@
 ;;     - use localforage instead of localstorage
 ;;     - check if async single-blob is ok performancewise
 ;; - dynamic templates (repeat lines based on objects)
-;;   - draw/choose object from object-graph
+;;   - repeat lines based on object-graph traversal
 ;; - navigate the object hierachy, and find the relevant report
 ;; - attach/show images for each line in the report
 ;;   - photo capture
@@ -90,7 +95,7 @@
 ;;       - `:DoubleFieldSeperator` (NB: typo in api)
 ;;       - `:FieldValue`
 ;; - `:raw-report`
-;; - `:data`
+;; - `:data` (intended, not implemented yet)
 ;;   - report-id
 ;;     - field-id
 ;;       - object-id
