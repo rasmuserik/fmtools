@@ -120,6 +120,7 @@
     [reagent.ratom :as ratom :refer  [reaction]])
   (:require
     [cljs.pprint]
+    [cljsjs.localforage]
     [cognitect.transit :as transit]
     [solsort.misc :refer [<blob-url]]
     [solsort.util

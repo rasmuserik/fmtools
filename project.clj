@@ -4,7 +4,7 @@
   [[org.clojure/clojure "1.8.0"]
    [org.clojure/clojurescript "1.7.170"]
    [org.clojure/core.async "0.2.374"]
-   [cljsjs/pouchdb "5.2.1-0"]
+   [cljsjs/localforage "1.3.1-0"]
    [solsort/util "0.1.2"]
    [com.cognitect/transit-cljs "0.8.237"]
    [reagent "0.5.1"]
