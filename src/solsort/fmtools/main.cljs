@@ -126,7 +126,7 @@
     [solsort.util
      :refer
      [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
-      parse-json-or-nil log page-ready render dom->clj]]
+      parse-json-or-nil log page-ready render dom->clj next-tick]]
     [reagent.core :as reagent :refer []]
     [cljs.reader :refer [read-string]]
     [clojure.data :refer [diff]]
@@ -276,22 +276,61 @@
 
 
 (defonce diskdb (atom {}))
-(defonce sync-in-progress (atom false))
 (defonce prev-id (atom 0))
 
-(defn next-id []
-  (let [result @prev-id]
-    (swap! prev-id inc)
-    (str "\u0001" result)))
+(defn unique-id ; ### a likely unique id
+  []
+  (let [t (js/Date.now)
+        r (js/Math.random)]
+    (js/btoa
+     (js/String.fromCharCode
+      (bit-and 255 (/ t 0x10000000000))
+      (bit-and 255 (/ t 0x100000000))
+      (bit-and 255 (/ t 0x1000000))
+      (bit-and 255 (/ t 0x10000))
+      (bit-and 255 (/ t 0x100))
+      (bit-and 255 t)
+      (bit-and 255 (* r 0x100))
+      (bit-and 255 (* r 0x10000))
+      (bit-and 255 (* r 0x1000000))
+      (bit-and 255 (* r 0x100000000))
+      (bit-and 255 (* r 0x10000000000))
+      (bit-and 255 (* r 0x1000000000000))))))
+(log 'random-id (unique-id))
+(log 'random-id (unique-id))
+(log 'random-id (unique-id))
+(log 'random-id (unique-id))
+(log 'random-id (unique-id))
+(log 'random-id (unique-id))
+(defn third ; ###
+  [col] 
+  (nth col 3)) 
 
-(defn third [col] (nth col 3))
-(defn sync-to-disk
+(defn to-map ; ###
+  [o]
+  (cond
+    (map? o) o
+    (sequential? o) (zipmap (range) o)
+    :else {}))
+
+(defn delta ; ###
+  "get changes from a to b"
+  [from to] 
+  (if (coll? to)
+    (let [from (to-map from)
+          to (to-map to)
+          ks (distinct (concat (keys from) (keys to)))]
+      (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
+    to))
+
+(defn save-changes ; ###
   ; (changes id) -> (value, chans, deleted)
   [value id]
   (go
     (log 'here value)
     (let 
-      [db-val (if id 
+      []
+      #_[db-val (if id 
                 (read-string (<! (<p (.getItem js/localforage id)))) 
                 {})
        value (if (sequential? value)
@@ -307,24 +346,41 @@
        ]
       (log 'here2 value)
       [id [] []]
-      )
-    ))
+      )))
 
-(defn to-disk [db]
-  (when-not @sync-in-progress
-    (reset! sync-in-progress true)
+(defn <to-disk  ; ###
+  [db] 
     (go
-      (let [changes (first (diff db @diskdb)) 
+      (let [changes (delta @diskdb db) 
             id (<! (<p (.getItem js/localforage "root-id")))
-            syn (sync-to-disk changes id)
-            ]
-        (log 'sync changes id)
-        (reset! sync-in-progress false)
-        (log 'to-disk-done @sync-in-progress)
-        )))) 
+            [_ chans deletes] (save-changes changes id)]
+        (log '<to-disk changes)
+        )))
 
-(log 'here)
-(to-disk [:a "hello"])
+;; ### sync-runner
+(defonce sync-in-progress (atom false))
+
+(defn sync-db [db]
+   (if @sync-in-progress
+    (reset! sync-in-progress db)
+    (go
+      (reset! sync-in-progress true)
+      (<! (<to-disk db))
+      (when-not (= true @sync-in-progress)
+        (next-tick #(sync-db db)))
+      (reset! sync-in-progress false)
+      )))
+
+
+(sync-db [:a "hello"])
+
+(defn next-id ; ###
+  []
+  (let [result @prev-id]
+    (swap! prev-id inc)
+    (str "\u0001" result)))
+
+;; ### 
 
 (register-handler
   :sync-to-disk
