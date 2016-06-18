@@ -125,10 +125,11 @@
     [solsort.misc :refer [<blob-url]]
     [solsort.util
      :refer
-     [<ajax <seq<! js-seq normalize-css load-style! put!close!
+     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
       parse-json-or-nil log page-ready render dom->clj]]
     [reagent.core :as reagent :refer []]
     [cljs.reader :refer [read-string]]
+    [clojure.data :refer [diff]]
     [clojure.walk :refer [keywordize-keys]]
     [re-frame.core :as re-frame
      :refer [register-sub subscribe register-handler
@@ -258,6 +259,73 @@
 (defn clj->json [s] (transit/write (transit/writer :json) s))
 (defn json->clj [s] (transit/read (transit/reader :json) s))
 
+
+;; we are writing the changes to disk. 
+;; The structure of a json object like
+;; `{a: 1, b: ['c', {d: 'e'}]}` is:
+;;
+;; - 0 {a: 1, b: '\u00011'}
+;; - 1 ['c', '\u00012']
+;; - 2 {d: 'e'}
+;;
+;; if first char of string has ascii value < 4 it is prefixed with "\u0000"
+;;
+;; references in db are "\u0001" followed by id
+;;
+;; keywords are "\u0002" followed by keyword
+
+
+(defonce diskdb (atom {}))
+(defonce sync-in-progress (atom false))
+(defonce prev-id (atom 0))
+
+(defn next-id []
+  (let [result @prev-id]
+    (swap! prev-id inc)
+    (str "\u0001" result)))
+
+(defn third [col] (nth col 3))
+(defn sync-to-disk
+  ; (changes id) -> (value, chans, deleted)
+  [value id]
+  (go
+    (log 'here value)
+    (let 
+      [db-val (if id 
+                (read-string (<! (<p (.getItem js/localforage id)))) 
+                {})
+       value (if (sequential? value)
+               (zipmap (range) value)
+               value)
+       value-map (if (map? value) value {})
+       children (into 
+                  {}
+                  (map #(list % (sync-to-disk (value-map %) (db-val %)))
+                       (distinct (into (keys value-map) (keys db-val)))))
+       chans (apply merge (map second (vals children)))
+       deleted (apply merge (map third (vals children)))
+       ]
+      (log 'here2 value)
+      [id [] []]
+      )
+    ))
+
+(defn to-disk [db]
+  (when-not @sync-in-progress
+    (reset! sync-in-progress true)
+    (go
+      (let [changes (first (diff db @diskdb)) 
+            id (<! (<p (.getItem js/localforage "root-id")))
+            syn (sync-to-disk changes id)
+            ]
+        (log 'sync changes id)
+        (reset! sync-in-progress false)
+        (log 'to-disk-done @sync-in-progress)
+        )))) 
+
+(log 'here)
+(to-disk [:a "hello"])
+
 (register-handler
   :sync-to-disk
   (fn  [db]
@@ -269,8 +337,8 @@
 (register-handler
   :restore-from-disk
   (fn  [db]
-    (json->clj (js/JSON.parse (js/localStorage.getItem "db")))
-    ;db ; disable restore-from-disk
+    ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
+    db ; disable restore-from-disk
     ))
 (defonce restore
   (dispatch [:restore-from-disk]))
@@ -386,8 +454,8 @@
 
 (defn find-objects [id]
   (apply concat [id]
-    (map find-objects
-      (keys (get @(subscribe [:db :objects id]) :children {})))))
+         (map find-objects
+              (keys (get @(subscribe [:db :objects id]) :children {})))))
 
 (defn object-list []
   (let [selected (selected-object :root)]
