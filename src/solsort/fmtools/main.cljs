@@ -208,10 +208,10 @@
     (dispatch [:sync-to-disk])
     (-> db
         (assoc-in [:reports (:ReportGuid report)] report)
-      (assoc-in [:raw-report (:ReportGuid report)]
-              {:report report
-               :data data
-               :role role}))))
+        (assoc-in [:raw-report (:ReportGuid report)]
+                  {:report report
+                   :data data
+                   :role role}))))
 ;; ## UI
 
 (register-sub
@@ -265,7 +265,7 @@
 (defn json->clj [s] (transit/read (transit/reader :json) s))
 
 
-;; we are writing the changes to disk. 
+;; we are writing the changes to disk.
 ;; The structure of a json object like
 ;; `{a: 1, b: ['c', {d: 'e'}]}` is:
 ;;
@@ -283,8 +283,8 @@
 (defonce diskdb (atom {}))
 (defonce prev-id (atom 0))
 (defn third ; ###
-  [col] 
-  (nth col 3)) 
+  [col]
+  (nth col 3))
 
 (defn to-map ; ###
   [o]
@@ -295,7 +295,7 @@
 
 (defn delta ; ###
   "get changes from a to b"
-  [from to] 
+  [from to]
   (if (coll? to)
     (let [from (to-map from)
           to (to-map to)
@@ -307,36 +307,36 @@
   ; (changes id) -> (value, chans, deleted)
   [value id]
   (go
-    (let 
-      [db-map (read-string 
+    (let
+      [db-map (read-string
                 (or (<! (<p (.getItem js/localforage id))) "{}"))
        value-map (to-map value)
-       ;children 
-       #_(into {} (map 
-                  #(list % (save-changes (value-map %) (db-map %))) 
-                  (distinct (concat (keys value-map) (keys db-map)))))
-      ; chans (apply merge (map second (vals children)))
-      ; deleted (apply merge (map third (vals children)))
+       ;children
+       #_(into {} (map
+                    #(list % (save-changes (value-map %) (db-map %)))
+                    (distinct (concat (keys value-map) (keys db-map)))))
+       ; chans (apply merge (map second (vals children)))
+       ; deleted (apply merge (map third (vals children)))
        ]
       [id [] []]
       )))
 
 (defn <to-disk  ; ###
-  [db] 
-    (go
-      (let [changes (delta @diskdb db) 
-            id (or (<! (<p (.getItem js/localforage "root-id"))))
-            [_ chans deletes] (<! (save-changes changes id))
-            
-            ]
-        (log '<to-disk id changes)
-        )))
+  [db]
+  (go
+    (let [changes (delta @diskdb db)
+          id (or (<! (<p (.getItem js/localforage "root-id"))))
+          [_ chans deletes] (<! (save-changes changes id))
+
+          ]
+      (log '<to-disk id changes)
+      )))
 
 ;; ### sync-runner
 (defonce sync-in-progress (atom false))
 
 (defn sync-db [db]
-   (if @sync-in-progress
+  (if @sync-in-progress
     (reset! sync-in-progress db)
     (go
       (reset! sync-in-progress true)
@@ -355,7 +355,7 @@
     (swap! prev-id inc)
     (str "\u0001" result)))
 
-;; ### 
+;; ###
 
 (register-handler
   :sync-to-disk
@@ -488,7 +488,7 @@
          (map find-objects
               (keys (get @(subscribe [:db :objects id]) :children {})))))
 
-(defn object-list [] 
+(defn object-list []
   (let [selected (selected-object :root)]
     (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
@@ -579,30 +579,30 @@
 (defn form []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     (log 'current-report report)
-   [:div.main-form
-   [:div.ui.container
-    [:div.ui.form
-     [:div.field
-      [:label "Rapport"]
-      [select :report-id
-       (for [report-id  (keys @(subscribe [:db :reports]))]
-         [@(subscribe [:db :reports report-id :ReportName])
-          report-id])]
-      (if (:children @(subscribe  [:area-object (:ObjectId report)]))
-        [:label "Område"]
-        "")
-      [areas (or (:ObjectId report) :root)]
-      ;[object-list]
-      [:hr]
-      #_[:label "Skabelon"]
-      #_[select :current-template
-       (for [template-id  @(subscribe [:templates])]
-         [(str (:Name @(subscribe [:template template-id])) " / "
-               (:Description @(subscribe [:template template-id])))
-          template-id])]]]]
-   [:hr]
-   ;[render-template @(subscribe [:ui :current-template])]]))
-   [render-template (:TemplateGuid report)]]))
+    [:div.main-form
+     [:div.ui.container
+      [:div.ui.form
+       [:div.field
+        [:label "Rapport"]
+        [select :report-id
+         (for [report-id  (keys @(subscribe [:db :reports]))]
+           [@(subscribe [:db :reports report-id :ReportName])
+            report-id])]
+        (if (:children @(subscribe  [:area-object (:ObjectId report)]))
+          [:label "Område"]
+          "")
+        [areas (or (:ObjectId report) :root)]
+        ;[object-list]
+        [:hr]
+        #_[:label "Skabelon"]
+        #_[select :current-template
+           (for [template-id  @(subscribe [:templates])]
+             [(str (:Name @(subscribe [:template template-id])) " / "
+                   (:Description @(subscribe [:template template-id])))
+              template-id])]]]]
+     [:hr]
+     ;[render-template @(subscribe [:ui :current-template])]]))
+     [render-template (:TemplateGuid report)]]))
 
 (defn app []
   [:div
