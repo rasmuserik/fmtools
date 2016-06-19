@@ -95,6 +95,8 @@
 ;;       - `:DoubleFieldSeperator` (NB: typo in api)
 ;;       - `:FieldValue`
 ;; - `:raw-report`
+;; - `:ui`
+;;   - [report-id field-id object-id (1/2)] value
 ;; - `:data` (intended, not implemented yet)
 ;;   - report-id
 ;;     - field-id
@@ -204,10 +206,12 @@
   :raw-report
   (fn  [db [_ report data role]]
     (dispatch [:sync-to-disk])
-    (assoc-in db [:raw-report (:ReportGuid report)]
+    (-> db
+        (assoc-in [:reports (:ReportGuid report)] report)
+      (assoc-in [:raw-report (:ReportGuid report)]
               {:report report
                :data data
-               :role role})))
+               :role role}))))
 ;; ## UI
 
 (register-sub
@@ -254,7 +258,8 @@
             (assoc-in db [:objects parent-id :children id] true))]
       (assoc-in db [:objects id] obj))))
 
-;; ## Simple disk-sync
+;; # Simple disk-sync
+;; ##
 
 (defn clj->json [s] (transit/write (transit/writer :json) s))
 (defn json->clj [s] (transit/read (transit/reader :json) s))
@@ -277,31 +282,6 @@
 
 (defonce diskdb (atom {}))
 (defonce prev-id (atom 0))
-
-(defn unique-id ; ### a likely unique id
-  []
-  (let [t (js/Date.now)
-        r (js/Math.random)]
-    (js/btoa
-     (js/String.fromCharCode
-      (bit-and 255 (/ t 0x10000000000))
-      (bit-and 255 (/ t 0x100000000))
-      (bit-and 255 (/ t 0x1000000))
-      (bit-and 255 (/ t 0x10000))
-      (bit-and 255 (/ t 0x100))
-      (bit-and 255 t)
-      (bit-and 255 (* r 0x100))
-      (bit-and 255 (* r 0x10000))
-      (bit-and 255 (* r 0x1000000))
-      (bit-and 255 (* r 0x100000000))
-      (bit-and 255 (* r 0x10000000000))
-      (bit-and 255 (* r 0x1000000000000))))))
-(log 'random-id (unique-id))
-(log 'random-id (unique-id))
-(log 'random-id (unique-id))
-(log 'random-id (unique-id))
-(log 'random-id (unique-id))
-(log 'random-id (unique-id))
 (defn third ; ###
   [col] 
   (nth col 3)) 
@@ -327,24 +307,17 @@
   ; (changes id) -> (value, chans, deleted)
   [value id]
   (go
-    (log 'here value)
     (let 
-      []
-      #_[db-val (if id 
-                (read-string (<! (<p (.getItem js/localforage id)))) 
-                {})
-       value (if (sequential? value)
-               (zipmap (range) value)
-               value)
-       value-map (if (map? value) value {})
-       children (into 
-                  {}
-                  (map #(list % (sync-to-disk (value-map %) (db-val %)))
-                       (distinct (into (keys value-map) (keys db-val)))))
-       chans (apply merge (map second (vals children)))
-       deleted (apply merge (map third (vals children)))
+      [db-map (read-string 
+                (or (<! (<p (.getItem js/localforage id))) "{}"))
+       value-map (to-map value)
+       ;children 
+       #_(into {} (map 
+                  #(list % (save-changes (value-map %) (db-map %))) 
+                  (distinct (concat (keys value-map) (keys db-map)))))
+      ; chans (apply merge (map second (vals children)))
+      ; deleted (apply merge (map third (vals children)))
        ]
-      (log 'here2 value)
       [id [] []]
       )))
 
@@ -352,9 +325,11 @@
   [db] 
     (go
       (let [changes (delta @diskdb db) 
-            id (<! (<p (.getItem js/localforage "root-id")))
-            [_ chans deletes] (save-changes changes id)]
-        (log '<to-disk changes)
+            id (or (<! (<p (.getItem js/localforage "root-id"))))
+            [_ chans deletes] (<! (save-changes changes id))
+            
+            ]
+        (log '<to-disk id changes)
         )))
 
 ;; ### sync-runner
@@ -513,7 +488,7 @@
          (map find-objects
               (keys (get @(subscribe [:db :objects id]) :children {})))))
 
-(defn object-list []
+(defn object-list [] 
   (let [selected (selected-object :root)]
     (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
@@ -602,22 +577,32 @@
 ;; ## main
 
 (defn form []
-  [:div.main-form
+  (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
+    (log 'current-report report)
+   [:div.main-form
    [:div.ui.container
     [:div.ui.form
      [:div.field
-      [:label "Område"]
-      [areas :root]
-      [object-list]
+      [:label "Rapport"]
+      [select :report-id
+       (for [report-id  (keys @(subscribe [:db :reports]))]
+         [@(subscribe [:db :reports report-id :ReportName])
+          report-id])]
+      (if (:children @(subscribe  [:area-object (:ObjectId report)]))
+        [:label "Område"]
+        "")
+      [areas (or (:ObjectId report) :root)]
+      ;[object-list]
       [:hr]
-      [:label "Skabelon"]
-      [select :current-template
+      #_[:label "Skabelon"]
+      #_[select :current-template
        (for [template-id  @(subscribe [:templates])]
          [(str (:Name @(subscribe [:template template-id])) " / "
                (:Description @(subscribe [:template template-id])))
           template-id])]]]]
    [:hr]
-   [render-template @(subscribe [:ui :current-template])]])
+   ;[render-template @(subscribe [:ui :current-template])]]))
+   [render-template (:TemplateGuid report)]]))
 
 (defn app []
   [:div
