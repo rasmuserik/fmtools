@@ -1,29 +1,38 @@
-;; # Changelog
-;; v0.0.5
+;; # Roadmap
 ;;
-;; - ...
+;; Current sprint/TODO:
+;; v0.0.6
 ;;
-;; ## v0.0.4
+;; - better data sync to disk (similar code will also be used for sync'ing to api)
+;; - save filled out data into app-db
+;;
+;; ## Changelog
+;; ### v0.0.5
+;;
+;; - do not select template directly, choose from open reports instead
+;; - experiments towards faster/better synchronisation from app-db to disk
+;;
+;; ### v0.0.4
 ;;
 ;; - initial traverse/store report data into database, (needs mangling)
 ;; - traverse area/object tree structure / object-graph
 ;; - find current selected area, and render list of nodes based on this
 ;;
-;; ## v0.0.3
+;; ### v0.0.3
 ;;
 ;; - try convert camera-image into dataurl for display
 ;; - area/object-tree - choose/show current object/area
 ;; - changelog/roadmap
 ;; - cors testing/debugging
 ;;
-;; ## v0.0.2
+;; ### v0.0.2
 ;;
 ;; - offline version with cache manifest
 ;; - document data structure
 ;; - refactoring
 ;; - issue-tracking in documentation/file
 ;;
-;; ## v0.0.1
+;; ### v0.0.1
 ;;
 ;; - checkbox component that writes to application database
 ;; - initial version of camera button (data not fetched yet)
@@ -34,7 +43,7 @@
 ;; - basic communication with api - load data
 ;; - Proxy api on demo-deploy-server
 ;;
-;; # Roadmap / Tasks
+;; ## Backlog
 ;;
 ;; v0.1.0
 ;;
@@ -65,7 +74,7 @@
 ;;   - show images
 ;; - works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
 ;;
-;; ## Later
+;; ### Later
 ;;
 ;; - proper horizontal labels (probably also needs extra option in backend)
 ;;
@@ -112,7 +121,7 @@
 ;;   - Might we not need ObjectID?
 ;;   - Why do we need more than one Guid to identify part of template?
 ;;
-;; # Literate source code
+;; # Dependencies
 ;;
 ;;
 
@@ -148,7 +157,9 @@
 
 ;; # Definitions
 ;;
-(defonce field-types
+
+(defonce empty-choice "· · ·")
+(defonce field-types ; ##
   {0   :none
    1   :text-fixed
    2   :text-input
@@ -164,12 +175,12 @@
    12  :fetch-from
    13  :remark
    100 :case-no-from-location})
-(defonce part-types
+(defonce part-types ; ##
   {0 :none
    1 :header
    2 :line
    3 :footer})
-(defonce line-types
+(defonce line-types ; ##
   {0  :basic
    1  :simple-headline
    2  :vertical-headline
@@ -177,7 +188,6 @@
    4  :multi-field-line
    5  :description-line
    10 :template-control})
-
 ;; # Application database
 
 (register-sub
@@ -374,7 +384,8 @@
 (defonce restore
   (dispatch [:restore-from-disk]))
 
-;; # Styling
+;; # UI
+;; ## Styling
 
 (declare app)
 (defonce unit (atom 40))
@@ -418,10 +429,9 @@
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 
-;; # Generic Components
-;; ## select
+;; ## Generic Components
 
-(defn select [id options]
+(defn select [id options] ; ###
   (let [current @(subscribe [:ui id])]
     (into [:select
            {:value (prn-str current)
@@ -431,15 +441,12 @@
             (let [v (prn-str v)]
               [:option {:key v :value v} k])))))
 
-;; ## checkbox
-
-(defn checkbox [id]
+(defn checkbox [id] ; ###
   (let [value @(subscribe [:ui id])]
     [:img.checkbox
      {:on-click #(dispatch [:ui id (not value)])
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 
-;; # App layout
 ;; ## Camera button
 
 (defn handle-file [id file]
@@ -461,9 +468,8 @@
        ])))
 
 ;; ## Objects / areas
-;; ### areas
 
-(defn areas [id]
+(defn areas [id] ; ###
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
         selected @(subscribe [:ui id])
@@ -471,30 +477,29 @@
     (if children
       [:div
        [select id
-        (concat [["· · ·" ]]
+        (concat [[empty-choice]]
                 (for [[child-id] children]
                   [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
        (areas selected)]
       [:div])))
 
-;; ### objects
-
-(defn selected-object [id]
+(defn selected-object [id] ; ###
   (let [selected @(subscribe [:ui id])]
     (if selected (selected-object selected) id)))
 
-(defn find-objects [id]
+(defn find-objects [id] ; ###
   (apply concat [id]
          (map find-objects
               (keys (get @(subscribe [:db :objects id]) :children {})))))
 
-(defn object-list []
+(defn object-list [] ; ###
   (let [selected (selected-object :root)]
     (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
-;; ## field
 
-(defn field [field cols]
+;; ## Lines/fields
+
+(defn field [field cols] ; ###
   (let [field-type (:FieldType field)
         columns (:Columns field)
         double-field (:DoubleField field)
@@ -534,9 +539,8 @@
         (str field-type) " " value])]))
 
 
-;; ## line
 
-(defn line [line]
+(defn line [line] ; ###
   (let [id (:PartGuid line)
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
@@ -562,9 +566,25 @@
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])
      ]))
 
-;; ## template
+;; ## Main
 
-(defn render-template [id]
+(defn choose-report [] ; ###
+  [:div.field
+   [:label "Rapport"]
+   [select :report-id
+    (concat [[empty-choice]] 
+            (for [report-id  (keys @(subscribe [:db :reports]))]
+              [@(subscribe [:db :reports report-id :ReportName])
+               report-id]))]])
+
+(defn choose-area [report] ; ###
+  (if (:children @(subscribe  [:area-object (:ObjectId report)]))
+    [:div.field
+     [:label "Område"]
+     [areas (or (:ObjectId report) :root)]]
+    [:span.empty]))
+
+(defn render-template [id] ; ###
   (let [template @(subscribe [:template id])]
     ;(log (with-out-str (cljs.pprint/pprint template)))
     (merge
@@ -574,47 +594,25 @@
       ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
       )))
 
-;; ## main
-
-(defn form []
+(defn app [] ; ###
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
-    (log 'current-report report)
     [:div.main-form
+     "Under development, not functional yet"
+     [:h1 {:style {:text-align :center}} "FM-Tools"]
+     [:hr]
      [:div.ui.container
       [:div.ui.form
-       [:div.field
-        [:label "Rapport"]
-        [select :report-id
-         (for [report-id  (keys @(subscribe [:db :reports]))]
-           [@(subscribe [:db :reports report-id :ReportName])
-            report-id])]
-        (if (:children @(subscribe  [:area-object (:ObjectId report)]))
-          [:label "Område"]
-          "")
-        [areas (or (:ObjectId report) :root)]
-        ;[object-list]
-        [:hr]
-        #_[:label "Skabelon"]
-        #_[select :current-template
-           (for [template-id  @(subscribe [:templates])]
-             [(str (:Name @(subscribe [:template template-id])) " / "
-                   (:Description @(subscribe [:template template-id])))
-              template-id])]]]]
+       [choose-report]
+       [choose-area report]
+       ;[object-list]
+       ]]
      [:hr]
      ;[render-template @(subscribe [:ui :current-template])]]))
      [render-template (:TemplateGuid report)]]))
 
-(defn app []
-  [:div
-   [:h1 "FM-Tools"]
-   [:hr]
-   [form]
-   ])
-
 ;; # Loading-Data
-;; ## <api
 
-(defn <api [endpoint]
+(defn <api [endpoint] ; ##
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
               ;"app.fmtools.dk/api/v1/"
@@ -625,7 +623,7 @@
 
 ;; ## Templates
 
-(defn load-template [template-id]
+(defn load-template [template-id] ; ###
   (go
     (let [template (keywordize-keys
                      (<! (<api (str "ReportTemplate?templateGuid="
@@ -650,7 +648,7 @@
           parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
       (dispatch [:template template-id (assoc template :rows parts)]))))
 
-(defn load-templates []
+(defn load-templates [] ; ###
   (go
     (let [templates (<! (<api "ReportTemplate"))
           template-id (-> templates
@@ -661,8 +659,8 @@
                (load-template (get template "TemplateGuid")))))))
 
 ;; ## Objects
-
-(defn load-area [area]
+;;
+(defn load-area [area] ; ###
   (go
     (let [objects (:Objects (keywordize-keys
                               (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
@@ -672,20 +670,20 @@
             (dispatch [:area-object object])
             ))))))
 
-(defn load-objects []
+(defn load-objects [] ; ###
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
         (doall (for [area (:Areas areas)]
                  (load-area area))))))
 ;; ## Report
 
-(defn load-report [report]
+(defn load-report [report] ; ###
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
       (dispatch [:raw-report report data role])
       (log 'report report data role))))
 
-(defn load-reports []
+(defn load-reports [] ; ###
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
       #_(log 'reports reports)
@@ -693,7 +691,7 @@
         (for [report (:ReportTables reports)]
           (load-report report))))))
 
-(defn handle-reports []
+(defn handle-reports [] ; ###
   (let [raw-reports (:raw-report @(subscribe [:db]))]
     (doall
       (for [[_ raw-report] raw-reports]
@@ -710,15 +708,16 @@
 
 ;; ## fetch
 
-(defn fetch []
+(defn fetch [] ; ###
   ;  (log 'fetching)
   (load-templates)
   #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
   (load-objects)
   (load-reports))
 
-;(fetch)
+;; ### Execute
 
+;(fetch)
 (defonce loader (fetch))
 
 ;; ## Experiments

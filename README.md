@@ -16,32 +16,41 @@ Krav til app'en:
 - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
 
-# Changelog
-v0.0.5
+# Roadmap
 
-- ...
+Current sprint/TODO:
+v0.0.6
 
-## v0.0.4
+- better data sync to disk (similar code will also be used for sync'ing to api)
+- save filled out data into app-db
+
+## Changelog
+### v0.0.5
+
+- do not select template directly, choose from open reports instead
+- experiments towards faster/better synchronisation from app-db to disk
+
+### v0.0.4
 
 - initial traverse/store report data into database, (needs mangling)
 - traverse area/object tree structure / object-graph
 - find current selected area, and render list of nodes based on this
 
-## v0.0.3
+### v0.0.3
 
 - try convert camera-image into dataurl for display
 - area/object-tree - choose/show current object/area
 - changelog/roadmap
 - cors testing/debugging
 
-## v0.0.2
+### v0.0.2
 
 - offline version with cache manifest
 - document data structure
 - refactoring
 - issue-tracking in documentation/file
 
-## v0.0.1
+### v0.0.1
 
 - checkbox component that writes to application database
 - initial version of camera button (data not fetched yet)
@@ -52,7 +61,7 @@ v0.0.5
 - basic communication with api - load data
 - Proxy api on demo-deploy-server
 
-# Roadmap / Tasks
+## Backlog
 
 v0.1.0
 
@@ -69,13 +78,13 @@ v0.1.0
   - generic widgets
   - fields
     - separate ids for double-checkboxes
-- synchronise / works offline
+- synchronise to disk / works offline
   - better performant sync of db to disk
     - use localforage instead of localstorage
     - check if async single-blob is ok performancewise
 - dynamic templates (repeat lines based on objects)
   - repeat lines based on object-graph traversal
-- navigate the object hierachy, and find the relevant report
+- sync data  to server
 - attach/show images for each line in the report
   - photo capture
     - make sure react-img has proper properties
@@ -83,7 +92,7 @@ v0.1.0
   - show images
 - works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
 
-## Later
+### Later
 
 - proper horizontal labels (probably also needs extra option in backend)
 
@@ -113,6 +122,8 @@ notes - intended content
       - `:DoubleFieldSeperator` (NB: typo in api)
       - `:FieldValue`
 - `:raw-report`
+- `:ui`
+  - [report-id field-id object-id (1/2)] value
 - `:data` (intended, not implemented yet)
   - report-id
     - field-id
@@ -128,7 +139,7 @@ I assume the following:
   - Might we not need ObjectID?
   - Why do we need more than one Guid to identify part of template?
 
-# Literate source code
+# Dependencies
 
 
 
@@ -138,14 +149,16 @@ I assume the following:
         [reagent.ratom :as ratom :refer  [reaction]])
       (:require
         [cljs.pprint]
+        [cljsjs.localforage]
         [cognitect.transit :as transit]
         [solsort.misc :refer [<blob-url]]
         [solsort.util
          :refer
-         [<ajax <seq<! js-seq normalize-css load-style! put!close!
-          parse-json-or-nil log page-ready render dom->clj]]
+         [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
+          parse-json-or-nil log page-ready render dom->clj next-tick]]
         [reagent.core :as reagent :refer []]
         [cljs.reader :refer [read-string]]
+        [clojure.data :refer [diff]]
         [clojure.walk :refer [keywordize-keys]]
         [re-frame.core :as re-frame
          :refer [register-sub subscribe register-handler
@@ -156,12 +169,15 @@ I assume the following:
 # Util
 
 Reload application, when a new versionis available
+
     (when js/window.applicationCache
       (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 
 # Definitions
 
-    (defonce field-types
+
+    (defonce empty-choice "· · ·")
+    (defonce field-types ; ##
       {0   :none
        1   :text-fixed
        2   :text-input
@@ -177,12 +193,12 @@ Reload application, when a new versionis available
        12  :fetch-from
        13  :remark
        100 :case-no-from-location})
-    (defonce part-types
+    (defonce part-types ; ##
       {0 :none
        1 :header
        2 :line
        3 :footer})
-    (defonce line-types
+    (defonce line-types ; ##
       {0  :basic
        1  :simple-headline
        2  :vertical-headline
@@ -190,8 +206,8 @@ Reload application, when a new versionis available
        4  :multi-field-line
        5  :description-line
        10 :template-control})
-
 # Application database
+
     (register-sub
       :db
       (fn  [db [_ & path]]
@@ -213,14 +229,17 @@ Reload application, when a new versionis available
 
 
 ## raw-report
+
     (register-handler
       :raw-report
       (fn  [db [_ report data role]]
         (dispatch [:sync-to-disk])
-        (assoc-in db [:raw-report (:ReportGuid report)]
-                  {:report report
-                   :data data
-                   :role role})))
+        (-> db
+            (assoc-in [:reports (:ReportGuid report)] report)
+            (assoc-in [:raw-report (:ReportGuid report)]
+                      {:report report
+                       :data data
+                       :role role}))))
 ## UI
 
     (register-sub
@@ -229,6 +248,7 @@ Reload application, when a new versionis available
       :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
 
 ## Templates
+
     (register-sub
       :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
     (register-sub
@@ -240,6 +260,7 @@ Reload application, when a new versionis available
         (assoc-in db [:templates id] template)))
 
 ## Objects
+
     (register-sub
       :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
     (register-handler
@@ -262,13 +283,107 @@ Reload application, when a new versionis available
                     (assoc-in [:objects area-guid :children id] true)
                     ; TODO add in-between-node
                     )
-                (assoc-in db [:objects parent-id :children id] true))
-              ]
+                (assoc-in db [:objects parent-id :children id] true))]
           (assoc-in db [:objects id] obj))))
 
-## Simple disk-sync
+# Simple disk-sync
+##
+
     (defn clj->json [s] (transit/write (transit/writer :json) s))
     (defn json->clj [s] (transit/read (transit/reader :json) s))
+
+
+we are writing the changes to disk.
+The structure of a json object like
+`{a: 1, b: ['c', {d: 'e'}]}` is:
+
+- 0 {a: 1, b: '\u00011'}
+- 1 ['c', '\u00012']
+- 2 {d: 'e'}
+
+if first char of string has ascii value < 4 it is prefixed with "\u0000"
+
+references in db are "\u0001" followed by id
+
+keywords are "\u0002" followed by keyword
+
+
+    (defonce diskdb (atom {}))
+    (defonce prev-id (atom 0))
+    (defn third ; ###
+      [col]
+      (nth col 3))
+
+    (defn to-map ; ###
+      [o]
+      (cond
+        (map? o) o
+        (sequential? o) (zipmap (range) o)
+        :else {}))
+
+    (defn delta ; ###
+      "get changes from a to b"
+      [from to]
+      (if (coll? to)
+        (let [from (to-map from)
+              to (to-map to)
+              ks (distinct (concat (keys from) (keys to)))]
+          (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
+        to))
+
+    (defn save-changes ; ###
+      ; (changes id) -> (value, chans, deleted)
+      [value id]
+      (go
+        (let
+          [db-map (read-string
+                    (or (<! (<p (.getItem js/localforage id))) "{}"))
+           value-map (to-map value)
+           ;children
+           #_(into {} (map
+                        #(list % (save-changes (value-map %) (db-map %)))
+                        (distinct (concat (keys value-map) (keys db-map)))))
+           ; chans (apply merge (map second (vals children)))
+           ; deleted (apply merge (map third (vals children)))
+           ]
+          [id [] []]
+          )))
+
+    (defn <to-disk  ; ###
+      [db]
+      (go
+        (let [changes (delta @diskdb db)
+              id (or (<! (<p (.getItem js/localforage "root-id"))))
+              [_ chans deletes] (<! (save-changes changes id))
+
+              ]
+          (log '<to-disk id changes)
+          )))
+
+### sync-runner
+    (defonce sync-in-progress (atom false))
+
+    (defn sync-db [db]
+      (if @sync-in-progress
+        (reset! sync-in-progress db)
+        (go
+          (reset! sync-in-progress true)
+          (<! (<to-disk db))
+          (when-not (= true @sync-in-progress)
+            (next-tick #(sync-db db)))
+          (reset! sync-in-progress false)
+          )))
+
+
+    (sync-db [:a "hello"])
+
+    (defn next-id ; ###
+      []
+      (let [result @prev-id]
+        (swap! prev-id inc)
+        (str "\u0001" result)))
+
+###
 
     (register-handler
       :sync-to-disk
@@ -281,13 +396,14 @@ Reload application, when a new versionis available
     (register-handler
       :restore-from-disk
       (fn  [db]
-        (json->clj (js/JSON.parse (js/localStorage.getItem "db")))
-        ;db ; disable restore-from-disk
+        ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
+        db ; disable restore-from-disk
         ))
     (defonce restore
       (dispatch [:restore-from-disk]))
 
-# Styling
+# UI
+## Styling
 
     (declare app)
     (defonce unit (atom 40))
@@ -331,12 +447,11 @@ Reload application, when a new versionis available
     (aset js/window "onresize" style)
     (js/setTimeout style 0)
 
-# Generic Components
-## select
-    (defn select [id options]
+## Generic Components
+
+    (defn select [id options] ; ###
       (let [current @(subscribe [:ui id])]
         (into [:select
-               ; TODO: make sure value is not converted dumbly to/from string
                {:value (prn-str current)
                 :onChange
                 #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
@@ -344,21 +459,17 @@ Reload application, when a new versionis available
                 (let [v (prn-str v)]
                   [:option {:key v :value v} k])))))
 
-## checkbox
-
-    (defn checkbox [id]
+    (defn checkbox [id] ; ###
       (let [value @(subscribe [:ui id])]
         [:img.checkbox
          {:on-click #(dispatch [:ui id (not value)])
           :src (if value "assets/check.png" "assets/uncheck.png")}]))
 
-# App layout
 ## Camera button
 
     (defn handle-file [id file]
       (go
-        (dispatch [:ui :camera-image (<! (<blob-url file))])
-        ))
+        (dispatch [:ui :camera-image (<! (<blob-url file))])))
 
     (defn camera-button []
       (let [id (str "camera" (js/Math.random))]
@@ -367,7 +478,6 @@ Reload application, when a new versionis available
            [:label {:for id}
             [:img.camera-button {:src (or @(subscribe [:ui :camera-image])
                                           "assets/camera.png")}]]
-           ; TODO apparently :camera might not be a supported property in react
            [:input
             {:type "file" :accept "image/*"
              :id id :style {:display :none}
@@ -376,9 +486,8 @@ Reload application, when a new versionis available
            ])))
 
 ## Objects / areas
-### areas
 
-    (defn areas [id]
+    (defn areas [id] ; ###
       (let [obj @(subscribe [:area-object id])
             children (:children obj)
             selected @(subscribe [:ui id])
@@ -386,32 +495,29 @@ Reload application, when a new versionis available
         (if children
           [:div
            [select id
-            (concat [["· · ·" ]]
+            (concat [[empty-choice]]
                     (for [[child-id] children]
                       [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
            (areas selected)]
-          [:div]
-          )
-        )
-      )
+          [:div])))
 
-### objects
-    (defn selected-object [id]
+    (defn selected-object [id] ; ###
       (let [selected @(subscribe [:ui id])]
         (if selected (selected-object selected) id)))
 
-    (defn find-objects [id]
+    (defn find-objects [id] ; ###
       (apply concat [id]
-        (map find-objects
-          (keys (get @(subscribe [:db :objects id]) :children {})))))
+             (map find-objects
+                  (keys (get @(subscribe [:db :objects id]) :children {})))))
 
-    (defn object-list []
+    (defn object-list [] ; ###
       (let [selected (selected-object :root)]
         (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
-## field
 
-    (defn field [field cols]
+## Lines/fields
+
+    (defn field [field cols] ; ###
       (let [field-type (:FieldType field)
             columns (:Columns field)
             double-field (:DoubleField field)
@@ -448,13 +554,11 @@ Reload application, when a new versionis available
              [checkbox guid])
            :text-fixed-noframe [:span.text-fixed-noframe value]
            [:strong "unhandled field:"
-            (str field-type) " " value])
-         ]))
+            (str field-type) " " value])]))
 
 
-## line
 
-    (defn line [line]
+    (defn line [line] ; ###
       (let [id (:PartGuid line)
             line-type (:LineType line)
             cols (apply + (map :Columns (:fields line)))
@@ -480,9 +584,25 @@ Reload application, when a new versionis available
            [:span {:key id} "unhandled line " (str line-type) " " debug-str])
          ]))
 
-## template
+## Main
 
-    (defn render-template [id]
+    (defn choose-report [] ; ###
+      [:div.field
+       [:label "Rapport"]
+       [select :report-id
+        (concat [[empty-choice]] 
+                (for [report-id  (keys @(subscribe [:db :reports]))]
+                  [@(subscribe [:db :reports report-id :ReportName])
+                   report-id]))]])
+
+    (defn choose-area [report] ; ###
+      (if (:children @(subscribe  [:area-object (:ObjectId report)]))
+        [:div.field
+         [:label "Område"]
+         [areas (or (:ObjectId report) :root)]]
+        [:span.empty]))
+
+    (defn render-template [id] ; ###
       (let [template @(subscribe [:template id])]
         ;(log (with-out-str (cljs.pprint/pprint template)))
         (merge
@@ -492,36 +612,25 @@ Reload application, when a new versionis available
           ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
           )))
 
-## main
-    (defn form []
-      [:div.main-form
-       [:div.ui.container
-        [:div.ui.form
-         [:div.field
-          [:label "Område"]
-          [areas :root]
-          [object-list]
-          [:hr]
-          [:label "Skabelon"]
-          [select :current-template
-           (for [template-id  @(subscribe [:templates])]
-             [(str (:Name @(subscribe [:template template-id])) " / "
-                   (:Description @(subscribe [:template template-id])))
-              template-id])]]]]
-       [:hr]
-       [render-template @(subscribe [:ui :current-template])]])
-
-    (defn app []
-      [:div
-       [:h1 "FM-Tools"]
-       [:hr]
-       [form]
-       ])
+    (defn app [] ; ###
+      (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
+        [:div.main-form
+         "Under development, not functional yet"
+         [:h1 {:style {:text-align :center}} "FM-Tools"]
+         [:hr]
+         [:div.ui.container
+          [:div.ui.form
+           [choose-report]
+           [choose-area report]
+           ;[object-list]
+           ]]
+         [:hr]
+         ;[render-template @(subscribe [:ui :current-template])]]))
+         [render-template (:TemplateGuid report)]]))
 
 # Loading-Data
-## <api
 
-    (defn <api [endpoint]
+    (defn <api [endpoint] ; ##
       (<ajax (str "https://"
                   "fmtools.solsort.com/api/v1/"
                   ;"app.fmtools.dk/api/v1/"
@@ -531,7 +640,8 @@ Reload application, when a new versionis available
              :credentials true))
 
 ## Templates
-    (defn load-template [template-id]
+
+    (defn load-template [template-id] ; ###
       (go
         (let [template (keywordize-keys
                          (<! (<api (str "ReportTemplate?templateGuid="
@@ -556,7 +666,7 @@ Reload application, when a new versionis available
               parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
           (dispatch [:template template-id (assoc template :rows parts)]))))
 
-    (defn load-templates []
+    (defn load-templates [] ; ###
       (go
         (let [templates (<! (<api "ReportTemplate"))
               template-id (-> templates
@@ -567,7 +677,8 @@ Reload application, when a new versionis available
                    (load-template (get template "TemplateGuid")))))))
 
 ## Objects
-    (defn load-area [area]
+
+    (defn load-area [area] ; ###
       (go
         (let [objects (:Objects (keywordize-keys
                                   (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
@@ -577,21 +688,20 @@ Reload application, when a new versionis available
                 (dispatch [:area-object object])
                 ))))))
 
-    (defn load-objects []
+    (defn load-objects [] ; ###
       (go (let [areas (keywordize-keys (<! (<api "Area")))]
             (doall (for [area (:Areas areas)]
-                     (load-area area)
-                     )))))
+                     (load-area area))))))
 ## Report
 
-    (defn load-report [report]
+    (defn load-report [report] ; ###
       (go
         (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
               role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
           (dispatch [:raw-report report data role])
           (log 'report report data role))))
 
-    (defn load-reports []
+    (defn load-reports [] ; ###
       (go
         (let [reports (keywordize-keys (<! (<api "Report")))]
           #_(log 'reports reports)
@@ -599,7 +709,7 @@ Reload application, when a new versionis available
             (for [report (:ReportTables reports)]
               (load-report report))))))
 
-    (defn handle-reports []
+    (defn handle-reports [] ; ###
       (let [raw-reports (:raw-report @(subscribe [:db]))]
         (doall
           (for [[_ raw-report] raw-reports]
@@ -616,15 +726,16 @@ Reload application, when a new versionis available
 
 ## fetch
 
-    (defn fetch []
+    (defn fetch [] ; ###
       ;  (log 'fetching)
       (load-templates)
       #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
       (load-objects)
       (load-reports))
 
-    ;(fetch)
+### Execute
 
+    ;(fetch)
     (defonce loader (fetch))
 
 ## Experiments
