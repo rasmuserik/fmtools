@@ -191,7 +191,8 @@
   (if (coll? to)
     (let [from (to-map from)
           to (to-map to)
-          ks (distinct (concat (keys from) (keys to)))]
+          ks (distinct (concat (keys from) (keys to)))
+          ks (filter #(not= (from %) (to %)) ks)]
       (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
     to))
 
@@ -335,34 +336,33 @@
   ; (value id key) -> (result-value, changes, deleted, key)
   [value id k]
   (go
-   (if (= value :keep-in-db)
-    [id {} [] k]
-    (let
-      [db-str  (<! (<p (.getItem js/localforage id))) 
-       db-map (read-string
-                (or db-str "{}"))
-       value-map (to-map value)
-       all-keys (distinct (concat (keys db-map) (keys value-map)))
-       children 
-       (map 
-         #(save-changes (get value-map % :keep-in-db) (db-map %) %) 
-         all-keys)
-       children (<! (async/reduce conj [] (async/merge children)))
-       new-id (str "id" (next-id))
-       saves 
-       (apply 
-               merge 
-              (if (coll? value) 
-                {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))} 
-                {})
-               (map second children))
-       deletes 
-       (apply
-                 concat
-                 (if db-str [id] [])
-                 (map third children))
-       ]
-      [(if-not (coll? value) value new-id) saves deletes k]))))
+    (if (= value :keep-in-db)
+      [id {} [] k]
+      (let
+        [db-str  (<! (<p (.getItem js/localforage id))) 
+         db-map (read-string
+                  (or db-str "{}"))
+         value-map (to-map value)
+         all-keys (distinct (concat (keys db-map) (keys value-map)))
+         children 
+         (map 
+           #(save-changes (get value-map % :keep-in-db) (db-map %) %) 
+           all-keys)
+         children (<! (async/reduce conj [] (async/merge children)))
+         new-id (str "id" (next-id))
+         saves 
+         (apply 
+           merge 
+           (if (coll? value) 
+             {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))} 
+             {})
+           (map second children))
+         deletes 
+         (apply
+           concat
+           (if db-str [id] [])
+           (map third children))]
+        [(if-not (coll? value) value new-id) saves deletes k]))))
 
 (defonce diskdb (atom {})) ; ####
 (defn <to-disk  ; ####
@@ -374,7 +374,7 @@
       (doall 
         (for [[k v] chans]
           (let [v (into {} (filter #(not (nil? (second %))) v))]
-           (.setItem js/localforage k (prn-str v)))))
+            (.setItem js/localforage k (prn-str v)))))
       (.setItem js/localforage "root-id" root-id)
       (doall 
         (for [k deletes]
