@@ -25,10 +25,12 @@
 ;;   - √write data structure to disk
 ;;   - √GC/remove old nodes from disk
 ;;   - √only write changes, fix delta function
-;;   - escape string written, such that encoding for node 
+;;   - √escape string written, such that encoding for node 
 ;;     references does not collide with disk.
+;;   - √load data structure from disk
+;;   - sync/restore db
 ;;   - refactor/cleanup
-;;   - restore data structure
+;;   - make sure that diff is optimised (ie. do not traverse all data)
 ;; - reactive db lookup by path
 ;; - save filled out data into app-db
 ;;
@@ -330,24 +332,17 @@
 ;;
 ;; keywords are "\u0002" followed by keyword
 
+(defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
 (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
 (defn unesc-str [s]  ; ####
-  (cond (.charCodeAt s 0)
+  (case (.charCodeAt s 0)
         1 (.slice s 1)
         s))
-(defn optional-unescape-string [o] (if (string? o) (unesc-str o) o))
-
+(defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
 (defonce prev-id (atom nil)) ; ####
-
-(defn next-id ; ####
-  []
-  (let [result @prev-id]
-    (swap! prev-id inc)
-    (str "\u0002" result)))
-
-(defn is-db-node [s] (= 2 (.charCodeAt s)))
-
+(defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
+(defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s)))) ; ####
 (defn save-changes ; ####
   ; (value id key) -> (result-value, changes, deleted, key)
   [value id k]
@@ -384,12 +379,34 @@
 (defonce sync-in-progress (atom false)) ; ####
 (defonce diskdb (atom {})) ; ####
 (defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
+(defn <load-db-item [k]
+  (go 
+      (log 'b k)
+    (let [v (read-string (<! (<localforage k)))
+          v (map 
+              (fn [[k v]]
+                (go
+                  [k (if (is-db-node v)
+                    (<! (<load-db-item v))
+                    (optional-unescape-string v))]))
+              v)
+          v (into {}  (<! (<chan-seq v)))
+          v (if (every? #(and (integer? %) (<= 0 %)) (keys v))
+              (let [length  (inc (apply max (keys v)))]
+               (into [] (map v (range length))))
+              v)]
+      v)))
 (defn <load-db [] ; ####
+  (when @sync-in-progress
+    (throw "<load-db sync-in-progress error")) 
   (go
-    (when @sync-in-progress
-     (throw "<load-db sync-in-progress error")
-    )))
+    (reset! sync-in-progress true)
+    (let [root-id (<! (<localforage "root-id"))
+          result (if root-id (<! (<load-db-item root-id)) {})]
+    (reset! sync-in-progress false)
+    result)))
 
+(go (log 'load-db (prn-str (<! (<load-db)))))
 (defn <to-disk  ; ####
   [db]
   (go
