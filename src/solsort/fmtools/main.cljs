@@ -1,4 +1,4 @@
-;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=icon.png" align="right">
+;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=icon.png align=right>
 ;; # FM-Tools
 ;;
 ;; ## Formål

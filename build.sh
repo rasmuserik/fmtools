@@ -21,7 +21,7 @@ echo "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400ita
 echo "NETWORK:" >> index.appcache
 echo "*" >> index.appcache
 
-cat doc/intro.md > README.md
+echo "" > README.md
 for SRC in main
 do
 cat src/solsort/*/${SRC}.cljs | 
