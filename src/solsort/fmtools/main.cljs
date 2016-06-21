@@ -21,7 +21,14 @@
 ;; Current sprint/TODO:
 ;; v0.0.6
 ;;
-;; - better data sync to disk (similar code will also be used for sync'ing to api)
+;; - better data sync to disk 
+;;   - √write data structure to disk
+;;   - √GC/remove old nodes from disk
+;;   - √only write changes, fix delta function
+;;   - escape string written, such that encoding for node 
+;;     references does not collide with disk.
+;;   - refactor/cleanup
+;;   - restore data structure
 ;; - reactive db lookup by path
 ;; - save filled out data into app-db
 ;;
@@ -307,7 +314,7 @@
             (assoc-in db [:objects parent-id :children id] true))]
       (assoc-in db [:objects id] obj))))
 
-;; ## Simple disk-sync
+;; ## Disk-sync
 
 ;; we are writing the changes to disk.
 ;; The structure of a json object like
@@ -323,14 +330,22 @@
 ;;
 ;; keywords are "\u0002" followed by keyword
 
+(defn esc-str [s]  ; ####
+  (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
+(defn unesc-str [s]  ; ####
+  (cond (.charCodeAt s 0)
+        1 (.slice s 1)
+        s))
 
-(defonce prev-id (atom 0))
+(defonce prev-id (atom 0)) ; ####
+
 (defn next-id ; ####
   []
   (let [result @prev-id]
     (swap! prev-id inc)
-    (str "\u0001" result)))
+    (str "\u0002" result)))
 
+(defn is-db-node [s] (= 2 (.charCodeAt s)))
 
 (defn save-changes ; ####
   ; (value id key) -> (result-value, changes, deleted, key)
@@ -349,7 +364,7 @@
            #(save-changes (get value-map % :keep-in-db) (db-map %) %) 
            all-keys)
          children (<! (async/reduce conj [] (async/merge children)))
-         new-id (str "id" (next-id))
+         new-id (next-id)
          saves 
          (apply 
            merge 
