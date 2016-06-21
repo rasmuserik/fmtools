@@ -1,4 +1,4 @@
-;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=icon.png align=right>
+;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=assets/icon.png align=right>
 ;; # FM-Tools
 ;;
 ;; ## Formål
@@ -18,7 +18,15 @@
 ;;
 ;; ## Roadmap
 ;;
-;; Current sprint/TODO:
+;; TODO next sprints
+;; - disk data sync
+;;   - sync/restore db
+;;   - refactor/cleanup
+;;   - debug performance
+;;   - make sure that diff is optimised (ie. do not traverse all data)
+;; - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
+;;
+;; Current sprint:
 ;; v0.0.6
 ;;
 ;; - better data sync to disk
@@ -28,11 +36,7 @@
 ;;   - √escape string written, such that encoding for node
 ;;     references does not collide with disk.
 ;;   - √load data structure from disk
-;;   - sync/restore db
-;;   - refactor/cleanup
-;;   - make sure that diff is optimised (ie. do not traverse all data)
-;; - reactive db lookup by path
-;; - save filled out data into app-db
+;; - start saving filled out data into app-db
 ;;
 ;; ### Changelog
 ;; #### v0.0.5
@@ -381,7 +385,6 @@
 (defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
 (defn <load-db-item [k]
   (go
-    (log 'b k)
     (let [v (read-string (<! (<localforage k)))
           v (map
               (fn [[k v]]
@@ -403,10 +406,10 @@
     (reset! sync-in-progress true)
     (let [root-id (<! (<localforage "root-id"))
           result (if root-id (<! (<load-db-item root-id)) {})]
+      (reset! diskdb result)
       (reset! sync-in-progress false)
       result)))
 
-(go (log 'load-db (prn-str (<! (<load-db)))))
 (defn <to-disk  ; ####
   [db]
   (go
@@ -433,9 +436,7 @@
       (<! (<to-disk db))
       (reset! sync-in-progress false))))
 
-(sync-db {:c 1 (js/Math.random) ["rand"] :b [:a "hello"]}) ; ####
-
-;; ####
+;; #### re-frame :sync-to-disk
 
 (register-handler
   :sync-to-disk
@@ -443,14 +444,18 @@
     ; currently just a hack, needs reimplementation on localforage
     ; only syncing part of structure that is changed
     ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+    ;(sync-db db)
     db))
 
 (register-handler
   :restore-from-disk
   (fn  [db]
     ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
+    ;(go (dispatch [:db (<! (<load-db))]) )
+    (go (log 'db-restore [:db (<! (<load-db))]) )
     db ; disable restore-from-disk
     ))
+
 (defonce restore
   (dispatch [:restore-from-disk]))
 
