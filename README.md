@@ -16,41 +16,69 @@ Krav til app'en:
 - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
 
-# Roadmap
+[![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=icon.png" align="right">
+# FM-Tools
+
+## Formål
+
+Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-tools.
+
+Krav til app'en:
+
+- muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
+- understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
+- muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende ehned
+- forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
+- muligt at vedhæfte/se billeder for hver linje i formularen
+- formater: håndholdt mobil, samt tablet
+- skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
+- skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
+
+## Roadmap
 
 Current sprint/TODO:
 v0.0.6
 
-- better data sync to disk (similar code will also be used for sync'ing to api)
+- better data sync to disk
+  - √write data structure to disk
+  - √GC/remove old nodes from disk
+  - √only write changes, fix delta function
+  - √escape string written, such that encoding for node
+    references does not collide with disk.
+  - √load data structure from disk
+  - sync/restore db
+  - refactor/cleanup
+  - make sure that diff is optimised (ie. do not traverse all data)
+- reactive db lookup by path
 - save filled out data into app-db
 
-## Changelog
-### v0.0.5
+### Changelog
+#### v0.0.5
 
 - do not select template directly, choose from open reports instead
 - experiments towards faster/better synchronisation from app-db to disk
 
-### v0.0.4
+#### v0.0.4
 
 - initial traverse/store report data into database, (needs mangling)
 - traverse area/object tree structure / object-graph
 - find current selected area, and render list of nodes based on this
 
-### v0.0.3
+#### v0.0.3
 
 - try convert camera-image into dataurl for display
 - area/object-tree - choose/show current object/area
 - changelog/roadmap
 - cors testing/debugging
 
-### v0.0.2
+#### v0.0.2
 
 - offline version with cache manifest
 - document data structure
 - refactoring
 - issue-tracking in documentation/file
 
-### v0.0.1
+#### v0.0.1
 
 - checkbox component that writes to application database
 - initial version of camera button (data not fetched yet)
@@ -61,7 +89,7 @@ v0.0.6
 - basic communication with api - load data
 - Proxy api on demo-deploy-server
 
-## Backlog
+### Backlog
 
 v0.1.0
 
@@ -92,11 +120,11 @@ v0.1.0
   - show images
 - works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
 
-### Later
+#### Later
 
 - proper horizontal labels (probably also needs extra option in backend)
 
-# DB
+## DB
 
 notes - intended content
 
@@ -130,7 +158,7 @@ notes - intended content
       - object-id
         - value
 
-# Notes / questions about API
+## Notes / questions about API
 
 I assume the following:
 
@@ -139,11 +167,9 @@ I assume the following:
   - Might we not need ObjectID?
   - Why do we need more than one Guid to identify part of template?
 
-# Dependencies
+# Literate source code
 
-
-
-    (ns solsort.fmtools.main
+    (ns solsort.fmtools.main ; ##
       (:require-macros
         [cljs.core.async.macros :refer [go go-loop alt!]]
         [reagent.ratom :as ratom :refer  [reaction]])
@@ -164,20 +190,42 @@ I assume the following:
          :refer [register-sub subscribe register-handler
                  dispatch dispatch-sync]]
         [clojure.string :as string :refer [replace split blank?]]
-        [cljs.core.async :refer [>! <! chan put! take! timeout close! pipe]]))
+        [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-# Util
+## Generic code and definitions
 
-Reload application, when a new versionis available
+Reload application, when a new version is available
 
     (when js/window.applicationCache
       (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 
-# Definitions
-
-
     (defonce empty-choice "· · ·")
-    (defonce field-types ; ##
+
+    (defn clj->json [s] (transit/write (transit/writer :json) s))
+    (defn json->clj [s] (transit/read (transit/reader :json) s))
+    (defn third [col] (nth col 2))
+
+    (defn to-map ; ####
+      [o]
+      (cond
+        (map? o) o
+        (sequential? o) (zipmap (range) o)
+        :else {}))
+
+    (defn delta ; ####
+      "get changes from a to b"
+      [from to]
+      (if (coll? to)
+        (let [from (to-map from)
+              to (to-map to)
+              ks (distinct (concat (keys from) (keys to)))
+              ks (filter #(not= (from %) (to %)) ks)]
+          (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
+        to))
+
+## Definitions
+
+    (defonce field-types ; ###
       {0   :none
        1   :text-fixed
        2   :text-input
@@ -193,12 +241,12 @@ Reload application, when a new versionis available
        12  :fetch-from
        13  :remark
        100 :case-no-from-location})
-    (defonce part-types ; ##
+    (defonce part-types ; ###
       {0 :none
        1 :header
        2 :line
        3 :footer})
-    (defonce line-types ; ##
+    (defonce line-types ; ###
       {0  :basic
        1  :simple-headline
        2  :vertical-headline
@@ -206,8 +254,9 @@ Reload application, when a new versionis available
        4  :multi-field-line
        5  :description-line
        10 :template-control})
-# Application database
+## Application database
 
+### :db
     (register-sub
       :db
       (fn  [db [_ & path]]
@@ -224,11 +273,10 @@ Reload application, when a new versionis available
           (if path
             (assoc-in db path value)
             value))))
+
     ;(dispatch-sync [:db {}])
 
-
-
-## raw-report
+### :raw-report
 
     (register-handler
       :raw-report
@@ -240,14 +288,14 @@ Reload application, when a new versionis available
                       {:report report
                        :data data
                        :role role}))))
-## UI
+### :ui
 
     (register-sub
       :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
     (register-handler
       :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
 
-## Templates
+### :template/:templates
 
     (register-sub
       :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
@@ -259,7 +307,7 @@ Reload application, when a new versionis available
         (dispatch [:sync-to-disk])
         (assoc-in db [:templates id] template)))
 
-## Objects
+### :area-object
 
     (register-sub
       :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
@@ -281,17 +329,12 @@ Reload application, when a new versionis available
                                    :ObjectId area-guid
                                    :ObjectName (str (:AreaName obj))}))
                     (assoc-in [:objects area-guid :children id] true)
-                    ; TODO add in-between-node
+                    ; todo add in-between-node
                     )
                 (assoc-in db [:objects parent-id :children id] true))]
           (assoc-in db [:objects id] obj))))
 
-# Simple disk-sync
-##
-
-    (defn clj->json [s] (transit/write (transit/writer :json) s))
-    (defn json->clj [s] (transit/read (transit/reader :json) s))
-
+## Disk-sync
 
 we are writing the changes to disk.
 The structure of a json object like
@@ -307,83 +350,110 @@ references in db are "\u0001" followed by id
 
 keywords are "\u0002" followed by keyword
 
-
-    (defonce diskdb (atom {}))
-    (defonce prev-id (atom 0))
-    (defn third ; ###
-      [col]
-      (nth col 3))
-
-    (defn to-map ; ###
-      [o]
-      (cond
-        (map? o) o
-        (sequential? o) (zipmap (range) o)
-        :else {}))
-
-    (defn delta ; ###
-      "get changes from a to b"
-      [from to]
-      (if (coll? to)
-        (let [from (to-map from)
-              to (to-map to)
-              ks (distinct (concat (keys from) (keys to)))]
-          (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
-        to))
-
-    (defn save-changes ; ###
-      ; (changes id) -> (value, chans, deleted)
-      [value id]
+    (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
+    (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
+    (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
+    (defn unesc-str [s]  ; ####
+      (case (.charCodeAt s 0)
+        1 (.slice s 1)
+        s))
+    (defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
+    (defonce prev-id (atom nil)) ; ####
+    (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
+    (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s)))) ; ####
+    (defn save-changes ; ####
+      ; (value id key) -> (result-value, changes, deleted, key)
+      [value id k]
       (go
-        (let
-          [db-map (read-string
-                    (or (<! (<p (.getItem js/localforage id))) "{}"))
-           value-map (to-map value)
-           ;children
-           #_(into {} (map
-                        #(list % (save-changes (value-map %) (db-map %)))
-                        (distinct (concat (keys value-map) (keys db-map)))))
-           ; chans (apply merge (map second (vals children)))
-           ; deleted (apply merge (map third (vals children)))
-           ]
-          [id [] []]
-          )))
+        (if (= value :keep-in-db)
+          [id {} [] k]
+          (let
+            [db-str (and id (<! (<p (.getItem js/localforage id))))
+             db-map (read-string
+                      (or db-str "{}"))
+             value-map (to-map value)
+             all-keys (distinct (concat (keys db-map) (keys value-map)))
+             children
+             (map
+               #(save-changes (get value-map % :keep-in-db) (db-map %) %)
+               all-keys)
+             children (<! (async/reduce conj [] (async/merge children)))
+             new-id (if (coll? value) (next-id) nil)
+             saves
+             (apply
+               merge
+               (if new-id
+                 {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))}
+                 {})
+               (map second children))
+             deletes
+             (apply
+               concat
+               (if db-str [id] [])
+               (map third children))]
+            [(or new-id (optional-escape-string value))
+             saves deletes k]))))
 
-    (defn <to-disk  ; ###
+    (defonce sync-in-progress (atom false)) ; ####
+    (defonce diskdb (atom {})) ; ####
+    (defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
+    (defn <load-db-item [k]
+      (go
+        (log 'b k)
+        (let [v (read-string (<! (<localforage k)))
+              v (map
+                  (fn [[k v]]
+                    (go
+                      [k (if (is-db-node v)
+                           (<! (<load-db-item v))
+                           (optional-unescape-string v))]))
+                  v)
+              v (into {}  (<! (<chan-seq v)))
+              v (if (every? #(and (integer? %) (<= 0 %)) (keys v))
+                  (let [length  (inc (apply max (keys v)))]
+                    (into [] (map v (range length))))
+                  v)]
+          v)))
+    (defn <load-db [] ; ####
+      (when @sync-in-progress
+        (throw "<load-db sync-in-progress error"))
+      (go
+        (reset! sync-in-progress true)
+        (let [root-id (<! (<localforage "root-id"))
+              result (if root-id (<! (<load-db-item root-id)) {})]
+          (reset! sync-in-progress false)
+          result)))
+
+    (go (log 'load-db (prn-str (<! (<load-db)))))
+    (defn <to-disk  ; ####
       [db]
       (go
         (let [changes (delta @diskdb db)
-              id (or (<! (<p (.getItem js/localforage "root-id"))))
-              [_ chans deletes] (<! (save-changes changes id))
+              id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
+              prev-id (reset! prev-id (js/parseInt (.slice id 1)))
+              [root-id chans deletes] (<! (save-changes changes id nil))]
+          (doall
+            (for [[k v] chans]
+              (let [v (into {} (filter #(not (nil? (second %))) v))]
+                (.setItem js/localforage k (prn-str v)))))
+          (.setItem js/localforage "root-id" root-id)
+          (doall
+            (for [k deletes]
+              (.removeItem js/localforage k)))
+          (reset! diskdb db))))
 
-              ]
-          (log '<to-disk id changes)
-          )))
-
-### sync-runner
-    (defonce sync-in-progress (atom false))
-
-    (defn sync-db [db]
+    (defn sync-db [db] ; ####
+      (log 'sync-start)
       (if @sync-in-progress
-        (reset! sync-in-progress db)
+        (log 'in-progress)
         (go
           (reset! sync-in-progress true)
           (<! (<to-disk db))
-          (when-not (= true @sync-in-progress)
-            (next-tick #(sync-db db)))
-          (reset! sync-in-progress false)
-          )))
+          (reset! sync-in-progress false))))
 
+    (sync-db {:c 1 (js/Math.random) ["rand"] :b [:a "hello"]}) ; ####
 
-    (sync-db [:a "hello"])
-
-    (defn next-id ; ###
-      []
-      (let [result @prev-id]
-        (swap! prev-id inc)
-        (str "\u0001" result)))
-
-###
+####
 
     (register-handler
       :sync-to-disk
@@ -402,8 +472,8 @@ keywords are "\u0002" followed by keyword
     (defonce restore
       (dispatch [:restore-from-disk]))
 
-# UI
-## Styling
+## UI
+### Styling
 
     (declare app)
     (defonce unit (atom 40))
@@ -447,9 +517,9 @@ keywords are "\u0002" followed by keyword
     (aset js/window "onresize" style)
     (js/setTimeout style 0)
 
-## Generic Components
+### Generic Components
 
-    (defn select [id options] ; ###
+    (defn select [id options] ; ####
       (let [current @(subscribe [:ui id])]
         (into [:select
                {:value (prn-str current)
@@ -459,13 +529,13 @@ keywords are "\u0002" followed by keyword
                 (let [v (prn-str v)]
                   [:option {:key v :value v} k])))))
 
-    (defn checkbox [id] ; ###
+    (defn checkbox [id] ; ####
       (let [value @(subscribe [:ui id])]
         [:img.checkbox
          {:on-click #(dispatch [:ui id (not value)])
           :src (if value "assets/check.png" "assets/uncheck.png")}]))
 
-## Camera button
+### Camera button
 
     (defn handle-file [id file]
       (go
@@ -485,9 +555,9 @@ keywords are "\u0002" followed by keyword
              }]
            ])))
 
-## Objects / areas
+### Objects / areas
 
-    (defn areas [id] ; ###
+    (defn areas [id] ; ####
       (let [obj @(subscribe [:area-object id])
             children (:children obj)
             selected @(subscribe [:ui id])
@@ -501,23 +571,23 @@ keywords are "\u0002" followed by keyword
            (areas selected)]
           [:div])))
 
-    (defn selected-object [id] ; ###
+    (defn selected-object [id] ; ####
       (let [selected @(subscribe [:ui id])]
         (if selected (selected-object selected) id)))
 
-    (defn find-objects [id] ; ###
+    (defn find-objects [id] ; ####
       (apply concat [id]
              (map find-objects
                   (keys (get @(subscribe [:db :objects id]) :children {})))))
 
-    (defn object-list [] ; ###
+    (defn object-list [] ; ####
       (let [selected (selected-object :root)]
         (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
 
-## Lines/fields
+### Lines/fields
 
-    (defn field [field cols] ; ###
+    (defn field [field cols] ; ####
       (let [field-type (:FieldType field)
             columns (:Columns field)
             double-field (:DoubleField field)
@@ -558,7 +628,7 @@ keywords are "\u0002" followed by keyword
 
 
 
-    (defn line [line] ; ###
+    (defn line [line] ; ####
       (let [id (:PartGuid line)
             line-type (:LineType line)
             cols (apply + (map :Columns (:fields line)))
@@ -584,25 +654,25 @@ keywords are "\u0002" followed by keyword
            [:span {:key id} "unhandled line " (str line-type) " " debug-str])
          ]))
 
-## Main
+### Main
 
-    (defn choose-report [] ; ###
+    (defn choose-report [] ; ####
       [:div.field
        [:label "Rapport"]
        [select :report-id
-        (concat [[empty-choice]] 
+        (concat [[empty-choice]]
                 (for [report-id  (keys @(subscribe [:db :reports]))]
                   [@(subscribe [:db :reports report-id :ReportName])
                    report-id]))]])
 
-    (defn choose-area [report] ; ###
+    (defn choose-area [report] ; ####
       (if (:children @(subscribe  [:area-object (:ObjectId report)]))
         [:div.field
          [:label "Område"]
          [areas (or (:ObjectId report) :root)]]
         [:span.empty]))
 
-    (defn render-template [id] ; ###
+    (defn render-template [id] ; ####
       (let [template @(subscribe [:template id])]
         ;(log (with-out-str (cljs.pprint/pprint template)))
         (merge
@@ -612,7 +682,7 @@ keywords are "\u0002" followed by keyword
           ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
           )))
 
-    (defn app [] ; ###
+    (defn app [] ; ####
       (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
         [:div.main-form
          "Under development, not functional yet"
@@ -628,9 +698,9 @@ keywords are "\u0002" followed by keyword
          ;[render-template @(subscribe [:ui :current-template])]]))
          [render-template (:TemplateGuid report)]]))
 
-# Loading-Data
+## Loading-Data
 
-    (defn <api [endpoint] ; ##
+    (defn <api [endpoint] ; ###
       (<ajax (str "https://"
                   "fmtools.solsort.com/api/v1/"
                   ;"app.fmtools.dk/api/v1/"
@@ -639,9 +709,9 @@ keywords are "\u0002" followed by keyword
                   endpoint)
              :credentials true))
 
-## Templates
+### Templates
 
-    (defn load-template [template-id] ; ###
+    (defn load-template [template-id] ; ####
       (go
         (let [template (keywordize-keys
                          (<! (<api (str "ReportTemplate?templateGuid="
@@ -666,7 +736,7 @@ keywords are "\u0002" followed by keyword
               parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
           (dispatch [:template template-id (assoc template :rows parts)]))))
 
-    (defn load-templates [] ; ###
+    (defn load-templates [] ; ####
       (go
         (let [templates (<! (<api "ReportTemplate"))
               template-id (-> templates
@@ -676,9 +746,9 @@ keywords are "\u0002" followed by keyword
           (doall (for [template (get templates "ReportTemplateTables")]
                    (load-template (get template "TemplateGuid")))))))
 
-## Objects
+### Objects
 
-    (defn load-area [area] ; ###
+    (defn load-area [area] ; ####
       (go
         (let [objects (:Objects (keywordize-keys
                                   (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
@@ -688,20 +758,20 @@ keywords are "\u0002" followed by keyword
                 (dispatch [:area-object object])
                 ))))))
 
-    (defn load-objects [] ; ###
+    (defn load-objects [] ; ####
       (go (let [areas (keywordize-keys (<! (<api "Area")))]
             (doall (for [area (:Areas areas)]
                      (load-area area))))))
-## Report
+### Report
 
-    (defn load-report [report] ; ###
+    (defn load-report [report] ; ####
       (go
         (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
               role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
           (dispatch [:raw-report report data role])
           (log 'report report data role))))
 
-    (defn load-reports [] ; ###
+    (defn load-reports [] ; ####
       (go
         (let [reports (keywordize-keys (<! (<api "Report")))]
           #_(log 'reports reports)
@@ -709,7 +779,7 @@ keywords are "\u0002" followed by keyword
             (for [report (:ReportTables reports)]
               (load-report report))))))
 
-    (defn handle-reports [] ; ###
+    (defn handle-reports [] ; ####
       (let [raw-reports (:raw-report @(subscribe [:db]))]
         (doall
           (for [[_ raw-report] raw-reports]
@@ -724,20 +794,20 @@ keywords are "\u0002" followed by keyword
                     (dispatch [:db report-guid (:FieldGuid entry) ()])))))))))
     ;(handle-reports)
 
-## fetch
+### fetch
 
-    (defn fetch [] ; ###
+    (defn fetch [] ; ####
       ;  (log 'fetching)
       (load-templates)
       #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
       (load-objects)
       (load-reports))
 
-### Execute
+#### Execute
 
     ;(fetch)
     (defonce loader (fetch))
 
-## Experiments
+### Experiments
     (let [db @(subscribe [:db])]
       (log db))

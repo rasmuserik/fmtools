@@ -1,12 +1,12 @@
 ;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=icon.png" align="right">
 ;; # FM-Tools
-;; 
+;;
 ;; ## Formål
 ;;
 ;; Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-tools.
-;; 
+;;
 ;; Krav til app'en:
-;; 
+;;
 ;; - muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
 ;; - understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
 ;; - muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende ehned
@@ -15,17 +15,17 @@
 ;; - formater: håndholdt mobil, samt tablet
 ;; - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 ;; - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
-;; 
+;;
 ;; ## Roadmap
 ;;
 ;; Current sprint/TODO:
 ;; v0.0.6
 ;;
-;; - better data sync to disk 
+;; - better data sync to disk
 ;;   - √write data structure to disk
 ;;   - √GC/remove old nodes from disk
 ;;   - √only write changes, fix delta function
-;;   - √escape string written, such that encoding for node 
+;;   - √escape string written, such that encoding for node
 ;;     references does not collide with disk.
 ;;   - √load data structure from disk
 ;;   - sync/restore db
@@ -178,7 +178,7 @@
 ;;
 ;; Reload application, when a new version is available
 
-(when js/window.applicationCache 
+(when js/window.applicationCache
   (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
 
 (defonce empty-choice "· · ·")
@@ -260,7 +260,7 @@
 
 ;; ### :raw-report
 
-(register-handler 
+(register-handler
   :raw-report
   (fn  [db [_ report data role]]
     (dispatch [:sync-to-disk])
@@ -337,8 +337,8 @@
 (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
 (defn unesc-str [s]  ; ####
   (case (.charCodeAt s 0)
-        1 (.slice s 1)
-        s))
+    1 (.slice s 1)
+    s))
 (defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
 (defonce prev-id (atom nil)) ; ####
 (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
@@ -350,25 +350,25 @@
     (if (= value :keep-in-db)
       [id {} [] k]
       (let
-        [db-str (and id (<! (<p (.getItem js/localforage id)))) 
+        [db-str (and id (<! (<p (.getItem js/localforage id))))
          db-map (read-string
                   (or db-str "{}"))
          value-map (to-map value)
          all-keys (distinct (concat (keys db-map) (keys value-map)))
-         children 
-         (map 
-           #(save-changes (get value-map % :keep-in-db) (db-map %) %) 
+         children
+         (map
+           #(save-changes (get value-map % :keep-in-db) (db-map %) %)
            all-keys)
          children (<! (async/reduce conj [] (async/merge children)))
          new-id (if (coll? value) (next-id) nil)
-         saves 
-         (apply 
-           merge 
+         saves
+         (apply
+           merge
            (if new-id
-             {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))} 
+             {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))}
              {})
            (map second children))
-         deletes 
+         deletes
          (apply
            concat
            (if db-str [id] [])
@@ -380,31 +380,31 @@
 (defonce diskdb (atom {})) ; ####
 (defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
 (defn <load-db-item [k]
-  (go 
-      (log 'b k)
+  (go
+    (log 'b k)
     (let [v (read-string (<! (<localforage k)))
-          v (map 
+          v (map
               (fn [[k v]]
                 (go
                   [k (if (is-db-node v)
-                    (<! (<load-db-item v))
-                    (optional-unescape-string v))]))
+                       (<! (<load-db-item v))
+                       (optional-unescape-string v))]))
               v)
           v (into {}  (<! (<chan-seq v)))
           v (if (every? #(and (integer? %) (<= 0 %)) (keys v))
               (let [length  (inc (apply max (keys v)))]
-               (into [] (map v (range length))))
+                (into [] (map v (range length))))
               v)]
       v)))
 (defn <load-db [] ; ####
   (when @sync-in-progress
-    (throw "<load-db sync-in-progress error")) 
+    (throw "<load-db sync-in-progress error"))
   (go
     (reset! sync-in-progress true)
     (let [root-id (<! (<localforage "root-id"))
           result (if root-id (<! (<load-db-item root-id)) {})]
-    (reset! sync-in-progress false)
-    result)))
+      (reset! sync-in-progress false)
+      result)))
 
 (go (log 'load-db (prn-str (<! (<load-db)))))
 (defn <to-disk  ; ####
@@ -414,12 +414,12 @@
           id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
           prev-id (reset! prev-id (js/parseInt (.slice id 1)))
           [root-id chans deletes] (<! (save-changes changes id nil))]
-      (doall 
+      (doall
         (for [[k v] chans]
           (let [v (into {} (filter #(not (nil? (second %))) v))]
             (.setItem js/localforage k (prn-str v)))))
       (.setItem js/localforage "root-id" root-id)
-      (doall 
+      (doall
         (for [k deletes]
           (.removeItem js/localforage k)))
       (reset! diskdb db))))
@@ -642,7 +642,7 @@
   [:div.field
    [:label "Rapport"]
    [select :report-id
-    (concat [[empty-choice]] 
+    (concat [[empty-choice]]
             (for [report-id  (keys @(subscribe [:db :reports]))]
               [@(subscribe [:db :reports report-id :ReportName])
                report-id]))]])
