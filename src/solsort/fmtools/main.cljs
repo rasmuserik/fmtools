@@ -176,7 +176,7 @@
 
 (defn clj->json [s] (transit/write (transit/writer :json) s))
 (defn json->clj [s] (transit/read (transit/reader :json) s))
-(defn third [col] (nth col 3))
+(defn third [col] (nth col 2))
 
 (defn to-map ; ####
   [o]
@@ -301,7 +301,7 @@
                                :ObjectId area-guid
                                :ObjectName (str (:AreaName obj))}))
                 (assoc-in [:objects area-guid :children id] true)
-                ; TODO add in-between-node
+                ; todo add in-between-node
                 )
             (assoc-in db [:objects parent-id :children id] true))]
       (assoc-in db [:objects id] obj))))
@@ -332,10 +332,9 @@
 
 
 (defn save-changes ; ####
-  ; (changes id) -> (value, chans, deleted)
+  ; (changes id passthrough) -> (value, chans, deleted, passthrough)
   [value id k]
   (go
-    (log 'a)
     (let
       [db-str  (<! (<p (.getItem js/localforage id))) 
        db-map (read-string
@@ -345,23 +344,18 @@
        children (map #(save-changes (value-map %) (db-map %) %) all-keys)
        children (<! (async/reduce conj [] (async/merge children)))
        new-id (str "id" (next-id))
-       saves (apply 
+       saves 
+       (apply 
                merge 
-              (if (coll? value)
-               {new-id (into {} 
-                             (map (fn [[v _ _ k]] [k v]) children))}
-               {})
+              (if (coll? value) {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))} {})
                (map second children))
-       ;deletes 
-       #_(apply 
+       deletes 
+       (apply
                  concat
-                 (if db-str [id] nil)
+                 (if db-str [id] [])
                  (map third children))
-       deletes []
        ]
-      (log 'savechanges value all-keys children saves)
-      [(if-not (coll? value) value new-id) saves deletes k]
-      )))
+      [(if-not (coll? value) value new-id) saves deletes k])))
 
 (defonce diskdb (atom {})) ; ####
 (defn <to-disk  ; ####
@@ -374,9 +368,13 @@
       (log 'b)
       (doall 
         (for [[k v] chans]
-          (.setItem js/localforage k (prn-str v))))
+          (let [v (into {} (filter #(not (nil? (second %))) v))]
+           (.setItem js/localforage k (prn-str v)))))
       (.setItem js/localforage "root-id" root-id)
-; (reset! diskdb db)
+      (doall 
+        (for [k deletes]
+          (.removeItem js/localforage k)))
+      (reset! diskdb db)
       (log '<to-disk id changes chans)
       )))
 
@@ -384,15 +382,13 @@
 (defonce sync-in-progress (atom false))
 
 (defn sync-db [db]
+  (log 'sync-start)
   (if @sync-in-progress
-    (reset! sync-in-progress db)
+    (log 'in-progress)
     (go
       (reset! sync-in-progress true)
       (<! (<to-disk db))
-      (when-not (= true @sync-in-progress)
-        (next-tick #(sync-db db)))
-      (reset! sync-in-progress false)
-      )))
+      (reset! sync-in-progress false))))
 
 (sync-db {:c 1 (js/Math.random) ["rand"] :b [:a "hello"]})
 
