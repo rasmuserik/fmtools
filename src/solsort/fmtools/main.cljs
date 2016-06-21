@@ -330,14 +330,15 @@
 ;;
 ;; keywords are "\u0002" followed by keyword
 
-(defn esc-str [s]  ; ####
-  (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
+(defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
+(defn optional-escape-string [o] (if (string? o) (esc-str o) o))
 (defn unesc-str [s]  ; ####
   (cond (.charCodeAt s 0)
         1 (.slice s 1)
         s))
+(defn optional-unescape-string [o] (if (string? o) (unesc-str o) o))
 
-(defonce prev-id (atom 0)) ; ####
+(defonce prev-id (atom nil)) ; ####
 
 (defn next-id ; ####
   []
@@ -354,7 +355,7 @@
     (if (= value :keep-in-db)
       [id {} [] k]
       (let
-        [db-str  (<! (<p (.getItem js/localforage id))) 
+        [db-str (and id (<! (<p (.getItem js/localforage id)))) 
          db-map (read-string
                   (or db-str "{}"))
          value-map (to-map value)
@@ -364,11 +365,11 @@
            #(save-changes (get value-map % :keep-in-db) (db-map %) %) 
            all-keys)
          children (<! (async/reduce conj [] (async/merge children)))
-         new-id (next-id)
+         new-id (if (coll? value) (next-id) nil)
          saves 
          (apply 
            merge 
-           (if (coll? value) 
+           (if new-id
              {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))} 
              {})
            (map second children))
@@ -377,14 +378,24 @@
            concat
            (if db-str [id] [])
            (map third children))]
-        [(if-not (coll? value) value new-id) saves deletes k]))))
+        [(or new-id (optional-escape-string value))
+         saves deletes k]))))
 
+(defonce sync-in-progress (atom false)) ; ####
 (defonce diskdb (atom {})) ; ####
+(defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
+(defn <load-db [] ; ####
+  (go
+    (when @sync-in-progress
+     (throw "<load-db sync-in-progress error")
+    )))
+
 (defn <to-disk  ; ####
   [db]
   (go
     (let [changes (delta @diskdb db)
-          id (or (<! (<p (.getItem js/localforage "root-id"))))
+          id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
+          prev-id (reset! prev-id (js/parseInt (.slice id 1)))
           [root-id chans deletes] (<! (save-changes changes id nil))]
       (doall 
         (for [[k v] chans]
@@ -396,10 +407,7 @@
           (.removeItem js/localforage k)))
       (reset! diskdb db))))
 
-;; #### sync-runner
-(defonce sync-in-progress (atom false))
-
-(defn sync-db [db]
+(defn sync-db [db] ; ####
   (log 'sync-start)
   (if @sync-in-progress
     (log 'in-progress)
@@ -408,7 +416,7 @@
       (<! (<to-disk db))
       (reset! sync-in-progress false))))
 
-(sync-db {:c 1 (js/Math.random) ["rand"] :b [:a "hello"]})
+(sync-db {:c 1 (js/Math.random) ["rand"] :b [:a "hello"]}) ; ####
 
 ;; ####
 
