@@ -36,7 +36,8 @@
 ;;   - √escape string written, such that encoding for node
 ;;     references does not collide with disk.
 ;;   - √load data structure from disk
-;; - start saving filled out data into app-db
+;; - √start saving filled out data into app-db
+;; - BUGFIX: text entry - read from db
 ;;
 ;; ### Changelog
 ;; #### v0.0.5
@@ -137,7 +138,7 @@
 ;;       - `:FieldValue`
 ;; - `:raw-report`
 ;; - `:ui`
-;;   - [report-id field-id object-id (1/2)] value
+;;   - [report-id field-id object-id (optional 1/2)] value
 ;; - `:data` (intended, not implemented yet)
 ;;   - report-id
 ;;     - field-id
@@ -336,18 +337,19 @@
 ;;
 ;; keywords are "\u0002" followed by keyword
 
-(defonce prev-id (atom nil)) ; ####
-(defonce sync-in-progress (atom false)) ; ####
-(defonce diskdb (atom {})) ; ####
+(defonce prev-id (atom nil))
+(defonce sync-in-progress (atom false))
+(defonce diskdb (atom {}))
+
 (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
 (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
-(defn unesc-str [s] (case (.charCodeAt s 0) 1 (.slice s 1) s)) ; #### 
-(defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
-(defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
-(defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s)))) ; ####
+(defn unescape-string [s] (case (.charCodeAt s 0) 1 (.slice s 1) s))
+(defn optional-unescape-string [o] (if (string? o) (unescape-string o) o))
+(defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id))
+(defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s))))
 (defn fourth-first [[v _ _ k] [k v]])
-(defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
+(defn <localforage [k] (<p (.getItem js/localforage k)))
 (defn save-changes ; ####
   "(value id key) -> (result-value, changes, deleted, key)"
   [value id k]
@@ -451,36 +453,46 @@
     (load-style!
       {:#main
        {:text-align :center}
+
        :.line
        {:min-height 44}
+
        :.main-form
        {:display :inline-block
         :text-align :left
         :width (* unit 12)}
+
        :.camera-input
        {:display :inline-block
         :position :absolute
         :right 0 }
+
        :.fmfield
-       {:clear :right }
+       {:vertical-align :top
+        :display :inline-block
+        :text-align :center 
+        :clear :right }
+
        :.checkbox
-       { :width 44
+       {:width 44
         :max-width "95%"
         :height 44 }
+
        :.multifield
        {:border-bottom "0.5px solid #ccc"}
+
        ".camera-input img"
        {:height 40
         :width 40
         :padding 4
         :border "2px solid black"
         :border-radius 6
-        :opacity "0.5"
-        }
+        :opacity "0.5" }
+
        :.fields
        {:text-align :center }
        }
-      "check-style"))
+      "fmstyling"))
   (render [app]))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
@@ -502,6 +514,17 @@
     [:img.checkbox
      {:on-click #(dispatch [:ui id (not value)])
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
+
+(defn input ; ####
+  [id & {:keys [type size max-length]
+         :or {type "text"}}]
+  [:input {:type type 
+           :name (prn-str id) 
+           :key (prn-str id)
+           :size size
+           :max-length max-length
+           :value @(subscribe [:ui id])
+           :on-change #(dispatch [:ui id (.-value (.-target %1))])}])
 
 ;; ### Camera button
 
@@ -553,58 +576,44 @@
     (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
 
-;; ### Lines/fields
+(defn field [obj cols id] ; ###
+  (let [field-type (:FieldType obj)
+        columns (:Columns obj)
+        double-field (:DoubleField obj)
+        double-separator (:DoubleFieldSeperator obj)
+        value (:FieldValue obj)]
+    [:span.fmfield {:key id
+                    :style {:width (* 11 @unit (/ columns cols)) }
+                    :on-click (fn [] (log obj) false)}
+     (if double-field
+       (let [obj (dissoc obj :DoubleField)]
+         [:span [field obj cols (conj id 1)]
+          " " double-separator " "
+          [field obj cols (conj id 2)]])
+       (case field-type
+         :fetch-from "Komponent-id"
+         :approve-reject [checkbox id]
+         :text-fixed [:span value]
+         :time [input id]
+         :remark [input id]
+         :text-input-noframe [input id]
+         :text-input [input id]
+         :decimal-2-digit [input id :size 2 :max-length 2]
+         :checkbox [checkbox id]
+         :text-fixed-noframe [:span value]
+         [:strong "unhandled field:" (str field-type) " " value]))]))
 
-(defn field [field cols] ; ####
-  (let [field-type (:FieldType field)
-        columns (:Columns field)
-        double-field (:DoubleField field)
-        double-separator (:DoubleFieldSeperator field)
-        guid (:FieldGuid field)
-        value (:FieldValue field)]
-    [:span.fmfield {:key guid
-                    :style
-                    {:width (* 11 @unit (/ columns cols))
-                     :vertical-align :top
-                     :display :inline-block
-                     ;:border-left "1px solid black"
-                     ;:border-right "1px solid black"
-                     :text-align :center}
-                    :on-click (fn [] (log field) false)}
-     (case field-type
-       :fetch-from "Komponent-id"
-       :approve-reject
-       (if double-field
-         [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
-         [checkbox guid])
-       :text-fixed [:span.text-fixed-frame.outer-vertical
-                    [:span.inner-vertical value]]
-       :time [:input {:type :text :name guid}]
-       :remark [:input {:type :text :name guid}]
-       :text-input-noframe [:input {:type :text :name guid}]
-       :text-input [:input {:type :text :name guid}]
-       :decimal-2-digit
-       [:div.ui.input
-        [:input {:type :text :size 2 :max-length 2 :name guid}]]
-       :checkbox
-       (if double-field
-         [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
-         [checkbox guid])
-       :text-fixed-noframe [:span.text-fixed-noframe value]
-       [:strong "unhandled field:"
-        (str field-type) " " value])]))
-
-
-
-(defn line [line] ; ####
+(defn line [line report-id] ; ###
   (let [id (:PartGuid line)
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
         debug-str (dissoc line :fields)
+        obj-id nil
         fields (into
                  [:div.fields]
-                 (map #(field % cols)  (:fields line)))]
+                 (map #(field % cols [report-id obj-id (:FieldGuid %)])  
+                      (:fields line)))]
     [:div.line
      {:style
       {:padding-top 10}
@@ -613,7 +622,6 @@
      (case line-type
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
-       #_:vertical-headline #_[:h3.vertical desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc ] fields]
        :multi-field-line [:div.multifield desc [camera-button id ]
@@ -641,13 +649,12 @@
     [:span.empty]))
 
 (defn render-template [id] ; ####
-  (let [template @(subscribe [:template id])]
-    ;(log (with-out-str (cljs.pprint/pprint template)))
+  (let [template @(subscribe [:template id])
+        report-id @(subscribe [:ui :report-id])]
     (merge
       [:div.ui.form
        [:h1 (:Description template)]]
-      (map line (:rows template))
-      ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
+      (doall (map line (:rows template) (repeat report-id)))
       )))
 
 (defn app [] ; ####
