@@ -202,13 +202,15 @@
 (defn delta ; ####
   "get changes from a to b"
   [from to]
-  (if (coll? to)
+  (if (= from to)
+    (if (coll? to) {} to)
+   (if (coll? to)
     (let [from (to-map from)
           to (to-map to)
           ks (distinct (concat (keys from) (keys to)))
           ks (filter #(not= (from %) (to %)) ks)]
       (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
-    to))
+    to)))
 
 ;; ## Definitions
 ;;
@@ -385,6 +387,7 @@
                 (into [] (map v (range length))))
               v)]
       v)))
+
 (defn <load-db [] ; ####
   (when @sync-in-progress
     (throw "<load-db sync-in-progress error"))
@@ -403,25 +406,40 @@
           id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
           prev-id (reset! prev-id (js/parseInt (.slice id 1)))
           [root-id chans deletes] (<! (save-changes changes id nil))]
-      (log 'to-disk changes)
-      (doall
-        (for [[k v] chans]
-          (let [v (into {} (filter #(not (nil? (second %))) v))]
-            (.setItem js/localforage k (prn-str v)))))
-      (.setItem js/localforage "root-id" root-id)
-      (doall (for [k deletes] (.removeItem js/localforage k)))
+      (log 'to-disk db changes)
+      (<! (<chan-seq (for [[k v] chans]
+                       (let [v (into {} (filter #(not (nil? (second %))) v))]
+                         (<p (.setItem js/localforage k (prn-str v)))))))
+      (<! (<p (.setItem js/localforage "root-id" root-id)))
+      (<! (<chan-seq (for [k deletes] (<p (.removeItem js/localforage k)))))
       (reset! diskdb db))))
 
-(defn sync-db [db] ; ####
+(defn <sync-db [db] ; ####
   (log 'sync-start)
-  (if @sync-in-progress
-    (log 'in-progress)
-    (go
-      (reset! sync-in-progress true)
-      (<! (<to-disk db))
-      (reset! sync-in-progress false))))
+  (go
+    (if @sync-in-progress
+      (log 'in-progress)
+      (do 
+        (reset! sync-in-progress true)
+        (<! (<to-disk db))
+        (reset! sync-in-progress false)))))
 
-(sync-db {(js/Math.random) [:a :b] :c [:d]})
+;(<sync-db {(js/Math.random) [:a :b] :c [:d]})
+(defonce sync-runner
+  (go
+    (log 'loading-db)
+    (dispatch-sync [:ui (<! (<load-db))])
+    (log 'loaded-db)
+    (loop []
+      (log 'start-sync)
+      (let [t0 (js/Date.now)]
+        (<! (<sync-db @(subscribe [:db :ui])))
+        (log 'sync-time (- (js/Date.now) t0)))
+      (<! (timeout 10000))
+      (recur)
+      )
+    ))
+(log 'ui @(subscribe [:db :ui]))
 
 ;; #### re-frame :sync-to-disk
 
@@ -431,7 +449,7 @@
     ; currently just a hack, needs reimplementation on localforage
     ; only syncing part of structure that is changed
     ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
-    ;(sync-db db)
+    ;(<sync-db db)
     db))
 
 (register-handler
@@ -439,7 +457,7 @@
   (fn  [db]
     ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
     ;(go (dispatch [:db (<! (<load-db))]) )
-    (go (log 'db-restore [:db (<! (<load-db))]) )
+    ;(go (log 'db-restore [:db (<! (<load-db))]) )
     db ; disable restore-from-disk
     ))
 
