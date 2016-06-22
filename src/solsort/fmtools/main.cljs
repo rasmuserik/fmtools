@@ -336,53 +336,37 @@
 ;;
 ;; keywords are "\u0002" followed by keyword
 
+(defonce prev-id (atom nil)) ; ####
+(defonce sync-in-progress (atom false)) ; ####
+(defonce diskdb (atom {})) ; ####
 (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
 (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
-(defn unesc-str [s]  ; ####
-  (case (.charCodeAt s 0)
-    1 (.slice s 1)
-    s))
+(defn unesc-str [s] (case (.charCodeAt s 0) 1 (.slice s 1) s)) ; #### 
 (defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
-(defonce prev-id (atom nil)) ; ####
 (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
 (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s)))) ; ####
+(defn fourth-first [[v _ _ k] [k v]])
+(defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
 (defn save-changes ; ####
-  ; (value id key) -> (result-value, changes, deleted, key)
+  "(value id key) -> (result-value, changes, deleted, key)"
   [value id k]
   (go
     (if (= value :keep-in-db)
       [id {} [] k]
       (let
         [db-str (and id (<! (<p (.getItem js/localforage id))))
-         db-map (read-string
-                  (or db-str "{}"))
+         db-map (read-string (or db-str "{}"))
          value-map (to-map value)
          all-keys (distinct (concat (keys db-map) (keys value-map)))
-         children
-         (map
-           #(save-changes (get value-map % :keep-in-db) (db-map %) %)
-           all-keys)
-         children (<! (async/reduce conj [] (async/merge children)))
+         save-fn #(save-changes (get value-map % :keep-in-db) (db-map %) %)
+         children (<! (<chan-seq (map save-fn all-keys)))
          new-id (if (coll? value) (next-id) nil)
-         saves
-         (apply
-           merge
-           (if new-id
-             {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))}
-             {})
-           (map second children))
-         deletes
-         (apply
-           concat
-           (if db-str [id] [])
-           (map third children))]
-        [(or new-id (optional-escape-string value))
-         saves deletes k]))))
+         saves (if new-id {new-id (into {} fourth-first (children))} {})
+         saves (apply merge saves (map second children))
+         deletes (apply concat (if db-str [id] []) (map third children))]
+        [(or new-id (optional-escape-string value)) saves deletes k]))))
 
-(defonce sync-in-progress (atom false)) ; ####
-(defonce diskdb (atom {})) ; ####
-(defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
 (defn <load-db-item [k]
   (go
     (let [v (read-string (<! (<localforage k)))
@@ -422,9 +406,7 @@
           (let [v (into {} (filter #(not (nil? (second %))) v))]
             (.setItem js/localforage k (prn-str v)))))
       (.setItem js/localforage "root-id" root-id)
-      (doall
-        (for [k deletes]
-          (.removeItem js/localforage k)))
+      (doall (for [k deletes] (.removeItem js/localforage k)))
       (reset! diskdb db))))
 
 (defn sync-db [db] ; ####
@@ -456,8 +438,7 @@
     db ; disable restore-from-disk
     ))
 
-(defonce restore
-  (dispatch [:restore-from-disk]))
+(defonce restore (dispatch [:restore-from-disk]))
 
 ;; ## UI
 ;; ### Styling
@@ -704,7 +685,6 @@
                      (<! (<api (str "ReportTemplate?templateGuid="
                                     template-id))))
           template (:ReportTemplateTable template)
-          ; TODO: (group-by :ControlGuid (api/v1/ReportTemplate/Control :ReportControls)) into :template-control lines
           fields (-> template
                      (:ReportTemplateFields )
                      (->>
