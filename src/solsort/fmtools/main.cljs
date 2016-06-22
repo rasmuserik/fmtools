@@ -204,13 +204,13 @@
   [from to]
   (if (= from to)
     (if (coll? to) {} to)
-   (if (coll? to)
-    (let [from (to-map from)
-          to (to-map to)
-          ks (distinct (concat (keys from) (keys to)))
-          ks (filter #(not= (from %) (to %)) ks)]
-      (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
-    to)))
+    (if (coll? to)
+      (let [from (to-map from)
+            to (to-map to)
+            ks (distinct (concat (keys from) (keys to)))
+            ks (filter #(not= (from %) (to %)) ks)]
+        (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
+      to)))
 
 ;; ## Definitions
 ;;
@@ -537,15 +537,18 @@
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 
 (defn input ; ####
-  [id & {:keys [type size max-length]
+  [id & {:keys [type size max-length options]
          :or {type "text"}}]
-  [:input {:type type 
+  (case type
+    :select (select id options)
+    :checkbox (checkbox id)
+    [:input {:type type 
            :name (prn-str id) 
            :key (prn-str id)
            :size size
            :max-length max-length
            :value @(subscribe [:ui id])
-           :on-change #(dispatch [:ui id (.-value (.-target %1))])}])
+           :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
 
 ;; ### Camera button
 
@@ -615,11 +618,11 @@
          :fetch-from "Komponent-id"
          :approve-reject [checkbox id]
          :text-fixed [:span value]
-         :time [input id]
+         :time [input id :type :time]
          :remark [input id]
          :text-input-noframe [input id]
          :text-input [input id]
-         :decimal-2-digit [input id :size 2 :max-length 2]
+         :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
          :checkbox [checkbox id]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
