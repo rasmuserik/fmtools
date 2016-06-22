@@ -419,7 +419,7 @@
   (go
     (if @sync-in-progress
       (log 'in-progress)
-      (do 
+      (do
         (reset! sync-in-progress true)
         (<! (<to-disk db))
         (reset! sync-in-progress false)))))
@@ -491,7 +491,7 @@
        :.fmfield
        {:vertical-align :top
         :display :inline-block
-        :text-align :center 
+        :text-align :center
         :clear :right }
 
        :.checkbox
@@ -542,13 +542,13 @@
   (case type
     :select (select id options)
     :checkbox (checkbox id)
-    [:input {:type type 
-           :name (prn-str id) 
-           :key (prn-str id)
-           :size size
-           :max-length max-length
-           :value @(subscribe [:ui id])
-           :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
+    [:input {:type type
+             :name (prn-str id)
+             :key (prn-str id)
+             :size size
+             :max-length max-length
+             :value @(subscribe [:ui id])
+             :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
 
 ;; ### Camera button
 
@@ -636,7 +636,7 @@
         obj-id nil
         fields (into
                  [:div.fields]
-                 (map #(field % cols [report-id obj-id (:FieldGuid %)])  
+                 (map #(field % cols [report-id obj-id (:FieldGuid %)])
                       (:fields line)))]
     [:div.line
      {:style

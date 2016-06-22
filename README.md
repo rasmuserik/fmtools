@@ -30,14 +30,15 @@ TODO next sprints
 Current sprint:
 v0.0.6
 
-- better data sync to disk
+- progress better data sync to disk
   - √write data structure to disk
   - √GC/remove old nodes from disk
   - √only write changes, fix delta function
   - √escape string written, such that encoding for node
     references does not collide with disk.
   - √load data structure from disk
-- start saving filled out data into app-db
+- √start saving filled out data into app-db
+- √BUGFIX: text entry - read from db
 
 ### Changelog
 #### v0.0.5
@@ -138,7 +139,7 @@ notes - intended content
       - `:FieldValue`
 - `:raw-report`
 - `:ui`
-  - [report-id field-id object-id (1/2)] value
+  - [report-id field-id object-id (optional 1/2)] value
 - `:data` (intended, not implemented yet)
   - report-id
     - field-id
@@ -202,13 +203,15 @@ Reload application, when a new version is available
     (defn delta ; ####
       "get changes from a to b"
       [from to]
-      (if (coll? to)
-        (let [from (to-map from)
-              to (to-map to)
-              ks (distinct (concat (keys from) (keys to)))
-              ks (filter #(not= (from %) (to %)) ks)]
-          (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
-        to))
+      (if (= from to)
+        (if (coll? to) {} to)
+        (if (coll? to)
+          (let [from (to-map from)
+                to (to-map to)
+                ks (distinct (concat (keys from) (keys to)))
+                ks (filter #(not= (from %) (to %)) ks)]
+            (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
+          to)))
 
 ## Definitions
 
@@ -337,53 +340,38 @@ references in db are "\u0001" followed by id
 
 keywords are "\u0002" followed by keyword
 
+    (defonce prev-id (atom nil))
+    (defonce sync-in-progress (atom false))
+    (defonce diskdb (atom {}))
+
     (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
     (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
     (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
-    (defn unesc-str [s]  ; ####
-      (case (.charCodeAt s 0)
-        1 (.slice s 1)
-        s))
-    (defn optional-unescape-string [o] (if (string? o) (unesc-str o) o)) ; ####
-    (defonce prev-id (atom nil)) ; ####
-    (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id)) ; ####
-    (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s)))) ; ####
+    (defn unescape-string [s] (case (.charCodeAt s 0) 1 (.slice s 1) s))
+    (defn optional-unescape-string [o] (if (string? o) (unescape-string o) o))
+    (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id))
+    (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s))))
+    (defn fourth-first [[v _ _ k]] [k v])
+    (defn <localforage [k] (<p (.getItem js/localforage k)))
     (defn save-changes ; ####
-      ; (value id key) -> (result-value, changes, deleted, key)
+      "(value id key) -> (result-value, changes, deleted, key)"
       [value id k]
       (go
         (if (= value :keep-in-db)
           [id {} [] k]
           (let
-            [db-str (and id (<! (<p (.getItem js/localforage id))))
-             db-map (read-string
-                      (or db-str "{}"))
+            [db-str (and id (<! (<localforage id)))
+             db-map (read-string (or db-str "{}"))
              value-map (to-map value)
              all-keys (distinct (concat (keys db-map) (keys value-map)))
-             children
-             (map
-               #(save-changes (get value-map % :keep-in-db) (db-map %) %)
-               all-keys)
-             children (<! (async/reduce conj [] (async/merge children)))
+             save-fn #(save-changes (get value-map % :keep-in-db) (db-map %) %)
+             children (<! (<chan-seq (map save-fn all-keys)))
              new-id (if (coll? value) (next-id) nil)
-             saves
-             (apply
-               merge
-               (if new-id
-                 {new-id (into {} (map (fn [[v _ _ k]] [k v]) children))}
-                 {})
-               (map second children))
-             deletes
-             (apply
-               concat
-               (if db-str [id] [])
-               (map third children))]
-            [(or new-id (optional-escape-string value))
-             saves deletes k]))))
+             saves (if new-id {new-id (into {} (map fourth-first children))} {})
+             saves (apply merge saves (map second children))
+             deletes (apply concat (if db-str [id] []) (map third children))]
+            [(or new-id (optional-escape-string value)) saves deletes k]))))
 
-    (defonce sync-in-progress (atom false)) ; ####
-    (defonce diskdb (atom {})) ; ####
-    (defn <localforage [k] (<p (.getItem js/localforage k))) ; ####
     (defn <load-db-item [k]
       (go
         (let [v (read-string (<! (<localforage k)))
@@ -400,6 +388,7 @@ keywords are "\u0002" followed by keyword
                     (into [] (map v (range length))))
                   v)]
           v)))
+
     (defn <load-db [] ; ####
       (when @sync-in-progress
         (throw "<load-db sync-in-progress error"))
@@ -418,24 +407,40 @@ keywords are "\u0002" followed by keyword
               id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
               prev-id (reset! prev-id (js/parseInt (.slice id 1)))
               [root-id chans deletes] (<! (save-changes changes id nil))]
-          (doall
-            (for [[k v] chans]
-              (let [v (into {} (filter #(not (nil? (second %))) v))]
-                (.setItem js/localforage k (prn-str v)))))
-          (.setItem js/localforage "root-id" root-id)
-          (doall
-            (for [k deletes]
-              (.removeItem js/localforage k)))
+          (log 'to-disk db changes)
+          (<! (<chan-seq (for [[k v] chans]
+                           (let [v (into {} (filter #(not (nil? (second %))) v))]
+                             (<p (.setItem js/localforage k (prn-str v)))))))
+          (<! (<p (.setItem js/localforage "root-id" root-id)))
+          (<! (<chan-seq (for [k deletes] (<p (.removeItem js/localforage k)))))
           (reset! diskdb db))))
 
-    (defn sync-db [db] ; ####
+    (defn <sync-db [db] ; ####
       (log 'sync-start)
-      (if @sync-in-progress
-        (log 'in-progress)
-        (go
-          (reset! sync-in-progress true)
-          (<! (<to-disk db))
-          (reset! sync-in-progress false))))
+      (go
+        (if @sync-in-progress
+          (log 'in-progress)
+          (do
+            (reset! sync-in-progress true)
+            (<! (<to-disk db))
+            (reset! sync-in-progress false)))))
+
+    ;(<sync-db {(js/Math.random) [:a :b] :c [:d]})
+    (defonce sync-runner
+      (go
+        (log 'loading-db)
+        (dispatch-sync [:ui (<! (<load-db))])
+        (log 'loaded-db)
+        (loop []
+          (log 'start-sync)
+          (let [t0 (js/Date.now)]
+            (<! (<sync-db @(subscribe [:db :ui])))
+            (log 'sync-time (- (js/Date.now) t0)))
+          (<! (timeout 10000))
+          (recur)
+          )
+        ))
+    (log 'ui @(subscribe [:db :ui]))
 
 #### re-frame :sync-to-disk
 
@@ -445,7 +450,7 @@ keywords are "\u0002" followed by keyword
         ; currently just a hack, needs reimplementation on localforage
         ; only syncing part of structure that is changed
         ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
-        ;(sync-db db)
+        ;(<sync-db db)
         db))
 
     (register-handler
@@ -453,12 +458,11 @@ keywords are "\u0002" followed by keyword
       (fn  [db]
         ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
         ;(go (dispatch [:db (<! (<load-db))]) )
-        (go (log 'db-restore [:db (<! (<load-db))]) )
+        ;(go (log 'db-restore [:db (<! (<load-db))]) )
         db ; disable restore-from-disk
         ))
 
-    (defonce restore
-      (dispatch [:restore-from-disk]))
+    (defonce restore (dispatch [:restore-from-disk]))
 
 ## UI
 ### Styling
@@ -471,36 +475,46 @@ keywords are "\u0002" followed by keyword
         (load-style!
           {:#main
            {:text-align :center}
+
            :.line
            {:min-height 44}
+
            :.main-form
            {:display :inline-block
             :text-align :left
             :width (* unit 12)}
+
            :.camera-input
            {:display :inline-block
             :position :absolute
             :right 0 }
+
            :.fmfield
-           {:clear :right }
+           {:vertical-align :top
+            :display :inline-block
+            :text-align :center
+            :clear :right }
+
            :.checkbox
-           { :width 44
+           {:width 44
             :max-width "95%"
             :height 44 }
+
            :.multifield
            {:border-bottom "0.5px solid #ccc"}
+
            ".camera-input img"
            {:height 40
             :width 40
             :padding 4
             :border "2px solid black"
             :border-radius 6
-            :opacity "0.5"
-            }
+            :opacity "0.5" }
+
            :.fields
            {:text-align :center }
            }
-          "check-style"))
+          "fmstyling"))
       (render [app]))
     (aset js/window "onresize" style)
     (js/setTimeout style 0)
@@ -522,6 +536,20 @@ keywords are "\u0002" followed by keyword
         [:img.checkbox
          {:on-click #(dispatch [:ui id (not value)])
           :src (if value "assets/check.png" "assets/uncheck.png")}]))
+
+    (defn input ; ####
+      [id & {:keys [type size max-length options]
+             :or {type "text"}}]
+      (case type
+        :select (select id options)
+        :checkbox (checkbox id)
+        [:input {:type type
+                 :name (prn-str id)
+                 :key (prn-str id)
+                 :size size
+                 :max-length max-length
+                 :value @(subscribe [:ui id])
+                 :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
 
 ### Camera button
 
@@ -573,58 +601,44 @@ keywords are "\u0002" followed by keyword
         (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
 
-### Lines/fields
+    (defn field [obj cols id] ; ###
+      (let [field-type (:FieldType obj)
+            columns (:Columns obj)
+            double-field (:DoubleField obj)
+            double-separator (:DoubleFieldSeperator obj)
+            value (:FieldValue obj)]
+        [:span.fmfield {:key id
+                        :style {:width (* 11 @unit (/ columns cols)) }
+                        :on-click (fn [] (log obj) false)}
+         (if double-field
+           (let [obj (dissoc obj :DoubleField)]
+             [:span [field obj cols (conj id 1)]
+              " " double-separator " "
+              [field obj cols (conj id 2)]])
+           (case field-type
+             :fetch-from "Komponent-id"
+             :approve-reject [checkbox id]
+             :text-fixed [:span value]
+             :time [input id :type :time]
+             :remark [input id]
+             :text-input-noframe [input id]
+             :text-input [input id]
+             :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+             :checkbox [checkbox id]
+             :text-fixed-noframe [:span value]
+             [:strong "unhandled field:" (str field-type) " " value]))]))
 
-    (defn field [field cols] ; ####
-      (let [field-type (:FieldType field)
-            columns (:Columns field)
-            double-field (:DoubleField field)
-            double-separator (:DoubleFieldSeperator field)
-            guid (:FieldGuid field)
-            value (:FieldValue field)]
-        [:span.fmfield {:key guid
-                        :style
-                        {:width (* 11 @unit (/ columns cols))
-                         :vertical-align :top
-                         :display :inline-block
-                         ;:border-left "1px solid black"
-                         ;:border-right "1px solid black"
-                         :text-align :center}
-                        :on-click (fn [] (log field) false)}
-         (case field-type
-           :fetch-from "Komponent-id"
-           :approve-reject
-           (if double-field
-             [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
-             [checkbox guid])
-           :text-fixed [:span.text-fixed-frame.outer-vertical
-                        [:span.inner-vertical value]]
-           :time [:input {:type :text :name guid}]
-           :remark [:input {:type :text :name guid}]
-           :text-input-noframe [:input {:type :text :name guid}]
-           :text-input [:input {:type :text :name guid}]
-           :decimal-2-digit
-           [:div.ui.input
-            [:input {:type :text :size 2 :max-length 2 :name guid}]]
-           :checkbox
-           (if double-field
-             [:span [checkbox guid] " " double-separator " " [checkbox guid] " \u00a0 "]
-             [checkbox guid])
-           :text-fixed-noframe [:span.text-fixed-noframe value]
-           [:strong "unhandled field:"
-            (str field-type) " " value])]))
-
-
-
-    (defn line [line] ; ####
+    (defn line [line report-id] ; ###
       (let [id (:PartGuid line)
             line-type (:LineType line)
             cols (apply + (map :Columns (:fields line)))
             desc (:TaskDescription line)
             debug-str (dissoc line :fields)
+            obj-id nil
             fields (into
                      [:div.fields]
-                     (map #(field % cols)  (:fields line)))]
+                     (map #(field % cols [report-id obj-id (:FieldGuid %)])
+                          (:fields line)))]
         [:div.line
          {:style
           {:padding-top 10}
@@ -633,7 +647,6 @@ keywords are "\u0002" followed by keyword
          (case line-type
            :basic [:h3 "" desc]
            :simple-headline [:h3 desc]
-           #_:vertical-headline #_[:h3.vertical desc]
            :vertical-headline [:div [:h3 desc] fields]
            :horizontal-headline [:div [:h3 desc ] fields]
            :multi-field-line [:div.multifield desc [camera-button id ]
@@ -661,13 +674,12 @@ keywords are "\u0002" followed by keyword
         [:span.empty]))
 
     (defn render-template [id] ; ####
-      (let [template @(subscribe [:template id])]
-        ;(log (with-out-str (cljs.pprint/pprint template)))
+      (let [template @(subscribe [:template id])
+            report-id @(subscribe [:ui :report-id])]
         (merge
           [:div.ui.form
            [:h1 (:Description template)]]
-          (map line (:rows template))
-          ;[:pre (js/JSON.stringify (clj->js template) nil 2)]
+          (doall (map line (:rows template) (repeat report-id)))
           )))
 
     (defn app [] ; ####
@@ -705,7 +717,6 @@ keywords are "\u0002" followed by keyword
                          (<! (<api (str "ReportTemplate?templateGuid="
                                         template-id))))
               template (:ReportTemplateTable template)
-              ; TODO: (group-by :ControlGuid (api/v1/ReportTemplate/Control :ReportControls)) into :template-control lines
               fields (-> template
                          (:ReportTemplateFields )
                          (->>
