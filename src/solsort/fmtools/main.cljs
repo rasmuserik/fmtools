@@ -29,7 +29,7 @@
 ;; Current sprint:
 ;; v0.0.6
 ;;
-;; - better data sync to disk
+;; - progress better data sync to disk
 ;;   - √write data structure to disk
 ;;   - √GC/remove old nodes from disk
 ;;   - √only write changes, fix delta function
@@ -37,7 +37,7 @@
 ;;     references does not collide with disk.
 ;;   - √load data structure from disk
 ;; - √start saving filled out data into app-db
-;; - BUGFIX: text entry - read from db
+;; - √BUGFIX: text entry - read from db
 ;;
 ;; ### Changelog
 ;; #### v0.0.5
@@ -348,7 +348,7 @@
 (defn optional-unescape-string [o] (if (string? o) (unescape-string o) o))
 (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id))
 (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s))))
-(defn fourth-first [[v _ _ k] [k v]])
+(defn fourth-first [[v _ _ k]] [k v])
 (defn <localforage [k] (<p (.getItem js/localforage k)))
 (defn save-changes ; ####
   "(value id key) -> (result-value, changes, deleted, key)"
@@ -357,14 +357,14 @@
     (if (= value :keep-in-db)
       [id {} [] k]
       (let
-        [db-str (and id (<! (<p (.getItem js/localforage id))))
+        [db-str (and id (<! (<localforage id)))
          db-map (read-string (or db-str "{}"))
          value-map (to-map value)
          all-keys (distinct (concat (keys db-map) (keys value-map)))
          save-fn #(save-changes (get value-map % :keep-in-db) (db-map %) %)
          children (<! (<chan-seq (map save-fn all-keys)))
          new-id (if (coll? value) (next-id) nil)
-         saves (if new-id {new-id (into {} fourth-first (children))} {})
+         saves (if new-id {new-id (into {} (map fourth-first children))} {})
          saves (apply merge saves (map second children))
          deletes (apply concat (if db-str [id] []) (map third children))]
         [(or new-id (optional-escape-string value)) saves deletes k]))))
@@ -403,6 +403,7 @@
           id (or (<! (<p (.getItem js/localforage "root-id"))) " 0")
           prev-id (reset! prev-id (js/parseInt (.slice id 1)))
           [root-id chans deletes] (<! (save-changes changes id nil))]
+      (log 'to-disk changes)
       (doall
         (for [[k v] chans]
           (let [v (into {} (filter #(not (nil? (second %))) v))]
@@ -419,6 +420,8 @@
       (reset! sync-in-progress true)
       (<! (<to-disk db))
       (reset! sync-in-progress false))))
+
+(sync-db {(js/Math.random) [:a :b] :c [:d]})
 
 ;; #### re-frame :sync-to-disk
 
