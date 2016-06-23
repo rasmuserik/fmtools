@@ -23,23 +23,26 @@
 ;;   - sync/restore db
 ;;   - refactor/cleanup
 ;;   - debug performance
-;;   - make sure that diff is optimised (ie. do not traverse all data)
-;; - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
 ;;
 ;; Current sprint:
-;; v0.0.6
+;; v0.0.7
 ;;
-;; - progress better data sync to disk
+;; - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
+;;
+;; ### Changelog
+;; #### v0.0.6
+;;
+;; - √progress better data sync to disk
 ;;   - √write data structure to disk
 ;;   - √GC/remove old nodes from disk
 ;;   - √only write changes, fix delta function
 ;;   - √escape string written, such that encoding for node
 ;;     references does not collide with disk.
 ;;   - √load data structure from disk
+;;   - √make sure that diff is optimised (ie. do not traverse all data)
 ;; - √start saving filled out data into app-db
 ;; - √BUGFIX: text entry - read from db
 ;;
-;; ### Changelog
 ;; #### v0.0.5
 ;;
 ;; - do not select template directly, choose from open reports instead
