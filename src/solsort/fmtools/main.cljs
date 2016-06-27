@@ -28,20 +28,22 @@
 ;; v0.0.7
 ;;
 ;; - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
+;; - √setup nrepl to work with cider
+;; - restructure file
 ;;
 ;; ### Changelog
 ;; #### v0.0.6
 ;;
-;; - √progress better data sync to disk
-;;   - √write data structure to disk
-;;   - √GC/remove old nodes from disk
-;;   - √only write changes, fix delta function
-;;   - √escape string written, such that encoding for node
+;; - progress better data sync to disk
+;;   - write data structure to disk
+;;   - GC/remove old nodes from disk
+;;   - only write changes, fix delta function
+;;   - escape string written, such that encoding for node
 ;;     references does not collide with disk.
-;;   - √load data structure from disk
-;;   - √make sure that diff is optimised (ie. do not traverse all data)
-;; - √start saving filled out data into app-db
-;; - √BUGFIX: text entry - read from db
+;;   - load data structure from disk
+;;   - make sure that diff is optimised (ie. do not traverse all data)
+;; - start saving filled out data into app-db
+;; - BUGFIX: text entry - read from db
 ;;
 ;; #### v0.0.5
 ;;

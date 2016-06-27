@@ -21,9 +21,9 @@ echo "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400ita
 echo "NETWORK:" >> index.appcache
 echo "*" >> index.appcache
 
-echo "" > README.md
-for SRC in main
-do
-cat src/solsort/*/${SRC}.cljs | 
-  sed -e "s/^[^/]/    \0/" | sed -e s'/^ *[;][;] \?//' >> README.md
-done
+#echo "" > README.md
+#for SRC in main
+#do
+#cat src/solsort/*/${SRC}.cljs | 
+#  sed -e "s/^[^/]/    \0/" | sed -e s'/^ *[;][;] \?//' >> README.md
+#done
