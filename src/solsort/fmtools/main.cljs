@@ -164,6 +164,7 @@
     [cljs.core.async.macros :refer [go go-loop alt!]]
     [reagent.ratom :as ratom :refer  [reaction]])
   (:require
+   [devtools.core :as devtools]
     [cljs.pprint]
     [cljsjs.localforage]
     [cognitect.transit :as transit]
@@ -188,6 +189,8 @@
 
 (when js/window.applicationCache
   (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
+
+(defonce dev-tools (devtools/install!))
 
 (defonce empty-choice "· · ·")
 

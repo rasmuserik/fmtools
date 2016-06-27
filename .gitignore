@@ -2,3 +2,5 @@
 /resources/public/index.js
 /resources/public/out/
 /target/
+.lein-repl-history
+.nrepl-port
