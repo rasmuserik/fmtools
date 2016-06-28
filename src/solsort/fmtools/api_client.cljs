@@ -1,29 +1,17 @@
 (ns solsort.fmtools.api-client
-  (:require-macros
-    [cljs.core.async.macros :refer [go go-loop alt!]]
-    [reagent.ratom :as ratom :refer  [reaction]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
-   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
-   [devtools.core :as devtools]
-    [cljs.pprint]
-    [cljsjs.localforage]
-    [cognitect.transit :as transit]
-    [solsort.misc :refer [<blob-url]]
+   [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
     [solsort.util
      :refer
      [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
-      parse-json-or-nil log page-ready render dom->clj next-tick]]
-    [reagent.core :as reagent :refer []]
-    [cljs.reader :refer [read-string]]
-    [clojure.data :refer [diff]]
+      log page-ready render dom->clj next-tick]]
     [clojure.walk :refer [keywordize-keys]]
     [re-frame.core :as re-frame
      :refer [register-sub subscribe register-handler
              dispatch dispatch-sync]]
-    [clojure.string :as string :refer [replace split blank?]]
     [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-;;
 (defonce field-types
   {0   :none
    1   :text-fixed
@@ -55,8 +43,7 @@
    10 :template-control})
 
 ;; ## Loading-Data
-
-(defn <api [endpoint] ; ###
+(defn <api [endpoint]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
               ;"app.fmtools.dk/api/v1/"
@@ -65,9 +52,8 @@
               endpoint)
          :credentials true))
 
-;; ### Templates
-
-(defn load-template [template-id] ; ####
+;;; Templates
+(defn load-template [template-id]
   (go
     (let [template (keywordize-keys
                      (<! (<api (str "ReportTemplate?templateGuid="
@@ -90,8 +76,7 @@
                                              (log "invalid-LintType" %))) parts)
           parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
       (dispatch [:template template-id (assoc template :rows parts)]))))
-
-(defn load-templates [] ; ####
+(defn load-templates [] 
   (go
     (let [templates (<! (<api "ReportTemplate"))
           template-id (-> templates
@@ -101,9 +86,8 @@
       (doall (for [template (get templates "ReportTemplateTables")]
                (load-template (get template "TemplateGuid")))))))
 
-;; ### Objects
-;;
-(defn load-area [area] ; ####
+;;; Objects
+(defn load-area [area]
   (go
     (let [objects (:Objects (keywordize-keys
                               (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
@@ -112,29 +96,26 @@
           (let [object (assoc object :AreaName (:Name area))]
             (dispatch [:area-object object])
             ))))))
-
-(defn load-objects [] ; ####
+(defn load-objects []
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
         (doall (for [area (:Areas areas)]
                  (load-area area))))))
-;; ### Report
 
-(defn load-report [report] ; ####
+;; ### Report
+(defn load-report [report]
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
       (dispatch [:raw-report report data role])
       (log 'report report data role))))
-
-(defn load-reports [] ; ####
+(defn load-reports []
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
       #_(log 'reports reports)
       (doall
         (for [report (:ReportTables reports)]
           (load-report report))))))
-
-(defn handle-reports [] ; ####
+(defn handle-reports []
   (let [raw-reports (:raw-report @(subscribe [:db]))]
     (doall
       (for [[_ raw-report] raw-reports]
@@ -150,8 +131,7 @@
 ;(handle-reports)
 
 ;; ### fetch
-
-(defn fetch [] ; ####
+(defn fetch []
   ;  (log 'fetching)
   (load-templates)
   #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
@@ -159,6 +139,5 @@
   (load-reports))
 
 ;; #### Execute
-
 ;(fetch)
 (defonce loader (fetch))
