@@ -1,171 +1,10 @@
-;; [![Build Status](https://travis-ci.org/solsort/fmtools.svg?branch=master)](https://travis-ci.org/solsort/fmtools) <img src=https://fmtools.solsort.com/icon.png align=right width=100 height=100>
-;; # FM-Tools
-;;
-;; ## Formål
-;;
-;; Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-tools.
-;;
-;; Krav til app'en:
-;;
-;; - muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
-;; - understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
-;; - muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende ehned
-;; - forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
-;; - muligt at vedhæfte/se billeder for hver linje i formularen
-;; - formater: håndholdt mobil, samt tablet
-;; - skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
-;; - skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
-;;
-;; ## Roadmap
-;;
-;; TODO next sprints
-;; - disk data sync
-;;   - sync/restore db
-;;   - refactor/cleanup
-;;   - debug performance
-;;
-;; Current sprint:
-;; v0.0.7
-;;
-;; - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
-;; - √setup nrepl to work with cider
-;; - restructure file
-;;
-;; ### Changelog
-;; #### v0.0.6
-;;
-;; - progress better data sync to disk
-;;   - write data structure to disk
-;;   - GC/remove old nodes from disk
-;;   - only write changes, fix delta function
-;;   - escape string written, such that encoding for node
-;;     references does not collide with disk.
-;;   - load data structure from disk
-;;   - make sure that diff is optimised (ie. do not traverse all data)
-;; - start saving filled out data into app-db
-;; - BUGFIX: text entry - read from db
-;;
-;; #### v0.0.5
-;;
-;; - do not select template directly, choose from open reports instead
-;; - experiments towards faster/better synchronisation from app-db to disk
-;;
-;; #### v0.0.4
-;;
-;; - initial traverse/store report data into database, (needs mangling)
-;; - traverse area/object tree structure / object-graph
-;; - find current selected area, and render list of nodes based on this
-;;
-;; #### v0.0.3
-;;
-;; - try convert camera-image into dataurl for display
-;; - area/object-tree - choose/show current object/area
-;; - changelog/roadmap
-;; - cors testing/debugging
-;;
-;; #### v0.0.2
-;;
-;; - offline version with cache manifest
-;; - document data structure
-;; - refactoring
-;; - issue-tracking in documentation/file
-;;
-;; #### v0.0.1
-;;
-;; - checkbox component that writes to application database
-;; - initial version of camera button (data not fetched yet)
-;; - simple buggy rendition of templates, test that table-format also works on mobile (mostly)
-;; - generic select widget
-;; - choose current template (should be report later)
-;; - responsive ui
-;; - basic communication with api - load data
-;; - Proxy api on demo-deploy-server
-;;
-;; ### Backlog
-;;
-;; v0.1.0
-;;
-;; - general
-;;   - better data model / data mapping
-;;     - function for mapping api-data to internal data
-;;     - make implentation match documentation
-;;       - templates should be list instead of object
-;;       - `:lines` instead of `:rows: in template
-;;       - new objects graph format
-;;   - refactor/update code
-;;   - expand this task list, as it gets solved
-;; - fill out reports (templates of lines / with different kinds of fields)
-;;   - generic widgets
-;;   - fields
-;;     - separate ids for double-checkboxes
-;; - synchronise to disk / works offline
-;;   - better performant sync of db to disk
-;;     - use localforage instead of localstorage
-;;     - check if async single-blob is ok performancewise
-;; - dynamic templates (repeat lines based on objects)
-;;   - repeat lines based on object-graph traversal
-;; - sync data  to server
-;; - attach/show images for each line in the report
-;;   - photo capture
-;;     - make sure react-img has proper properties
-;;     - fetch data to db
-;;   - show images
-;; - works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
-;;
-;; #### Later
-;;
-;; - proper horizontal labels (probably also needs extra option in backend)
-;;
-;; ## DB
-;;
-;; notes - intended content
-;;
-;; - `:objects` (NB: root oid)
-;;   - oid
-;;     - `:name`
-;;     - `:ParentId` oid
-;;     - `:children` oid-list
-;;     - `:api-id` id used to identify it in the api
-;; - `:templates` list
-;;   - `:TemplateGuid`
-;;   - `:Name`
-;;   - `:Description`
-;;   - `:lines` list
-;;     - `:PartId`
-;;     - `:TaskDescription`
-;;     - `:LineType`
-;;     - `:fields` list
-;;       - `:FieldGuid`
-;;       - `:FieldType`
-;;       - `:Columns`
-;;       - `:DoubleField`
-;;       - `:DoubleFieldSeperator` (NB: typo in api)
-;;       - `:FieldValue`
-;; - `:raw-report`
-;; - `:ui`
-;;   - [report-id field-id object-id (optional 1/2)] value
-;; - `:data` (intended, not implemented yet)
-;;   - report-id
-;;     - field-id
-;;       - object-id
-;;         - value
-;;
-;; ## Notes / questions about API
-;;
-;; I assume the following:
-;;
-;; - √ObjectId of objects are unique (no ObjectId occur in different AreaGuids)
-;; - Field/part-data put/get
-;;   - Might we not need ObjectID?
-;;   - Why do we need more than one Guid to identify part of template?
-;;
-;; # Literate source code
-
 (ns solsort.fmtools.main ; ##
   (:require-macros
     [cljs.core.async.macros :refer [go go-loop alt!]]
     [reagent.ratom :as ratom :refer  [reaction]])
   (:require
+   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.db]
    [devtools.core :as devtools]
     [cljs.pprint]
     [cljsjs.localforage]
@@ -185,44 +24,8 @@
     [clojure.string :as string :refer [replace split blank?]]
     [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-;; ## Generic code and definitions
 ;;
-;; Reload application, when a new version is available
-
-(when js/window.applicationCache
-  (aset js/window.applicationCache "onupdateready" #(js/location.reload)))
-
-(defonce dev-tools (devtools/install!))
-
-(defonce empty-choice "· · ·")
-
-(defn clj->json [s] (transit/write (transit/writer :json) s))
-(defn json->clj [s] (transit/read (transit/reader :json) s))
-(defn third [col] (nth col 2))
-
-(defn to-map ; ####
-  [o]
-  (cond
-    (map? o) o
-    (sequential? o) (zipmap (range) o)
-    :else {}))
-
-(defn delta ; ####
-  "get changes from a to b"
-  [from to]
-  (if (= from to)
-    (if (coll? to) {} to)
-    (if (coll? to)
-      (let [from (to-map from)
-            to (to-map to)
-            ks (distinct (concat (keys from) (keys to)))
-            ks (filter #(not= (from %) (to %)) ks)]
-        (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
-      to)))
-
-;; ## Definitions
-;;
-(defonce field-types ; ###
+(defonce field-types
   {0   :none
    1   :text-fixed
    2   :text-input
@@ -238,12 +41,12 @@
    12  :fetch-from
    13  :remark
    100 :case-no-from-location})
-(defonce part-types ; ###
+(defonce part-types
   {0 :none
    1 :header
    2 :line
    3 :footer})
-(defonce line-types ; ###
+(defonce line-types
   {0  :basic
    1  :simple-headline
    2  :vertical-headline
@@ -251,85 +54,6 @@
    4  :multi-field-line
    5  :description-line
    10 :template-control})
-;; ## Application database
-
-;; ### :db
-(register-sub
-  :db
-  (fn  [db [_ & path]]
-    (reaction
-      (if path
-        (get-in @db path)
-        @db))))
-
-(register-handler
-  :db
-  (fn  [db [_ & path]]
-    (let [value (last path)
-          path (butlast path)]
-      (if path
-        (assoc-in db path value)
-        value))))
-
-;(dispatch-sync [:db {}])
-
-;; ### :raw-report
-
-(register-handler
-  :raw-report
-  (fn  [db [_ report data role]]
-    (dispatch [:sync-to-disk])
-    (-> db
-        (assoc-in [:reports (:ReportGuid report)] report)
-        (assoc-in [:raw-report (:ReportGuid report)]
-                  {:report report
-                   :data data
-                   :role role}))))
-;; ### :ui
-
-(register-sub
-  :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
-(register-handler
-  :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
-
-;; ### :template/:templates
-
-(register-sub
-  :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
-(register-sub
-  :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
-(register-handler
-  :template
-  (fn  [db  [_ id template]]
-    (dispatch [:sync-to-disk])
-    (assoc-in db [:templates id] template)))
-
-;; ### :area-object
-
-(register-sub
-  :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
-(register-handler
-  :area-object
-  (fn  [db  [_ obj]]
-    (let [id (:ObjectId obj)
-          obj (into (get-in db [:objects id] {}) obj)
-          area-guid (:AreaGuid obj)
-          parent-id (:ParentId obj)
-          db
-          (if (zero? parent-id)
-            (-> db
-                (assoc-in [:objects :root :children area-guid] true)
-                (assoc-in [:objects area-guid]
-                          (or (get-in db [:objects area-guid])
-                              {:ParentId 0
-                               :AreaGuid area-guid
-                               :ObjectId area-guid
-                               :ObjectName (str (:AreaName obj))}))
-                (assoc-in [:objects area-guid :children id] true)
-                ; todo add in-between-node
-                )
-            (assoc-in db [:objects parent-id :children id] true))]
-      (assoc-in db [:objects id] obj))))
 
 ;; ## Disk-sync
 
@@ -351,15 +75,12 @@
 (defonce sync-in-progress (atom false))
 (defonce diskdb (atom {}))
 
-(defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn esc-str [s] (if (< (.charCodeAt s 0) 32) (str "\u0001" s) s))
 (defn optional-escape-string [o] (if (string? o) (esc-str o) o))
 (defn unescape-string [s] (case (.charCodeAt s 0) 1 (.slice s 1) s))
 (defn optional-unescape-string [o] (if (string? o) (unescape-string o) o))
 (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id))
 (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s))))
-(defn fourth-first [[v _ _ k]] [k v])
-(defn <localforage [k] (<p (.getItem js/localforage k)))
 (defn save-changes ; ####
   "(value id key) -> (result-value, changes, deleted, key)"
   [value id k]
@@ -563,6 +284,7 @@
 (defn handle-file [id file]
   (go
     (dispatch [:ui :camera-image (<! (<blob-url file))])))
+(js/console.log 'here)
 
 (defn camera-button []
   (let [id (str "camera" (js/Math.random))]

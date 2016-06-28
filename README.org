@@ -30,7 +30,7 @@ v0.0.7
 
 - reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
 - √setup nrepl to work with cider
-- restructure file
+- √restructure file
 
 *** Changelog
 **** v0.0.6
