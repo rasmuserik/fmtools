@@ -158,14 +158,14 @@
          :checkbox [checkbox id]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
-(defn line [line report-id areas]
+(defn render-line [line report-id obj]
   (let [id (:PartGuid line)
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
         debug-str (dissoc line :fields)
         area (:AreaGuid line)
-        obj-id nil
+        obj-id (:ObjectId obj)
         fields (into
                  [:div.fields]
                  (map #(field % cols [report-id obj-id (:FieldGuid %)])
@@ -175,7 +175,7 @@
       {:padding-top 10}
       :key id
       :on-click #(log debug-str)}
-     (if area area "")
+     (if obj-id (:ObjectName obj)"")
      (case line-type
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
@@ -212,16 +212,29 @@
             (map traverse-areas (keys (:children area)))
             ))))
 
+(defn render-section [lines report-id areas]
+  (for [obj areas]
+    (for [line lines]
+      (when (= (:AreaGuid line) (:AreaGuid obj))
+        (render-line line report-id obj)))))
+
+(defn render-lines
+  [lines report-id areas]
+  (apply concat
+   (for [section (partition-by :ColumnHeader lines)]
+     (render-section section report-id areas))))
+
 (defn render-template [report]
   (let [id (:TemplateGuid report)
         template @(subscribe [:template id])
         report-id @(subscribe [:ui :report-id])
-        areas (traverse-areas (:ObjectId report))]
+        areas (conj (traverse-areas (:ObjectId report)) {})]
     (log 'here areas)
     (into
       [:div.ui.form
        [:h1 (:Description template)]]
-      (doall (map #(line % report-id areas) (:rows template)))
+      (render-lines (:rows template) report-id areas)
+     ; (doall (map #(line % report-id areas) (:rows template)))
       )))
 
 (defn app []
