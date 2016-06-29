@@ -8,14 +8,14 @@ Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-t
 
 Krav til app'en:
 
-- muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
-- understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
-- muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende ehned
-- forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
-- muligt at vedhæfte/se billeder for hver linje i formularen
-- formater: håndholdt mobil, samt tablet
-- skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
-- skal fungere på nyere Android og iOS, - enten som webapp, eller som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren.
+- [ ] muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
+- [X] understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
+- [X] muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende enhed
+- [ ] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
+- [ ] muligt at vedhæfte/se billeder for hver linje i formularen
+- [ ] formater: håndholdt mobil, samt tablet
+- [ ] skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
+- [ ] skal fungere på nyere Android og iOS, - enten _som webapp_, eller +som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren+.
 
 ** Roadmap
 
@@ -24,15 +24,18 @@ TODO next sprints
   - sync/restore db
   - refactor/cleanup
   - debug performance
+- reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
 
 Current sprint:
-v0.0.7
-
-- reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
-- √setup nrepl to work with cider
-- √restructure file
+v0.0.8
 
 *** Changelog
+**** v0.0.7
+
+- setup nrepl to work with cider
+- refactor / restructure project into separate files
+- repeat lines for objects/areas
+
 **** v0.0.6
 
 - progress better data sync to disk
