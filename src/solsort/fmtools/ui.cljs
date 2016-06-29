@@ -100,7 +100,6 @@
              :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
 
 ;;; Camera button
-
 (defn handle-file [id file]
   (go
     (dispatch [:ui :camera-image (<! (<blob-url file))])))
@@ -132,16 +131,6 @@
                   [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
        (areas selected)]
       [:div])))
-(defn selected-object [id]
-  (let [selected @(subscribe [:ui id])]
-    (if selected (selected-object selected) id)))
-(defn find-objects [id]
-  (apply concat [id]
-         (map find-objects
-              (keys (get @(subscribe [:db :objects id]) :children {})))))
-(defn object-list [] 
-  (let [selected (selected-object :root)]
-    (into [:div "Object ids:"] (interpose " " (map str (find-objects selected))))))
 
 (defn field [obj cols id]
   (let [field-type (:FieldType obj)
@@ -169,12 +158,13 @@
          :checkbox [checkbox id]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
-(defn line [line report-id]
+(defn line [line report-id areas]
   (let [id (:PartGuid line)
         line-type (:LineType line)
         cols (apply + (map :Columns (:fields line)))
         desc (:TaskDescription line)
         debug-str (dissoc line :fields)
+        area (:AreaGuid line)
         obj-id nil
         fields (into
                  [:div.fields]
@@ -185,6 +175,7 @@
       {:padding-top 10}
       :key id
       :on-click #(log debug-str)}
+     (if area area "")
      (case line-type
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
@@ -211,13 +202,26 @@
      [areas (or (:ObjectId report) :root)]]
     [:span.empty]))
 
-(defn render-template [id]
-  (let [template @(subscribe [:template id])
-        report-id @(subscribe [:ui :report-id])]
-    (merge
+(defn traverse-areas [id]
+  (let [selected @(subscribe [:ui id])
+        area @(subscribe [:area-object id])]
+    (if selected
+      (into [area] (traverse-areas selected))
+      (apply concat
+            [area]
+            (map traverse-areas (keys (:children area)))
+            ))))
+
+(defn render-template [report]
+  (let [id (:TemplateGuid report)
+        template @(subscribe [:template id])
+        report-id @(subscribe [:ui :report-id])
+        areas (traverse-areas (:ObjectId report))]
+    (log 'here areas)
+    (into
       [:div.ui.form
        [:h1 (:Description template)]]
-      (doall (map line (:rows template) (repeat report-id)))
+      (doall (map #(line % report-id areas) (:rows template)))
       )))
 
 (defn app []
@@ -230,8 +234,7 @@
       [:div.ui.form
        [choose-report]
        [choose-area report]
-       ;[object-list]
        ]]
      [:hr]
      ;[render-template @(subscribe [:ui :current-template])]]))
-     [render-template (:TemplateGuid report)]]))
+     [render-template report]]))
