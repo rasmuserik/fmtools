@@ -132,7 +132,7 @@
        (areas selected)]
       [:div])))
 
-(defn field [obj cols id]
+(defn field [obj cols id area]
   (let [field-type (:FieldType obj)
         columns (:Columns obj)
         double-field (:DoubleField obj)
@@ -147,7 +147,7 @@
           " " double-separator " "
           [field obj cols (conj id 2)]])
        (case field-type
-         :fetch-from "Komponent-id"
+         :fetch-from (str (:ObjectName area))
          :approve-reject [checkbox id]
          :text-fixed [:span value]
          :time [input id :type :time]
@@ -168,14 +168,13 @@
         obj-id (:ObjectId obj)
         fields (into
                  [:div.fields]
-                 (map #(field % cols [report-id obj-id (:FieldGuid %)])
+                 (map #(field % cols [report-id obj-id (:FieldGuid %)] obj)
                       (:fields line)))]
     [:div.line
      {:style
       {:padding-top 10}
       :key id
       :on-click #(log debug-str)}
-     (if obj-id (:ObjectName obj)"")
      (case line-type
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
