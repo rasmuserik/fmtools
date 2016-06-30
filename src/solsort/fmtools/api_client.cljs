@@ -2,6 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.disk-sync :as disk-sync]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -94,7 +95,7 @@
       (doall
        (for [object objects]
          (let [object (assoc object :AreaName (:Name area))]
-           (dispatch [:area-object object])
+           (dispatch-sync [:area-object object])
            ))))
     (log 'load-area (:Name area))))
 (defn <load-objects []
@@ -107,8 +108,8 @@
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
-      (dispatch [:raw-report report data role])
-      (log 'report report data role))))
+      (dispatch-sync [:raw-report report data role])
+      (log 'report (:ReportName report)))))
 (defn <load-reports []
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
@@ -129,16 +130,19 @@
            (log 'report report-guid data)
            (doall
             (for [entry (:ReportFields report)]
-              (dispatch [:db report-guid (:FieldGuid entry) ()])))))))))
+              (dispatch-sync [:db report-guid (:FieldGuid entry) ()])))))))))
 #_(handle-reports)
 
 (defn <fetch []
-  (<chan-seq
-   [(<load-reports)
-    (<load-templates)
-    (<load-objects)
-    #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
-    ]))
+  (go
+    (dispatch-sync [:db :loading true])
+    (<! (<chan-seq [(<load-reports)
+                 (<load-templates)
+                 (<load-objects)
+                 #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))]))
+    (<! (disk-sync/<save-form))
+    (dispatch-sync [:db :loading false])
+    ))
 
 
 #_(fetch)

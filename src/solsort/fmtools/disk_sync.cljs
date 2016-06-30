@@ -154,3 +154,9 @@
    db))
 
 (defonce restore (dispatch [:restore-from-disk]))
+
+(defn <save-form
+  "write the current data in the database to disk"
+  []
+  (go
+    (log 'not-implemented-yet)))
