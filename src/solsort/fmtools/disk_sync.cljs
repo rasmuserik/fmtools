@@ -1,28 +1,28 @@
 (ns solsort.fmtools.disk-sync ; ##
   (:require-macros
-    [cljs.core.async.macros :refer [go go-loop alt!]]
-    [reagent.ratom :as ratom :refer  [reaction]])
+   [cljs.core.async.macros :refer [go go-loop alt!]]
+   [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.fmtools.db]
    [devtools.core :as devtools]
-    [cljs.pprint]
-    [cljsjs.localforage]
-    [cognitect.transit :as transit]
-    [solsort.misc :refer [<blob-url]]
-    [solsort.util
-     :refer
-     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
-      parse-json-or-nil log page-ready render dom->clj next-tick]]
-    [reagent.core :as reagent :refer []]
-    [cljs.reader :refer [read-string]]
-    [clojure.data :refer [diff]]
-    [clojure.walk :refer [keywordize-keys]]
-    [re-frame.core :as re-frame
-     :refer [register-sub subscribe register-handler
-             dispatch dispatch-sync]]
-    [clojure.string :as string :refer [replace split blank?]]
-    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
+   [cljs.pprint]
+   [cljsjs.localforage]
+   [cognitect.transit :as transit]
+   [solsort.misc :refer [<blob-url]]
+   [solsort.util
+    :refer
+    [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
+     parse-json-or-nil log page-ready render dom->clj next-tick]]
+   [reagent.core :as reagent :refer []]
+   [cljs.reader :refer [read-string]]
+   [clojure.data :refer [diff]]
+   [clojure.walk :refer [keywordize-keys]]
+   [re-frame.core :as re-frame
+    :refer [register-sub subscribe register-handler
+            dispatch dispatch-sync]]
+   [clojure.string :as string :refer [replace split blank?]]
+   [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
 ;; we are writing the changes to disk.
 ;; The structure of a json object like
@@ -48,35 +48,35 @@
 (defn optional-unescape-string [o] (if (string? o) (unescape-string o) o))
 (defn next-id [] (swap! prev-id inc) (str "\u0002" @prev-id))
 (defn is-db-node [s] (and (string? s) (= 2 (.charCodeAt s))))
-(defn save-changes ; ####
+(defn save-changes
   "(value id key) -> (result-value, changes, deleted, key)"
   [value id k]
   (go
     (if (= value :keep-in-db)
       [id {} [] k]
       (let
-        [db-str (and id (<! (<localforage id)))
-         db-map (read-string (or db-str "{}"))
-         value-map (to-map value)
-         all-keys (distinct (concat (keys db-map) (keys value-map)))
-         save-fn #(save-changes (get value-map % :keep-in-db) (db-map %) %)
-         children (<! (<chan-seq (map save-fn all-keys)))
-         new-id (if (coll? value) (next-id) nil)
-         saves (if new-id {new-id (into {} (map fourth-first children))} {})
-         saves (apply merge saves (map second children))
-         deletes (apply concat (if db-str [id] []) (map third children))]
+          [db-str (and id (<! (<localforage id)))
+           db-map (read-string (or db-str "{}"))
+           value-map (to-map value)
+           all-keys (distinct (concat (keys db-map) (keys value-map)))
+           save-fn #(save-changes (get value-map % :keep-in-db) (db-map %) %)
+           children (<! (<chan-seq (map save-fn all-keys)))
+           new-id (if (coll? value) (next-id) nil)
+           saves (if new-id {new-id (into {} (map fourth-first children))} {})
+           saves (apply merge saves (map second children))
+           deletes (apply concat (if db-str [id] []) (map third children))]
         [(or new-id (optional-escape-string value)) saves deletes k]))))
 
 (defn <load-db-item [k]
   (go
     (let [v (read-string (<! (<localforage k)))
           v (map
-              (fn [[k v]]
-                (go
-                  [k (if (is-db-node v)
-                       (<! (<load-db-item v))
-                       (optional-unescape-string v))]))
-              v)
+             (fn [[k v]]
+               (go
+                 [k (if (is-db-node v)
+                      (<! (<load-db-item v))
+                      (optional-unescape-string v))]))
+             v)
           v (into {}  (<! (<chan-seq v)))
           v (if (every? #(and (integer? %) (<= 0 %)) (keys v))
               (let [length  (inc (apply max (keys v)))]
@@ -84,7 +84,7 @@
               v)]
       v)))
 
-(defn <load-db [] ; ####
+(defn <load-db []
   (when @sync-in-progress
     (throw "<load-db sync-in-progress error"))
   (go
@@ -95,7 +95,7 @@
       (reset! sync-in-progress false)
       result)))
 
-(defn <to-disk  ; ####
+(defn <to-disk
   [db]
   (go
     (let [changes (delta @diskdb db)
@@ -110,7 +110,7 @@
       (<! (<chan-seq (for [k deletes] (<p (.removeItem js/localforage k)))))
       (reset! diskdb db))))
 
-(defn <sync-db [db] ; ####
+(defn <sync-db [db]
   (log 'sync-start)
   (go
     (if @sync-in-progress
@@ -120,7 +120,7 @@
         (<! (<to-disk db))
         (reset! sync-in-progress false)))))
 
-;(<sync-db {(js/Math.random) [:a :b] :c [:d]})
+#_(<sync-db {(js/Math.random) [:a :b] :c [:d]})
 (defonce sync-runner
   (go
     (log 'loading-db)
@@ -137,24 +137,20 @@
     ))
 (log 'ui @(subscribe [:db :ui]))
 
-;; #### re-frame :sync-to-disk
+;; re-frame :sync-to-disk
+(register-handler
+ :sync-to-disk
+ (fn  [db]
+   #_(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
+   #_(<sync-db db)
+   db))
 
 (register-handler
-  :sync-to-disk
-  (fn  [db]
-    ; currently just a hack, needs reimplementation on localforage
-    ; only syncing part of structure that is changed
-    ;(js/localStorage.setItem "db" (js/JSON.stringify (clj->json db)))
-    ;(<sync-db db)
-    db))
-
-(register-handler
-  :restore-from-disk
-  (fn  [db]
-    ;(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
-    ;(go (dispatch [:db (<! (<load-db))]) )
-    ;(go (log 'db-restore [:db (<! (<load-db))]) )
-    db ; disable restore-from-disk
-    ))
+ :restore-from-disk
+ (fn  [db]
+   #_(json->clj (js/JSON.parse (js/localStorage.getItem "db")))
+   #_(go (dispatch [:db (<! (<load-db))]) )
+   #_(go (log 'db-restore [:db (<! (<load-db))]) )
+   db))
 
 (defonce restore (dispatch [:restore-from-disk]))

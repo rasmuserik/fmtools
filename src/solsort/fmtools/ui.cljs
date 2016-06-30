@@ -1,22 +1,22 @@
 (ns solsort.fmtools.ui
   (:require-macros
-    [cljs.core.async.macros :refer [go go-loop alt!]])
+   [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
-    [solsort.misc :refer [<blob-url]]
-    [solsort.util
-     :refer
-     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
-      parse-json-or-nil log page-ready render dom->clj next-tick]]
-    [reagent.core :as reagent :refer []]
-    [cljs.reader :refer [read-string]]
-    [clojure.data :refer [diff]]
-    [clojure.walk :refer [keywordize-keys]]
-    [re-frame.core :as re-frame
-     :refer [register-sub subscribe register-handler
-             dispatch dispatch-sync]]
-    [clojure.string :as string :refer [replace split blank?]]
-    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
+   [solsort.misc :refer [<blob-url]]
+   [solsort.util
+    :refer
+    [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
+     parse-json-or-nil log page-ready render dom->clj next-tick]]
+   [reagent.core :as reagent :refer []]
+   [cljs.reader :refer [read-string]]
+   [clojure.data :refer [diff]]
+   [clojure.walk :refer [keywordize-keys]]
+   [re-frame.core :as re-frame
+    :refer [register-sub subscribe register-handler
+            dispatch dispatch-sync]]
+   [clojure.string :as string :refer [replace split blank?]]
+   [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
 (declare app)
 (defonce unit (atom 40))
@@ -24,48 +24,48 @@
   (reset! unit (js/Math.floor (* 0.95 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
   (let [unit @unit]
     (load-style!
-      {:#main
-       {:text-align :center}
+     {:#main
+      {:text-align :center}
 
-       :.line
-       {:min-height 44}
+      :.line
+      {:min-height 44}
 
-       :.main-form
-       {:display :inline-block
-        :text-align :left
-        :width (* unit 12)}
+      :.main-form
+      {:display :inline-block
+       :text-align :left
+       :width (* unit 12)}
 
-       :.camera-input
-       {:display :inline-block
-        :position :absolute
-        :right 0 }
+      :.camera-input
+      {:display :inline-block
+       :position :absolute
+       :right 0 }
 
-       :.fmfield
-       {:vertical-align :top
-        :display :inline-block
-        :text-align :center
-        :clear :right }
+      :.fmfield
+      {:vertical-align :top
+       :display :inline-block
+       :text-align :center
+       :clear :right }
 
-       :.checkbox
-       {:width 44
-        :max-width "95%"
-        :height 44 }
+      :.checkbox
+      {:width 44
+       :max-width "95%"
+       :height 44 }
 
-       :.multifield
-       {:border-bottom "0.5px solid #ccc"}
+      :.multifield
+      {:border-bottom "0.5px solid #ccc"}
 
-       ".camera-input img"
-       {:height 40
-        :width 40
-        :padding 4
-        :border "2px solid black"
-        :border-radius 6
-        :opacity "0.5" }
+      ".camera-input img"
+      {:height 40
+       :width 40
+       :padding 4
+       :border "2px solid black"
+       :border-radius 6
+       :opacity "0.5" }
 
-       :.fields
-       {:text-align :center }
-       }
-      "fmstyling"))
+      :.fields
+      {:text-align :center }
+      }
+     "fmstyling"))
   (render [app]))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
@@ -167,9 +167,9 @@
         area (:AreaGuid line)
         obj-id (:ObjectId obj)
         fields (into
-                 [:div.fields]
-                 (map #(field % cols [report-id obj-id (:FieldGuid %)] obj)
-                      (:fields line)))]
+                [:div.fields]
+                (map #(field % cols [report-id obj-id (:FieldGuid %)] obj)
+                     (:fields line)))]
     [:div.line
      {:style
       {:padding-top 10}
@@ -183,8 +183,7 @@
        :multi-field-line [:div.multifield desc [camera-button id ]
                           fields ]
        :description-line [:div desc [:input {:type :text}]]
-       [:span {:key id} "unhandled line " (str line-type) " " debug-str])
-     ]))
+       [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 
 (defn choose-report []
   [:div.field
@@ -207,9 +206,9 @@
     (if selected
       (into [area] (traverse-areas selected))
       (apply concat
-            [area]
-            (map traverse-areas (keys (:children area)))
-            ))))
+             [area]
+             (map traverse-areas (keys (:children area)))
+             ))))
 
 (defn render-section [lines report-id areas]
   (for [obj areas]
@@ -220,8 +219,8 @@
 (defn render-lines
   [lines report-id areas]
   (apply concat
-   (for [section (partition-by :ColumnHeader lines)]
-     (render-section section report-id areas))))
+         (for [section (partition-by :ColumnHeader lines)]
+           (render-section section report-id areas))))
 
 (defn render-template [report]
   (let [id (:TemplateGuid report)
@@ -230,11 +229,11 @@
         areas (conj (traverse-areas (:ObjectId report)) {})]
     (log 'here areas)
     (into
-      [:div.ui.form
-       [:h1 (:Description template)]]
-      (render-lines (:rows template) report-id areas)
-     ; (doall (map #(line % report-id areas) (:rows template)))
-      )))
+     [:div.ui.form
+      [:h1 (:Description template)]]
+     (render-lines (:rows template) report-id areas)
+     #_(doall (map #(line % report-id areas) (:rows template)))
+     )))
 
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
@@ -248,5 +247,6 @@
        [choose-area report]
        ]]
      [:hr]
-     ;[render-template @(subscribe [:ui :current-template])]]))
-     [render-template report]]))
+     #_[render-template @(subscribe [:ui :current-template])]
+     [render-template report]
+     ]))
