@@ -19,6 +19,7 @@
 (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn fourth-first [[v _ _ k]] [k v])
 (defn <localforage [k] (<p (.getItem js/localforage k)))
+(defn <localforage! [k v] (<p (.setItem js/localforage k v)))
 
 (defn to-map
   [o]

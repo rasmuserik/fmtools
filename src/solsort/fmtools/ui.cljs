@@ -239,6 +239,11 @@
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     [:div.main-form
      "Under development, not functional yet"
+     [:div {:style {:float :right}}
+      (if @(subscribe [:db :loading])
+        "loading..."
+        ""
+        )]
      [:h1 {:style {:text-align :center}} "FM-Tools"]
      [:hr]
      [:div.ui.container

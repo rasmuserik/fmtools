@@ -3,7 +3,7 @@
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
-   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
    [solsort.fmtools.db]
    [devtools.core :as devtools]
    [cljs.pprint]
@@ -159,4 +159,18 @@
   "write the current data in the database to disk"
   []
   (go
-    (log 'not-implemented-yet)))
+    (log 'save-form @(subscribe [:db]))
+    (<! (<localforage! "objects" (clj->json @(subscribe [:db :objects]))))
+    (<! (<localforage! "reports" (clj->json @(subscribe [:db :reports]))))
+    (<! (<localforage! "templates" (clj->json @(subscribe [:db :templates]))))
+    ))
+
+(defn restore-form
+  "load current template/reports from disk"
+  []
+  (go (dispatch-sync [:db :objects (json->clj (<! (<localforage "objects")))]))
+  (go (dispatch-sync [:db :reports (json->clj (<! (<localforage "reports")))]))
+  (go (dispatch-sync [:db :templates (json->clj (<! (<localforage "templates")))]))
+  (log 'restored-from-disk)
+  nil)
+(defonce restore-on-boot (restore-form))
