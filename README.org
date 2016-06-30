@@ -34,7 +34,7 @@ Krav til app'en:
     - [ ] integer
     - [X] 2-digit
     - [ ] 4-digit
-    - [ ] dual-field
+    - [X] dual-field
     - [X] fetch-from
     - [ ] approve-reject
     - [ ] remark

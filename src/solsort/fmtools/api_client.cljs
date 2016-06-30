@@ -53,7 +53,7 @@
          :credentials true))
 
 ;;; Templates
-(defn load-template [template-id]
+(defn <load-template [template-id]
   (go
     (let [template (keywordize-keys
                      (<! (<api (str "ReportTemplate?templateGuid="
@@ -75,19 +75,23 @@
           parts (map #(assoc % :LineType (or (line-types (:LineType %))
                                              (log "invalid-LintType" %))) parts)
           parts (map #(assoc % :PartType (part-types (:PartType %))) parts)]
-      (dispatch [:template template-id (assoc template :rows parts)]))))
-(defn load-templates [] 
+      (dispatch-sync [:template template-id (assoc template :rows parts)])
+      (log 'loaded-template template-id)
+      )))
+(defn <load-templates [] 
   (go
     (let [templates (<! (<api "ReportTemplate"))
           template-id (-> templates
                           (get "ReportTemplateTables")
                           (nth 0)
                           (get "TemplateGuid"))]
-      (doall (for [template (get templates "ReportTemplateTables")]
-               (load-template (get template "TemplateGuid")))))))
+      (<! (<chan-seq (for [template (get templates "ReportTemplateTables")]
+                       (<load-template (get template "TemplateGuid")))))
+          (log 'loaded-templates)
+          )))
 
 ;;; Objects
-(defn load-area [area]
+(defn <load-area [area]
   (go
     (let [objects (:Objects (keywordize-keys
                               (<! (<api (str "Object?areaGuid=" (:AreaGuid area))))))]
@@ -95,26 +99,30 @@
         (for [object objects]
           (let [object (assoc object :AreaName (:Name area))]
             (dispatch [:area-object object])
-            ))))))
-(defn load-objects []
+            ))))
+    (log 'load-area (:Name area))
+    ))
+(defn <load-objects []
   (go (let [areas (keywordize-keys (<! (<api "Area")))]
-        (doall (for [area (:Areas areas)]
-                 (load-area area))))))
+        (<! (<chan-seq (for [area (:Areas areas)]
+                         (<load-area area))))
+        (log 'objects-loaded))))
 
 ;; ### Report
-(defn load-report [report]
+(defn <load-report [report]
   (go
     (let [data (keywordize-keys (<! (<api (str "Report?reportGuid=" (:ReportGuid report)))))
           role (keywordize-keys (<! (<api (str "Report/Role?reportGuid=" (:ReportGuid report)))))]
       (dispatch [:raw-report report data role])
       (log 'report report data role))))
-(defn load-reports []
+(defn <load-reports []
   (go
     (let [reports (keywordize-keys (<! (<api "Report")))]
-      #_(log 'reports reports)
-      (doall
+      (<! (<chan-seq
         (for [report (:ReportTables reports)]
-          (load-report report))))))
+          (<load-report report))))
+      (log 'loaded-reports)
+      )))
 (defn handle-reports []
   (let [raw-reports (:raw-report @(subscribe [:db]))]
     (doall
@@ -131,13 +139,15 @@
 ;(handle-reports)
 
 ;; ### fetch
-(defn fetch []
-  ;  (log 'fetching)
-  (load-templates)
-  #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
-  (load-objects)
-  (load-reports))
+(defn <fetch []
+  (<chan-seq
+   [(<load-reports)
+    (<load-templates)
+    (<load-objects)
+  ;(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))
+    ]))
+
 
 ;; #### Execute
 ;(fetch)
-(defonce loader (fetch))
+(defonce loader (<fetch))
