@@ -11,6 +11,7 @@ Krav til app'en:
 - [ ] muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
 - [X] understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
 - [X] muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende enhed
+  - TODO: question: choose report, and then area, or choose area, and then report?
 - [ ] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
 - [ ] muligt at vedhæfte/se billeder for hver linje i formularen
 - [ ] formater: håndholdt mobil, samt tablet
@@ -19,15 +20,77 @@ Krav til app'en:
 
 ** Roadmap
 
-TODO next sprints
-- disk data sync
-  - sync/restore db
-  - refactor/cleanup
-  - debug performance
-- reactive db lookup by path, ie.: (db :foo :bar) returns reaction on :bar of reaction of :foo
-
+- [-] version 0.1
+  - [X] basic report view 
+    - [X] choose active report
+    - [X] choose active areas
+    - [X] render line
+    - [X] repeat lines per area
+  - [-] field/line-types
+    - [X] text-fixed / evt. noframe
+    - [X] text-input / evt. noframe
+    - [X] checkbox
+    - [ ] time
+    - [ ] integer
+    - [X] 2-digit
+    - [ ] 4-digit
+    - [ ] dual-field
+    - [X] fetch-from
+    - [ ] approve-reject
+    - [ ] remark
+    - [ ] decription line (input)
+    - [X] basic (text line)
+    - [X] head-line
+    - [ ] "template-control" line
+  - [-] template/report-structure
+    - [X] load template/report from api
+    - [ ] loading indicator + actual channel for result
+    - [ ] check for updates
+    - [ ] sync to disk
+    - [ ] load from disk
+  - [-] report filled-out content
+    - [X] load all from api
+    - [ ] sync to disk
+    - [ ] write changes to api
+    - [ ] load incremental changes from api
+  - [-] images
+    - [X] image button per line
+    - [X] ability to capture image
+    - [ ] save image to disk
+    - [ ] sync image to server
+    - [ ] show existing images (when online)
+    - [ ] remove image
+  - [-] general
+    - [ ] make all assets work offline
+    - [ ] check for connectivity changes, and sync when connected / regularly
+    - [ ] verify it works on android
+    - [ ] verify it works on iOS
+    - [ ] try to make it work on Windows Phone
+    - [ ] verify it works on phone as well as tablet
+    - [X] checkbox component
+    - [X] input component
+    - [ ] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
+  - [-] design
+    - [X] simple semantic-ui responsive design
+    - [ ] avoid input truncation
+  - [X] infrastructure
+    - [X] development api proxy
+    - [X] https/cors support
+    - [X] responsive ui framework
+  - [-] documentation
+    - [X] general project documentation
+    - [ ] roadmap
+    - [X] changelog
+    - [X] document data structure
+ 
 Current sprint:
+
 v0.0.8
+- [X] roadmap for version 0.1
+- [ ] proper sync to disk
+- [ ] line images
+- [ ] find out how we handle huge number of objects (optimisation or truncation)
+- [ ] status + questions: report->area|area->report; feature-complete sample report
 
 *** Changelog
 **** v0.0.7
