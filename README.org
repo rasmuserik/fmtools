@@ -41,13 +41,14 @@ Krav til app'en:
     - [ ] decription line (input)
     - [X] basic (text line)
     - [X] head-line
-    - [ ] "template-control" line
+    - [ ] NEW: mobile-vertical text
+  - [ ] "template-control" line
   - [-] template/report-structure
     - [X] load template/report from api
-    - [ ] loading indicator + actual channel for result
+    - [X] loading indicator + actual channel for result
     - [ ] check for updates
-    - [ ] sync to disk
-    - [ ] load from disk
+    - [X] sync to disk
+    - [X] load from disk
   - [-] report filled-out content
     - [X] load all from api
     - [ ] sync to disk
@@ -82,14 +83,17 @@ Krav til app'en:
     - [ ] roadmap
     - [X] changelog
     - [X] document data structure
+- later
+  - major refactor do not use keywords in loaded datastructure, due to keywordize-overhead (will make loading much more snappy).
  
 Current sprint:
 
 v0.0.8
 - [X] roadmap for version 0.1
-- [ ] proper sync to disk
+- [X] sync report/template to/from disk
+- [x] loading indicator
+- [X] optionally hide report, when very broad areas is choosen.
 - [ ] line images
-- [ ] find out how we handle huge number of objects (optimisation or truncation)
 - [ ] status + questions: report->area|area->report; feature-complete sample report
 
 *** Changelog

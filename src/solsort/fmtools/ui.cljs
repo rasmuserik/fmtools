@@ -226,14 +226,28 @@
   (let [id (:TemplateGuid report)
         template @(subscribe [:template id])
         report-id @(subscribe [:ui :report-id])
-        areas (conj (traverse-areas (:ObjectId report)) {})]
-    (log 'here areas)
+        areas (conj (traverse-areas (:ObjectId report)) {})
+        max-objects 100
+        ]
+    (log 'here areas (count areas))
     (into
-     [:div.ui.form
-      [:h1 (:Description template)]]
-     (render-lines (:rows template) report-id areas)
-     #_(doall (map #(line % report-id areas) (:rows template)))
-     )))
+      [:div.ui.form
+       [:h1 (:Description template)]
+       (if (< max-objects (count areas))
+         [:div
+          [:div {:style {:display :inline-block :float :right}}[checkbox :nolimit]]
+          [:br]
+          "Vis rapportindhold for områder med mere end " (str max-objects) " objekter (langsomt):"
+          [:br]
+          "- eller vælg underområde herover."]
+         ""
+         )
+       ]
+      (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
+        []
+        (render-lines (:rows template) report-id areas)
+      #_(doall (map #(line % report-id areas) (:rows template)))
+      ))))
 
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
