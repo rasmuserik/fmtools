@@ -87,15 +87,17 @@ Krav til app'en:
   - major refactor do not use keywords in loaded datastructure, due to keywordize-overhead (will make loading much more snappy).
  
 Current sprint:
-
-v0.0.8
-- [X] roadmap for version 0.1
-- [X] sync report/template to/from disk
-- [x] loading indicator
-- [X] optionally hide report, when very broad areas is choosen.
-- [X] started image/camera pop-in ui
+v0.0.9
 
 *** Changelog
+
+**** v0.0.8
+- roadmap for version 0.1
+- sync report/template to/from disk
+- loading indicator
+- optionally hide report, when very broad areas is choosen.
+- started image/camera pop-in ui
+
 **** v0.0.7
 
 - setup nrepl to work with cider
