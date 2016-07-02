@@ -54,13 +54,15 @@
       :.multifield
       {:border-bottom "0.5px solid #ccc"}
 
+      ".image-button"
+       {:height 40
+        :width 40
+        :padding 4
+        :border "2px solid black"
+        :border-radius 6
+       }
       ".camera-input img"
-      {:height 40
-       :width 40
-       :padding 4
-       :border "2px solid black"
-       :border-radius 6
-       :opacity "0.5" }
+      {:opacity "0.5" }
 
       :.fields
       {:text-align :center }
@@ -103,19 +105,26 @@
 (defn handle-file [id file]
   (go
     (dispatch [:ui :camera-image (<! (<blob-url file))])))
-(defn camera-button []
+(defn camera-button [id]
   (let [id (str "camera" (js/Math.random))]
     (fn []
-      [:div.camera-input
-       [:label {:for id}
-        [:img.camera-button {:src (or @(subscribe [:ui :camera-image])
-                                      "assets/camera.png")}]]
-       [:input
-        {:type "file" :accept "image/*"
-         :id id :style {:display :none}
-         :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
-         }]
-       ])))
+      (let [show-controls @(subscribe [:db :ui :show-controls id])]
+        [:div
+         (if show-controls
+           [:div
+           [:label {:for id}
+            [:img.image-button {:src (or @(subscribe [:ui :camera-image])
+                                         "assets/camera.png")}]]
+           [:input
+            {:type "file" :accept "image/*"
+             :id id :style {:display :none}
+             :on-change #(handle-file id (aget (.-files (.-target %1)) 0))}]]
+         "")
+         [:div.camera-input
+          [:img.image-button
+           {:src "assets/camera.png"
+            :on-click #(dispatch [:db :ui :show-controls id (not show-controls)])
+            }]]]))))
 
 ;;; Actual ui
 (defn areas [id]
