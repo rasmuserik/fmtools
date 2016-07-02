@@ -22,25 +22,17 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(register-sub
- :db
+(register-sub :db
  (fn  [db [_ & path]]
    (reaction
     (if path
       (get-in @db path)
       @db))))
 
-(register-handler
- :db
- (fn  [db [_ & path]]
-   (let [value (last path)
-         path (butlast path)]
-     (if path
-       (assoc-in db path value)
-       value))))
+(register-handler :db
+                  (fn  [db [_ & path]] (let [value (last path) path (butlast path)] (if path (assoc-in db path value) value))))
 
-(register-handler
- :raw-report
+(register-handler :raw-report
  (fn  [db [_ report data role]]
    (dispatch [:sync-to-disk])
    (-> db
@@ -49,25 +41,23 @@
                  {:report report
                   :data data
                   :role role}))))
-(register-sub
- :ui (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
-(register-handler
- :ui (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
+(register-sub :ui
+              (fn  [db [_ id]]  (reaction (get-in @db [:ui id]))) )
+(register-handler :ui
+                  (fn  [db  [_ id data]] (assoc-in db [:ui id] data)))
 
-(register-sub
- :templates (fn  [db]  (reaction (keys (get @db :templates {})))))
-(register-sub
- :template (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
-(register-handler
- :template
+(register-sub :templates
+              (fn  [db]  (reaction (keys (get @db :templates {})))))
+(register-sub :template
+              (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
+(register-handler :template
  (fn  [db  [_ id template]]
    (dispatch [:sync-to-disk])
    (assoc-in db [:templates id] template)))
 
-(register-sub
- :area-object (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
-(register-handler
- :area-object
+(register-sub :area-object
+              (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
+(register-handler :area-object
  (fn  [db  [_ obj]]
    (let [id (:ObjectId obj)
          obj (into (get-in db [:objects id] {}) obj)
@@ -88,3 +78,8 @@
                )
            (assoc-in db [:objects parent-id :children id] true))]
      (assoc-in db [:objects id] obj))))
+
+(register-sub :images
+              (fn  [db [_ id]]  (reaction (get-in @db [:images id]
+                                                  ["http://lorempixel.com/300/200/nature/" "http://lorempixel.com/200/300/nature/"]
+                                                  ))))

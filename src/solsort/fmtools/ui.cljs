@@ -103,28 +103,57 @@
 
 ;;; Camera button
 (defn handle-file [id file]
-  (go
-    (dispatch [:ui :camera-image (<! (<blob-url file))])))
+  (log 'handle-file id)
+  (go (dispatch [:add-image id (<! (<blob-url file))])))
 (defn camera-button [id]
   (let [id (str "camera" (js/Math.random))]
     (fn []
-      (let [show-controls @(subscribe [:db :ui :show-controls id])]
+      (let [show-controls (get @(subscribe [:db :show-controls]) id)
+            images @(subscribe [:images id])]
         [:div
          (if show-controls
-           [:div
-           [:label {:for id}
-            [:img.image-button {:src (or @(subscribe [:ui :camera-image])
-                                         "assets/camera.png")}]]
-           [:input
-            {:type "file" :accept "image/*"
-             :id id :style {:display :none}
-             :on-change #(handle-file id (aget (.-files (.-target %1)) 0))}]]
-         "")
+           {:style {:border-left "3px solid gray"
+                    :border-bottom"3px solid gray"
+                    :padding-left "5px"
+                    :padding-bottom "3px"
+                    }}
+           {})
          [:div.camera-input
           [:img.image-button
            {:src "assets/camera.png"
-            :on-click #(dispatch [:db :ui :show-controls id (not show-controls)])
-            }]]]))))
+            :on-click #(dispatch [:db :show-controls id (not show-controls)])}]]
+         (if show-controls
+           [:div {:style {:padding-right 44}}
+           [:label {:for id}
+            [:img.image-button {:src "assets/camera.png"}]]
+           [:input
+            {:type "file" :accept "image/*"
+             :id id :style {:display :none}
+             :on-change #(handle-file [id (count images)] (aget (.-files (.-target %1)) 0))}]
+            " \u00a0 "
+            (into
+             [:span.image-list]
+             (for [img images]
+               [:div {:style {:display :inline-block
+                              :position :relative
+                              :max-width "60%"
+                              :margin 3
+                              :vertical-align :top}}
+                [:img.image-button
+                 {:src "./assets/delete.png"
+                  :style {:position :absolute
+                          :top 0
+                          :right 0
+                          :background "rgba(255,255,255,0.7)"}}
+                 ]
+                [:img {:src img
+                       :style {:max-height 150
+                               :vertical-align :top
+                               :max-width "100%"
+                               }}]])
+                  )]
+         "")
+         ]))))
 
 ;;; Actual ui
 (defn areas [id]

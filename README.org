@@ -78,9 +78,9 @@ Krav til app'en:
     - [X] development api proxy
     - [X] https/cors support
     - [X] responsive ui framework
-  - [-] documentation
+  - [X] documentation
     - [X] general project documentation
-    - [ ] roadmap
+    - [X] roadmap
     - [X] changelog
     - [X] document data structure
 - later
@@ -93,8 +93,7 @@ v0.0.8
 - [X] sync report/template to/from disk
 - [x] loading indicator
 - [X] optionally hide report, when very broad areas is choosen.
-- [ ] line images
-- [ ] status + questions: report->area|area->report; feature-complete sample report
+- [X] started image/camera pop-in ui
 
 *** Changelog
 **** v0.0.7
