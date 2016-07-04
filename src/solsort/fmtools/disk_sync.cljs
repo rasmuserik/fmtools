@@ -40,10 +40,12 @@
   (let [c (chan)]
    (js/localforage.iterate
     (fn [v k i]
-      (let [path (concat (read-string k) [(json->clj v)])]
-        (log 'restore i path)
-        (apply db! path)
-        (apply db! :disk path))
+      (try
+       (let [path (concat (read-string k) [(json->clj v)])]
+         (log 'restore i path)
+         (apply db! path)
+         (apply db! :disk path))
+       (catch js/Object e (js/console.log e)))
       js/undefined)
     #(close! c))
    c))
