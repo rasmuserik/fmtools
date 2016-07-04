@@ -99,15 +99,16 @@
              :key (prn-str id)
              :size size
              :max-length max-length
-             :value @(subscribe [:ui id])
-             :on-change #(dispatch [:ui id (.-value (.-target %1))])}]))
+             :value @(apply db id)
+             :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
 
+(log @(db))
 ;;; Camera button
 (defn handle-file [id file]
   (go (dispatch [:add-image id (<! (<blob-url file))])))
 (defn camera-button [id]
-  (let [show-controls (get @(subscribe [:db :show-controls]) id)
-        images @(subscribe [:images id])]
+  (let [show-controls (get @(db :ui :show-controls) id)
+        images @(apply db id)]
     [:div
      (if show-controls
        {:style {:border-left "3px solid gray"
@@ -119,7 +120,7 @@
      [:div.camera-input
       [:img.image-button
        {:src "assets/camera.png"
-        :on-click #(dispatch [:db :show-controls id (not show-controls)])}]]
+        :on-click #(db! :ui :show-controls id (not show-controls))}]]
      (if show-controls
        [:div {:style {:padding-right 44}}
         [:label {:for id}
@@ -186,14 +187,14 @@
           [field obj cols (conj id 2)]])
        (case field-type
          :fetch-from (str (:ObjectName area))
-         :approve-reject [checkbox (concat [:data] id)]
+         :approve-reject [checkbox id]
          :text-fixed [:span value]
          :time [input id :type :time]
          :remark [input id]
          :text-input-noframe [input id]
          :text-input [input id]
          :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-         :checkbox [checkbox (concat [:data] id)]
+         :checkbox [checkbox id]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
 (defn render-line [line report-id obj]
@@ -203,10 +204,10 @@
         debug-str (dissoc line :fields)
         area (:AreaGuid line)
         obj-id (:ObjectId obj)
-        id [report-id (:PartGuid line) obj-id]
+        id [:data report-id obj-id (:PartGuid line)]
         fields (into
                 [:div.fields]
-                (map #(field % cols [report-id obj-id (:FieldGuid %)] obj)
+                (map #(field % cols [:data report-id obj-id (:FieldGuid %)] obj)
                      (:fields line)))]
     [:div.line
      {:style
@@ -218,11 +219,12 @@
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc ] fields]
-       :multi-field-line [:div.multifield desc [camera-button id]
+       :multi-field-line [:div.multifield desc [camera-button (conj id :images)]
                           fields ]
        :description-line [:div desc [:input {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 
+(log @(db))
 (defn choose-report []
   [:div.field
    [:label "Rapport"]

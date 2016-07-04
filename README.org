@@ -89,6 +89,7 @@ Krav til app'en:
 Current sprint:
 v0.0.9
 
+- field data and images store under ~:data~ in a tree data structure (report-id obj-id field/part-id [entry-id])
 - memoized reactive application database access through ~db~ (and ~db!~ for writing)
 - camera pop-in working removal of images
 - camera pop-in working adding of images
@@ -220,7 +221,6 @@ notes - intended content
       - ~:FieldValue~
 - ~:raw-report~
 - ~:ui~
-  - [report-id field-id object-id (optional 1/2)] value
 - ~:data~ (intended, not implemented yet)
   - report-id
     - object-id

@@ -89,18 +89,14 @@
            (assoc-in db [:objects parent-id :children id] true))]
      (assoc-in db [:objects id] obj))))
 
-(register-sub :images
-              (fn  [db [_ id]]
-                (reaction (get-in @db [:images id]))))
-
 (register-handler :add-image
                   (fn  [db  [_ id img-url]]
-                    (assoc-in db [:images id]
+                    (assoc-in db id
                               (conj (remove #{img-url}
-                                     (get-in db [:images id]))
+                                     (get-in db id))
                                     img-url))))
 
 (register-handler :remove-image
                   (fn  [db  [_ id img-url]]
-                    (assoc-in db [:images id]
-                              (remove #{img-url} (get-in db [:images id])))))
+                    (assoc-in db id
+                              (remove #{img-url} (get-in db id)))))
