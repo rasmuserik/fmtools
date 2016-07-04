@@ -2,7 +2,6 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
-   [solsort.fmtools.disk-sync :as disk-sync]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -140,10 +139,5 @@
                  (<load-templates)
                  (<load-objects)
                  #_(go (let [user (keywordize-keys (<! (<api "User")))] (dispatch [:user user])))]))
-    (<! (disk-sync/<save-form))
     (dispatch-sync [:db :loading false])
     ))
-
-
-#_(fetch)
-(defonce loader (<fetch))

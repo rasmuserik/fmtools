@@ -5,6 +5,7 @@
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
    [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.api-client :refer [<fetch]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -31,8 +32,7 @@
     (log 'save-form @(subscribe [:db]))
     (<! (<localforage! (prn-str [:objects]) (clj->json @(subscribe [:db :objects]))))
     (<! (<localforage! (prn-str [:reports]) (clj->json @(subscribe [:db :reports]))))
-    (<! (<localforage! (prn-str [:templates]) (clj->json @(subscribe [:db :templates]))))
-    ))
+    (<! (<localforage! (prn-str [:templates]) (clj->json @(subscribe [:db :templates]))))))
 
 (defn <restore-form
   "load current template/reports from disk"
@@ -41,12 +41,9 @@
    (js/localforage.iterate
     (fn [v k i]
       (let [path (concat (read-string k) [(json->clj v)])]
+        (log 'restore i path)
         (apply db! path)
-        (apply db! :disk path)))
+        (apply db! :disk path))
+      js/undefined)
     #(close! c))
    c))
-
-(defonce restore-on-boot
-  (go
-    (<restore-form)
-    (log 'restored-db)))

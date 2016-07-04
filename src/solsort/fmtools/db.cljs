@@ -44,7 +44,6 @@
 
 (register-handler :raw-report
  (fn  [db [_ report data role]]
-   (dispatch [:sync-to-disk])
    (-> db
        (assoc-in [:reports (:ReportGuid report)] report)
        (assoc-in [:raw-report (:ReportGuid report)]
@@ -62,7 +61,6 @@
               (fn  [db [_ id]]  (reaction (get-in @db [:templates id] {}))))
 (register-handler :template
  (fn  [db  [_ id template]]
-   (dispatch [:sync-to-disk])
    (assoc-in db [:templates id] template)))
 
 (register-sub :area-object
