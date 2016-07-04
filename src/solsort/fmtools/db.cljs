@@ -80,6 +80,12 @@
      (assoc-in db [:objects id] obj))))
 
 (register-sub :images
-              (fn  [db [_ id]]  (reaction (get-in @db [:images id]
-                                                  ["http://lorempixel.com/300/200/nature/" "http://lorempixel.com/200/300/nature/"]
-                                                  ))))
+              (fn  [db [_ id]]
+                (log 'images id)
+                (reaction (get-in @db [:images id]))))
+
+(register-handler :add-image
+                  (fn  [db  [_ id img-url]]
+                    (assoc-in db [:images id]
+                              (conj (get-in db [:images id])
+                                    img-url))))
