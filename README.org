@@ -167,7 +167,7 @@ v0.1.0
     - function for mapping api-data to internal data
     - make implentation match documentation
       - templates should be list instead of object
-      - `:lines` instead of `:rows: in template
+      - ~:lines~ instead of ~:rows~ in template
       - new objects graph format
   - refactor/update code
   - expand this task list, as it gets solved
@@ -197,35 +197,37 @@ v0.1.0
 
 notes - intended content
 
-- `:objects` (NB: root oid)
+- ~:objects~ (NB: root oid)
   - oid
-    - `:name`
-    - `:ParentId` oid
-    - `:children` oid-list
-    - `:api-id` id used to identify it in the api
-- `:templates` list
-  - `:TemplateGuid`
-  - `:Name`
-  - `:Description`
-  - `:lines` list
-    - `:PartId`
-    - `:TaskDescription`
-    - `:LineType`
-    - `:fields` list
-      - `:FieldGuid`
-      - `:FieldType`
-      - `:Columns`
-      - `:DoubleField`
-      - `:DoubleFieldSeperator` (NB: typo in api)
-      - `:FieldValue`
-- `:raw-report`
-- `:ui`
+    - ~:name~
+    - ~:ParentId~ oid
+    - ~:children~ oid-list
+    - ~:api-id~ id used to identify it in the api
+- ~:templates~ list
+  - ~:TemplateGuid~
+  - ~:Name~
+  - ~:Description~
+  - ~:lines~ list
+    - ~:PartId~
+    - ~:TaskDescription~
+    - ~:LineType~
+    - ~:fields~ list
+      - ~:FieldGuid~
+      - ~:FieldType~
+      - ~:Columns~
+      - ~:DoubleField~
+      - ~:DoubleFieldSeperator~ (NB: typo in api)
+      - ~:FieldValue~
+- ~:raw-report~
+- ~:ui~
   - [report-id field-id object-id (optional 1/2)] value
-- `:data` (intended, not implemented yet)
+- ~:data~ (intended, not implemented yet)
   - report-id
-    - field-id
-      - object-id
+    - object-id
+      - field-id / part-id
         - value
+        - sequence-id
+          - value
 
 ** Notes / questions about API
 
