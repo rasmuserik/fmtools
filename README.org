@@ -49,6 +49,7 @@ Krav til app'en:
     - [ ] check for updates
     - [X] sync to disk
     - [X] load from disk
+    - [ ] MAYBE refactor not to use keywords (for performance)
   - [-] report filled-out content
     - [X] load all from api
     - [ ] sync to disk
@@ -62,7 +63,7 @@ Krav til app'en:
     - [X] show existing images (when online)
     - [ ] remove image
   - [-] general
-    - [ ] make all assets work offline
+    - [X] make all assets work offline
     - [ ] check for connectivity changes, and sync when connected / regularly
     - [ ] verify it works on android
     - [ ] verify it works on iOS
@@ -89,6 +90,8 @@ Krav til app'en:
 Current sprint:
 v0.0.9
 
+- include semantic-css when offline
+- refactor disk-sync code
 - field data and images store under ~:data~ in a tree data structure (report-id obj-id field/part-id [entry-id])
 - memoized reactive application database access through ~db~ (and ~db!~ for writing)
 - camera pop-in working removal of images
