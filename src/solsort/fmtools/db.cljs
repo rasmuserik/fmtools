@@ -22,13 +22,23 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(declare db)
+(defn db-raw [& path]
+  (if path
+    (reaction (get @(apply db (butlast path)) (last path)))
+    (subscribe [:db])))
+(def db
+  "memoised function, that returns a subscription to a given path into the application db"
+  (memoize db-raw))
+(defn db! "Write a value into the application db" [& path]
+  (dispatch (into [:db] path)))
+
 (register-sub :db
  (fn  [db [_ & path]]
    (reaction
     (if path
       (get-in @db path)
       @db))))
-
 (register-handler :db
                   (fn  [db [_ & path]] (let [value (last path) path (butlast path)] (if path (assoc-in db path value) value))))
 
@@ -81,7 +91,6 @@
 
 (register-sub :images
               (fn  [db [_ id]]
-                (log 'images id)
                 (reaction (get-in @db [:images id]))))
 
 (register-handler :add-image

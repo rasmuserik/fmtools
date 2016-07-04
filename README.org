@@ -59,7 +59,7 @@ Krav til app'en:
     - [X] ability to capture image
     - [ ] save image to disk
     - [ ] sync image to server
-    - [ ] show existing images (when online)
+    - [X] show existing images (when online)
     - [ ] remove image
   - [-] general
     - [ ] make all assets work offline
@@ -70,7 +70,7 @@ Krav til app'en:
     - [ ] verify it works on phone as well as tablet
     - [X] checkbox component
     - [X] input component
-    - [ ] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
+    - [X] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
   - [-] design
     - [X] simple semantic-ui responsive design
     - [ ] avoid input truncation
@@ -89,6 +89,7 @@ Krav til app'en:
 Current sprint:
 v0.0.9
 
+- memoized reactive application database access through ~db~ (and ~db!~ for writing)
 - camera pop-in working removal of images
 - camera pop-in working adding of images
 - camera pop-in sensible id

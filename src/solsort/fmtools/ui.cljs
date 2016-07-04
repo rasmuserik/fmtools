@@ -4,6 +4,7 @@
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
+   [solsort.fmtools.db :refer [db db!]]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -83,9 +84,9 @@
             (let [v (prn-str v)]
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
-  (let [value @(subscribe [:ui id])]
+  (let [value @(apply db id)]
     [:img.checkbox
-     {:on-click #(dispatch [:ui id (not value)])
+     {:on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 (defn input
   [id & {:keys [type size max-length options]
@@ -103,7 +104,6 @@
 
 ;;; Camera button
 (defn handle-file [id file]
-  (log 'handle-file id)
   (go (dispatch [:add-image id (<! (<blob-url file))])))
 (defn camera-button [id]
   (let [show-controls (get @(subscribe [:db :show-controls]) id)
@@ -186,14 +186,14 @@
           [field obj cols (conj id 2)]])
        (case field-type
          :fetch-from (str (:ObjectName area))
-         :approve-reject [checkbox id]
+         :approve-reject [checkbox (concat [:data] id)]
          :text-fixed [:span value]
          :time [input id :type :time]
          :remark [input id]
          :text-input-noframe [input id]
          :text-input [input id]
          :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-         :checkbox [checkbox id]
+         :checkbox [checkbox (concat [:data] id)]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
 (defn render-line [line report-id obj]
@@ -267,13 +267,12 @@
         areas (conj (traverse-areas (:ObjectId report)) {})
         max-objects 100
         ]
-    (log 'here areas (count areas))
     (into
       [:div.ui.form
        [:h1 (:Description template)]
        (if (< max-objects (count areas))
          [:div
-          [:div {:style {:display :inline-block :float :right}}[checkbox :nolimit]]
+          [:div {:style {:display :inline-block :float :right}}[checkbox [:ui :nolimit]]]
           [:br]
           "Vis rapportindhold for områder med mere end " (str max-objects) " objekter (langsomt):"
           [:br]
