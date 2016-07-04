@@ -142,7 +142,9 @@
               :style {:position :absolute
                       :top 0
                       :right 0
-                      :background "rgba(255,255,255,0.7)"}}
+                      :background "rgba(255,255,255,0.7)"}
+              :on-click #(dispatch [:remove-image id img])
+              }
              ]
             [:img {:src img
                    :style {:max-height 150

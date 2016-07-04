@@ -89,6 +89,10 @@ Krav til app'en:
 Current sprint:
 v0.0.9
 
+- camera pop-in working removal of images
+- camera pop-in working adding of images
+- camera pop-in sensible id
+
 *** Changelog
 
 **** v0.0.8

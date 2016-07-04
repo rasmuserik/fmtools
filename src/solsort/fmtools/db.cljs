@@ -87,5 +87,11 @@
 (register-handler :add-image
                   (fn  [db  [_ id img-url]]
                     (assoc-in db [:images id]
-                              (conj (get-in db [:images id])
+                              (conj (remove #{img-url}
+                                     (get-in db [:images id]))
                                     img-url))))
+
+(register-handler :remove-image
+                  (fn  [db  [_ id img-url]]
+                    (assoc-in db [:images id]
+                              (remove #{img-url} (get-in db [:images id])))))
