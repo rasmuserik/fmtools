@@ -218,7 +218,7 @@
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc ] fields]
-       :multi-field-line [:div.multifield desc [camera-button id ]
+       :multi-field-line [:div.multifield desc [camera-button id]
                           fields ]
        :description-line [:div desc [:input {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
