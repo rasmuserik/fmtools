@@ -90,6 +90,8 @@ Krav til app'en:
 Current sprint:
 v0.0.9
 
+- when choosing an area/report, make sure that the report/area corresponds to it.
+- ability to first choose area, and then choose report. 
 - include semantic-css when offline
 - refactor disk-sync code
 - field data and images store under ~:data~ in a tree data structure (report-id obj-id field/part-id [entry-id])

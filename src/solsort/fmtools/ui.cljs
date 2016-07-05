@@ -224,31 +224,54 @@
        :description-line [:div desc [:input {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 
-(log @(db))
+(defn sub-areas [id]
+  (let [area @(subscribe [:area-object id])]
+    (apply concat [area] (map sub-areas (keys (:children area))))))
+(defn traverse-areas [id]
+  (let [selected @(subscribe [:ui id])]
+    (if selected
+      (into [@(subscribe [:area-object id])] (traverse-areas selected))
+      (sub-areas id))))
+
 (defn choose-report []
-  [:div.field
-   [:label "Rapport"]
-   [select :report-id
-    (concat [[empty-choice]]
-            (for [report-id  (keys @(subscribe [:db :reports]))]
-              [@(subscribe [:db :reports report-id :ReportName])
-               report-id]))]])
+  (let [areas (into #{} (map :ObjectId (traverse-areas :root)))
+        reports (filter #(areas (% :ObjectId))(map second @(db :reports)))]
+    (case (count reports)
+      0 (do
+          (db! :ui :report-id nil)
+          [:span.empty])
+      1 (do
+          (db! :ui :report-id ((first reports) :ReportGuid))
+          [:div "Rapport: " ((first reports) :ReportName)])
+     [:div.field
+      [:label "Rapport"]
+      [select :report-id
+       (concat [[empty-choice]]
+               (for [report reports]
+                 [(report :ReportName)
+                  (report :ReportGuid)]))]]
+     )))
+
+(defn set-areas! [oid]
+  (log 'set-areas oid)
+  (let [obj @(db :objects oid)
+        parent-id (get obj :ParentId)]
+    (when parent-id
+      (db! :ui (if (= 0 parent-id) :root parent-id) oid)
+      (recur parent-id)
+  )))
+
 (defn choose-area [report]
-  (if (:children @(subscribe  [:area-object (:ObjectId report)]))
+  #_(if (:children @(subscribe  [:area-object (:ObjectId report)]))
     [:div.field
      [:label "Område"]
      [areas (or (:ObjectId report) :root)]]
-    [:span.empty]))
-
-(defn traverse-areas [id]
-  (let [selected @(subscribe [:ui id])
-        area @(subscribe [:area-object id])]
-    (if selected
-      (into [area] (traverse-areas selected))
-      (apply concat
-             [area]
-             (map traverse-areas (keys (:children area)))
-             ))))
+    [:span.empty])
+  (when (:ObjectId report) (set-areas! (:ObjectId report)))
+  [:div.field
+   [:label "Område"]
+   [areas :root]]
+  )
 
 (defn render-section [lines report-id areas]
   (for [obj areas]
@@ -261,6 +284,7 @@
   (apply concat
          (for [section (partition-by :ColumnHeader lines)]
            (render-section section report-id areas))))
+;(db! [:ui :root true])
 
 (defn render-template [report]
   (let [id (:TemplateGuid report)
@@ -301,8 +325,8 @@
      [:hr]
      [:div.ui.container
       [:div.ui.form
-       [choose-report]
        [choose-area report]
+       [choose-report]
        ]]
      [:hr]
      #_[render-template @(subscribe [:ui :current-template])]

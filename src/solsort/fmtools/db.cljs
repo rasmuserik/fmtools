@@ -71,6 +71,7 @@
          obj (into (get-in db [:objects id] {}) obj)
          area-guid (:AreaGuid obj)
          parent-id (:ParentId obj)
+         obj (assoc obj :ParentId (if (zero? parent-id) area-guid parent-id))
          db
          (if (zero? parent-id)
            (-> db
