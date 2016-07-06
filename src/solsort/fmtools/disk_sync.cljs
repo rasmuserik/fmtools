@@ -37,14 +37,48 @@
   "load current template/reports from disk"
   []
   (let [c (chan)]
-   (js/localforage.iterate
-    (fn [v k i]
-      (try
-       (let [path (concat (read-string k) [(json->clj v)])]
-         (log 'restore i path)
-         (apply db! path)
-         (apply db! :disk path))
-       (catch js/Object e (js/console.log e)))
-      js/undefined)
-    #(close! c))
-   c))
+    (js/localforage.iterate
+     (fn [v k i]
+       (try
+         (let [path (concat (read-string k) [(json->clj v)])]
+           (log 'restore i path)
+           (apply db! path)
+           (apply db! :disk path))
+         (catch js/Object e (js/console.log e)))
+       js/undefined)
+     #(close! c))
+    c))
+
+(defn changes [a b prefix]
+  (log 'changes a b prefix)
+  (if (= a b)
+    []
+    (if (map? a)
+      (if (map? b)
+        (let [ks (distinct (concat (keys a) (keys b)))]
+          (apply concat (map #(changes (a %) (b %) (conj prefix %)) ks)))
+        (apply concat [[prefix b]] (map #(changes (second %) nil (conj prefix (first %))) a))
+        )
+      (if (map? b)
+        (apply concat (if (nil? a) [] [[prefix nil]])
+               (map #(changes nil (second %) (conj prefix (first %))) b))
+        [[prefix b]])
+      )))
+#_(js/console.log (changes
+      {:a {:v 1 :u {:x 3}} :b 2 :e [1]}
+      {:a {:v {:r 5} :j {:x 3}} :b 2 :d [1]}
+      []))
+
+#_(def disk-chan (c))
+#_(go-loop []
+  (timeout 1000)
+  (log 'here)
+  (recur))
+
+(defn handle-changes! [path db]
+  (log 'handle-changes path
+       ))
+
+(defn watch-changes! [& path]
+  (ratom/run!
+   (handle-changes! path @(apply db path))))

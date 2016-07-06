@@ -15,7 +15,6 @@
     (<! (disk/<restore-form))
     (<! (api/<fetch))
     (<! (disk/<save-form))
-    (ratom/run!
-     (js/console.log @(db/db :data)))
+    (disk/watch-changes! :data) 
     ))
 

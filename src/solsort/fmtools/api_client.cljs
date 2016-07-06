@@ -64,6 +64,7 @@
   (go
     (let [objects (Objects
                     (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))]
+      ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
       (doall
        (for [object objects]
          (let [object (assoc object "AreaName" (Name area))]
@@ -97,9 +98,10 @@
 (defn <fetch []
   (go
     (dispatch-sync [:db :loading true])
-    (<! (<chan-seq [(<load-reports)
+    (<! (<chan-seq [
+                    (<load-objects)
+                    (<load-reports)
                  (<load-templates)
-                 (<load-objects)
                     #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
     (dispatch-sync [:db :loading false])
     ))
