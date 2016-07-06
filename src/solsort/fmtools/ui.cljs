@@ -2,6 +2,11 @@
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
+
+   [solsort.fmtools.definitions :refer
+    [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
+     TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
+     TemplateGuid Description DoubleField]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db db!]]
@@ -12,7 +17,6 @@
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
-   [clojure.walk :refer [keywordize-keys]]
    [re-frame.core :as re-frame
     :refer [register-sub subscribe register-handler
             dispatch dispatch-sync]]
@@ -167,26 +171,26 @@
        [select id
         (concat [[empty-choice]]
                 (for [[child-id] children]
-                  [(:ObjectName @(subscribe [:area-object child-id])) child-id]))]
+                  [(ObjectName @(subscribe [:area-object child-id])) child-id]))]
        (areas selected)]
       [:div])))
 
 (defn field [obj cols id area]
-  (let [field-type (:FieldType obj)
-        columns (:Columns obj)
-        double-field (:DoubleField obj)
-        double-separator (:DoubleFieldSeperator obj)
-        value (:FieldValue obj)]
+  (let [field-type (FieldType obj)
+        columns (Columns obj)
+        double-field (DoubleField obj)
+        double-separator (DoubleFieldSeperator obj)
+        value (FieldValue obj)]
     [:span.fmfield {:key id
                     :style {:width (* 11 @unit (/ columns cols)) }
                     :on-click (fn [] (log obj) false)}
      (if double-field
-       (let [obj (dissoc obj :DoubleField)]
+       (let [obj (dissoc obj "DoubleField")]
          [:span [field obj cols (conj id 1)]
           " " double-separator " "
           [field obj cols (conj id 2)]])
        (case field-type
-         :fetch-from (str (:ObjectName area))
+         :fetch-from (str (ObjectName area))
          :approve-reject [checkbox id]
          :text-fixed [:span value]
          :time [input id :type :time]
@@ -198,16 +202,16 @@
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
 (defn render-line [line report-id obj]
-  (let [line-type (:LineType line)
-        cols (apply + (map :Columns (:fields line)))
-        desc (:TaskDescription line)
+  (let [line-type (LineType line)
+        cols (apply + (map Columns (:fields line)))
+        desc (TaskDescription line)
         debug-str (dissoc line :fields)
-        area (:AreaGuid line)
-        obj-id (:ObjectId obj)
-        id [:data report-id obj-id (:PartGuid line)]
+        area (AreaGuid line)
+        obj-id (ObjectId obj)
+        id [:data report-id obj-id (PartGuid line)]
         fields (into
                 [:div.fields]
-                (map #(field % cols [:data report-id obj-id (:FieldGuid %)] obj)
+                (map #(field % cols [:data report-id obj-id (FieldGuid %)] obj)
                      (:fields line)))]
     [:div.line
      {:style
@@ -234,40 +238,40 @@
       (sub-areas id))))
 
 (defn choose-report []
-  (let [areas (into #{} (map :ObjectId (traverse-areas :root)))
-        reports (filter #(areas (% :ObjectId))(map second @(db :reports)))]
+  (let [areas (into #{} (map ObjectId (traverse-areas :root)))
+        reports (filter #(areas (% "ObjectId"))(map second @(db :reports)))]
     (case (count reports)
       0 (do
           (db! :ui :report-id nil)
           [:span.empty])
       1 (do
-          (db! :ui :report-id ((first reports) :ReportGuid))
-          [:div "Rapport: " ((first reports) :ReportName)])
+          (db! :ui :report-id ((first reports) "ReportGuid"))
+          [:div "Rapport: " ((first reports) "ReportName")])
      [:div.field
       [:label "Rapport"]
       [select :report-id
        (concat [[empty-choice]]
                (for [report reports]
-                 [(report :ReportName)
-                  (report :ReportGuid)]))]]
+                 [(report "ReportName")
+                  (report "ReportGuid")]))]]
      )))
 
 (defn set-areas! [oid]
   (log 'set-areas oid)
   (let [obj @(db :objects oid)
-        parent-id (get obj :ParentId)]
+        parent-id (get obj "ParentId")]
     (when parent-id
       (db! :ui (if (= 0 parent-id) :root parent-id) oid)
       (recur parent-id)
   )))
 
 (defn choose-area [report]
-  #_(if (:children @(subscribe  [:area-object (:ObjectId report)]))
+  #_(if (:children @(subscribe  [:area-object (ObjectId report)]))
     [:div.field
      [:label "Område"]
-     [areas (or (:ObjectId report) :root)]]
+     [areas (or (ObjectId report) :root)]]
     [:span.empty])
-  (when (:ObjectId report) (set-areas! (:ObjectId report)))
+  (when (ObjectId report) (set-areas! (ObjectId report)))
   [:div.field
    [:label "Område"]
    [areas :root]]
@@ -276,26 +280,26 @@
 (defn render-section [lines report-id areas]
   (for [obj areas]
     (for [line lines]
-      (when (= (:AreaGuid line) (:AreaGuid obj))
+      (when (= (AreaGuid line) (AreaGuid obj))
         (render-line line report-id obj)))))
 
 (defn render-lines
   [lines report-id areas]
   (apply concat
-         (for [section (partition-by :ColumnHeader lines)]
+         (for [section (partition-by ColumnHeader lines)]
            (render-section section report-id areas))))
 ;(db! [:ui :root true])
 
 (defn render-template [report]
-  (let [id (:TemplateGuid report)
+  (let [id (TemplateGuid report)
         template @(subscribe [:template id])
         report-id @(subscribe [:ui :report-id])
-        areas (conj (traverse-areas (:ObjectId report)) {})
+        areas (conj (traverse-areas (ObjectId report)) {})
         max-objects 100
         ]
     (into
       [:div.ui.form
-       [:h1 (:Description template)]
+       [:h1 (Description template)]
        (if (< max-objects (count areas))
          [:div
           [:div {:style {:display :inline-block :float :right}}[checkbox [:ui :nolimit]]]

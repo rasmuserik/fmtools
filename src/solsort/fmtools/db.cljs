@@ -3,6 +3,9 @@
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
+   [solsort.fmtools.definitions :refer
+    [ReportGuid AreaGuid ParentId ObjectId ObjectName AreaName
+     ]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice]]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -15,7 +18,6 @@
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
-   [clojure.walk :refer [keywordize-keys]]
    [re-frame.core :as re-frame
     :refer [register-sub subscribe register-handler
             dispatch dispatch-sync]]
@@ -45,8 +47,8 @@
 (register-handler :raw-report
  (fn  [db [_ report data role]]
    (-> db
-       (assoc-in [:reports (:ReportGuid report)] report)
-       (assoc-in [:raw-report (:ReportGuid report)]
+       (assoc-in [:reports (ReportGuid report)] report)
+       (assoc-in [:raw-report (ReportGuid report)]
                  {:report report
                   :data data
                   :role role}))))
@@ -67,21 +69,21 @@
               (fn  [db [_ id]]  (reaction (get-in @db [:objects id] {}))))
 (register-handler :area-object
  (fn  [db  [_ obj]]
-   (let [id (:ObjectId obj)
+   (let [id (ObjectId obj)
          obj (into (get-in db [:objects id] {}) obj)
-         area-guid (:AreaGuid obj)
-         parent-id (:ParentId obj)
-         obj (assoc obj :ParentId (if (zero? parent-id) area-guid parent-id))
+         area-guid (AreaGuid obj)
+         parent-id (ParentId obj)
+         obj (assoc obj "ParentId" (if (zero? parent-id) area-guid parent-id))
          db
          (if (zero? parent-id)
            (-> db
                (assoc-in [:objects :root :children area-guid] true)
                (assoc-in [:objects area-guid]
                          (or (get-in db [:objects area-guid])
-                             {:ParentId 0
-                              :AreaGuid area-guid
-                              :ObjectId area-guid
-                              :ObjectName (str (:AreaName obj))}))
+                             {"ParentId" 0
+                              "AreaGuid" area-guid
+                              "ObjectId" area-guid
+                              "ObjectName" (str (AreaName obj))}))
                (assoc-in [:objects area-guid :children id] true)
                                         ; todo add in-between-node
                )
