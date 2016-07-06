@@ -11,7 +11,6 @@ Krav til app'en:
 - [ ] muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
 - [X] understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
 - [X] muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende enhed
-  - TODO: question: choose report, and then area, or choose area, and then report?
 - [ ] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
 - [ ] muligt at vedhæfte/se billeder for hver linje i formularen
 - [ ] formater: håndholdt mobil, samt tablet
@@ -84,12 +83,11 @@ Krav til app'en:
     - [X] roadmap
     - [X] changelog
     - [X] document data structure
-- later
-  - major refactor do not use keywords in loaded datastructure, due to keywordize-overhead (will make loading much more snappy).
  
 Current sprint:
 v0.0.9
 
+- stop using keywordize
 - when choosing an area/report, make sure that the report/area corresponds to it.
 - ability to first choose area, and then choose report. 
 - include semantic-css when offline
