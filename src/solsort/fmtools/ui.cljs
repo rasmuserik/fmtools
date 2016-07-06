@@ -74,7 +74,7 @@
 (js/setTimeout style 0)
 
 ;;;; Generic Components
-(defn select [id options] ; ####
+(defn select [id options]
   (let [current @(subscribe [:ui id])]
     (into [:select
            {:value (prn-str current)

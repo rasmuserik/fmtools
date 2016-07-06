@@ -1,6 +1,8 @@
 (ns solsort.fmtools.api-client
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
+   [solsort.fmtools.definitions :refer
+    [line-types part-types field-types]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.util
     :refer
@@ -11,36 +13,6 @@
     :refer [register-sub subscribe register-handler
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
-
-(defonce field-types
-  {0   :none
-   1   :text-fixed
-   2   :text-input
-   3   :checkbox
-   4   :integer
-   5   :decimal-2-digit
-   6   :decimal-4-digit
-   7   :date
-   8   :time
-   9   :text-fixed-noframe
-   10  :text-input-noframe
-   11  :approve-reject
-   12  :fetch-from
-   13  :remark
-   100 :case-no-from-location})
-(defonce part-types
-  {0 :none
-   1 :header
-   2 :line
-   3 :footer})
-(defonce line-types
-  {0  :basic
-   1  :simple-headline
-   2  :vertical-headline
-   3  :horizontal-headline
-   4  :multi-field-line
-   5  :description-line
-   10 :template-control})
 
 (defn <api [endpoint]
   (<ajax (str "https://"
@@ -61,7 +33,7 @@
                      (:ReportTemplateFields )
                      (->>
                       (map #(assoc % :FieldType (field-types (:FieldType %))))
-                      (sort-by :DisplayOrer)
+                      (sort-by :DisplayOrder)
                       (group-by :PartGuid)))
           parts (-> template (:ReportTemplateParts))
           parts (map

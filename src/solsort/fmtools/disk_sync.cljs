@@ -1,4 +1,4 @@
-(ns solsort.fmtools.disk-sync ; ##
+(ns solsort.fmtools.disk-sync
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]])
