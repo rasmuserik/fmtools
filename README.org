@@ -204,27 +204,27 @@ notes - intended content
 - ~:objects~ (NB: root oid)
   - oid
     - ~:name~
-    - ~:ParentId~ oid
+    - ~"ParentId"~ oid
     - ~:children~ oid-list
     - ~:api-id~ id used to identify it in the api
 - ~:templates~ list
-  - ~:TemplateGuid~
-  - ~:Name~
-  - ~:Description~
+  - ~"TemplateGuid"~
+  - ~"Name"~
+  - ~"Description"~
   - ~:lines~ list
-    - ~:PartId~
-    - ~:TaskDescription~
-    - ~:LineType~
+    - ~"PartId"~
+    - ~"TaskDescription"~
+    - ~"LineType"~
     - ~:fields~ list
-      - ~:FieldGuid~
-      - ~:FieldType~
-      - ~:Columns~
-      - ~:DoubleField~
-      - ~:DoubleFieldSeperator~ (NB: typo in api)
-      - ~:FieldValue~
+      - ~"FieldGuid"~
+      - ~"FieldType"~
+      - ~"Columns"~
+      - ~"DoubleField"~
+      - ~"DoubleFieldSeperator"~ (NB: typo in api)
+      - ~"FieldValue"~
 - ~:raw-report~
 - ~:ui~
-- ~:data~ (intended, not implemented yet)
+- ~:data~
   - report-id
     - object-id
       - field-id / part-id
