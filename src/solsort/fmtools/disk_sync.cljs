@@ -24,6 +24,8 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(def disk (atom {}))
+
 (defn <save-form
   "write the current data in the database to disk"
   []
@@ -43,41 +45,37 @@
          (let [path (concat (read-string k) [(json->clj v)])]
            (log 'restore i path)
            (apply db! path)
+           (swap! disk assoc-in (butlast path) (last path))
            (apply db! :disk path))
          (catch js/Object e (js/console.log e)))
        js/undefined)
      #(close! c))
     c))
 
-(defn changes [a b prefix]
-  (log 'changes a b prefix)
+(defn find-changes [a b prefix]
   (if (= a b)
     []
     (if (map? a)
       (if (map? b)
         (let [ks (distinct (concat (keys a) (keys b)))]
-          (apply concat (map #(changes (a %) (b %) (conj prefix %)) ks)))
-        (apply concat [[prefix b]] (map #(changes (second %) nil (conj prefix (first %))) a))
+          (apply concat (map #(find-changes (a %) (b %) (conj prefix %)) ks)))
+        (apply concat [[prefix b]] (map #(find-changes (second %) nil (conj prefix (first %))) a))
         )
       (if (map? b)
         (apply concat (if (nil? a) [] [[prefix nil]])
-               (map #(changes nil (second %) (conj prefix (first %))) b))
+               (map #(find-changes nil (second %) (conj prefix (first %))) b))
         [[prefix b]])
       )))
-#_(js/console.log (changes
-      {:a {:v 1 :u {:x 3}} :b 2 :e [1]}
-      {:a {:v {:r 5} :j {:x 3}} :b 2 :d [1]}
-      []))
-
-#_(def disk-chan (c))
-#_(go-loop []
-  (timeout 1000)
-  (log 'here)
-  (recur))
 
 (defn handle-changes! [path db]
-  (log 'handle-changes path
-       ))
+  (swap!
+   disk
+   (fn [disk]
+     (let [changes (find-changes (get-in disk path) db (into [] path))]
+       (js/console.log 'changes changes)
+       (log 'disk disk)
+       (reduce (fn [disk [path val]](assoc-in disk path val)) disk changes))
+       )))
 
 (defn watch-changes! [& path]
   (ratom/run!
