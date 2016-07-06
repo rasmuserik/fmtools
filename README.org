@@ -12,10 +12,11 @@ Krav til app'en:
 - [X] understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
 - [X] muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende enhed
 - [ ] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
-- [ ] muligt at vedhæfte/se billeder for hver linje i formularen
+- [X] muligt at vedhæfte/se billeder for hver linje i formularen
 - [ ] formater: håndholdt mobil, samt tablet
 - [ ] skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
 - [ ] skal fungere på nyere Android og iOS, - enten _som webapp_, eller +som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren+.
+- [ ] synkronisering med server
 
 ** Roadmap
 
@@ -48,19 +49,19 @@ Krav til app'en:
     - [ ] check for updates
     - [X] sync to disk
     - [X] load from disk
-    - [ ] MAYBE refactor not to use keywords (for performance)
+    - [X] MAYBE refactor not to use keywords (for performance)
   - [-] report filled-out content
     - [X] load all from api
-    - [ ] sync to disk
+    - [X] sync to disk
     - [ ] write changes to api
     - [ ] load incremental changes from api
   - [-] images
     - [X] image button per line
     - [X] ability to capture image
-    - [ ] save image to disk
+    - [X] save image to disk
     - [ ] sync image to server
     - [X] show existing images (when online)
-    - [ ] remove image
+    - [X] remove image
   - [-] general
     - [X] make all assets work offline
     - [ ] check for connectivity changes, and sync when connected / regularly
@@ -85,8 +86,11 @@ Krav til app'en:
     - [X] document data structure
  
 Current sprint:
-v0.0.9
 
+*** Changelog
+**** v0.0.9
+
+- sync of filled out data + images to/from disk
 - stop using keywordize
 - when choosing an area/report, make sure that the report/area corresponds to it.
 - ability to first choose area, and then choose report. 
@@ -97,8 +101,6 @@ v0.0.9
 - camera pop-in working removal of images
 - camera pop-in working adding of images
 - camera pop-in sensible id
-
-*** Changelog
 
 **** v0.0.8
 - roadmap for version 0.1

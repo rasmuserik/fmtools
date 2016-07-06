@@ -73,6 +73,7 @@
    (fn [disk]
      (let [changes (find-changes (get-in disk path) db (into [] path))]
        (js/console.log 'changes changes)
+       (doall (map (fn [[a b]] (<localforage! (prn-str a) (clj->json b))) changes))
        (log 'disk disk)
        (reduce (fn [disk [path val]](assoc-in disk path val)) disk changes))
        )))
