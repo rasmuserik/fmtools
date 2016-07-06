@@ -86,6 +86,9 @@ Krav til app'en:
     - [X] document data structure
  
 Current sprint:
+v0.10.0
+
+- ...
 
 *** Changelog
 **** v0.0.9
