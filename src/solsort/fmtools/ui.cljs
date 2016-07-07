@@ -2,7 +2,6 @@
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
-
    [solsort.fmtools.definitions :refer
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
@@ -316,9 +315,42 @@
       #_(doall (map #(line % report-id areas) (:rows template)))
       ))))
 
+(defn fix-height [o]
+  (let [node (reagent/dom-node o)
+        child (-> node (aget "children") (aget 0))
+        width (aget child "clientHeight")
+        height (aget child "clientWidth")
+        style (aget node "style")
+        ]
+    (aset style "height" (str height "px"))
+    (aset style "width" (str width "px"))
+    (aset js/window "xxx" node)
+    (js/console.log node (aget node "height"))
+  ))
+(def rot90
+  (with-meta
+    (fn [elem]
+      [:div
+       {:style {:position "relative"
+                :display :inline-block}}
+       [:div
+        {:style {:transform-origin "0% 0%"
+                 :transform "rotate(-90deg)"
+                 :position "absolute"
+                 :top "100%"
+                 :left 0
+                 :display :inline-block}}
+        elem
+        ]
+       ]
+      )
+    {:component-did-mount fix-height
+     :component-did-updagte fix-height
+     }))
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     [:div.main-form
+     [rot90 (str "Hello world " (js/Math.random) )]
      "Under development, not functional yet"
      [:div {:style {:float :right}}
       (if @(subscribe [:db :loading])
