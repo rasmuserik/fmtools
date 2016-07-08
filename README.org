@@ -89,7 +89,9 @@ Krav til app'en:
 Current sprint:
 v0.10.0
 
-- 90º rotation af tekst-felter
+- [ ] render control
+- [ ] fetch control from api
+- [X] 90º rotation af tekst-felter (if header-flag, ie ~#...~ of url contains "rot90")
 
 *** Changelog
 **** v0.0.9

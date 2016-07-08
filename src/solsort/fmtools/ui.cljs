@@ -206,7 +206,7 @@
        (areas selected)]
       [:div])))
 
-(def do-rot90 true)
+(def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
 (defn field [obj cols id area]
   (let [field-type (FieldType obj)
         columns (Columns obj)
