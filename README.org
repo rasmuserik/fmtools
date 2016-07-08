@@ -87,7 +87,7 @@ Krav til app'en:
     - [X] document data structure
  
 Current sprint:
-v0.10.0
+v0.0.10
 
 - [ ] render control
 - [ ] fetch control from api
