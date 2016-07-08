@@ -105,7 +105,39 @@
              :value @(apply db id)
              :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
 
-(log @(db))
+(defn fix-height [o]
+  (let [node (reagent/dom-node o)
+        child (-> node (aget "children") (aget 0))
+        width (aget child "clientHeight")
+        height (aget child "clientWidth")
+        style (aget node "style")
+        ]
+    (aset style "height" (str height "px"))
+    (aset style "width" (str width "px"))
+    (aset js/window "xxx" node)
+    (js/console.log 'fix-height height width)
+    ))
+
+(def rot90
+  (with-meta
+    (fn [elem]
+      [:div
+       {:style {:position "relative"
+                :display :inline-block}}
+       [:div
+        {:style {:transform-origin "0% 0%"
+                 :transform "rotate(-90deg)"
+                 :position "absolute"
+                 :top "100%"
+                 :left 0
+                 :display :inline-block}}
+        elem
+        ]
+       ]
+      )
+    {:component-did-mount fix-height
+     :component-did-update fix-height}))
+
 ;;; Camera button
 (defn handle-file [id file]
   (go (dispatch [:add-image id (<! (<blob-url file))])))
@@ -174,6 +206,7 @@
        (areas selected)]
       [:div])))
 
+(def do-rot90 true)
 (defn field [obj cols id area]
   (let [field-type (FieldType obj)
         columns (Columns obj)
@@ -191,7 +224,7 @@
        (case field-type
          :fetch-from (str (ObjectName area))
          :approve-reject [checkbox id]
-         :text-fixed [:span value]
+         :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
          :time [input id :type :time]
          :remark [input id]
          :text-input-noframe [input id]
@@ -315,42 +348,9 @@
       #_(doall (map #(line % report-id areas) (:rows template)))
       ))))
 
-(defn fix-height [o]
-  (let [node (reagent/dom-node o)
-        child (-> node (aget "children") (aget 0))
-        width (aget child "clientHeight")
-        height (aget child "clientWidth")
-        style (aget node "style")
-        ]
-    (aset style "height" (str height "px"))
-    (aset style "width" (str width "px"))
-    (aset js/window "xxx" node)
-    (js/console.log node (aget node "height"))
-  ))
-(def rot90
-  (with-meta
-    (fn [elem]
-      [:div
-       {:style {:position "relative"
-                :display :inline-block}}
-       [:div
-        {:style {:transform-origin "0% 0%"
-                 :transform "rotate(-90deg)"
-                 :position "absolute"
-                 :top "100%"
-                 :left 0
-                 :display :inline-block}}
-        elem
-        ]
-       ]
-      )
-    {:component-did-mount fix-height
-     :component-did-updagte fix-height
-     }))
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     [:div.main-form
-     [rot90 (str "Hello world " (js/Math.random) )]
      "Under development, not functional yet"
      [:div {:style {:float :right}}
       (if @(subscribe [:db :loading])

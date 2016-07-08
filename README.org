@@ -74,6 +74,7 @@ Krav til app'en:
     - [X] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
   - [-] design
     - [X] simple semantic-ui responsive design
+    - [ ] vertical text
     - [ ] avoid input truncation
   - [X] infrastructure
     - [X] development api proxy
@@ -88,7 +89,7 @@ Krav til app'en:
 Current sprint:
 v0.10.0
 
-- ...
+- 90º rotation af tekst-felter
 
 *** Changelog
 **** v0.0.9
