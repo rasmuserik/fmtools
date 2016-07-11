@@ -33,6 +33,7 @@
     (log 'save-form @(subscribe [:db]))
     (<! (<localforage! (prn-str [:objects]) (clj->json @(subscribe [:db :objects]))))
     (<! (<localforage! (prn-str [:reports]) (clj->json @(subscribe [:db :reports]))))
+    (<! (<localforage! (prn-str [:controls]) (clj->json @(subscribe [:db :controls]))))
     (<! (<localforage! (prn-str [:templates]) (clj->json @(subscribe [:db :templates]))))))
 
 (defn <restore-form
