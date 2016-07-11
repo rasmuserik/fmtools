@@ -89,8 +89,10 @@ Krav til app'en:
 Current sprint:
 v0.0.10
 
-- [ ] render control
-- [ ] fetch control from api
+- [X] performance, more responsive edit (fixed through less logging on change)
+- [X] input styling, - no hide text
+- [X] render control
+- [X] fetch control from api
 - [X] 90º rotation af tekst-felter (if header-flag, ie ~#...~ of url contains "rot90")
 
 *** Changelog

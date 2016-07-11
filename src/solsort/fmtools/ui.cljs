@@ -91,19 +91,24 @@
     [:img.checkbox
      {:on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
-(defn input
-  [id & {:keys [type size max-length options]
+(defn input  [id & {:keys [type size max-length options]
          :or {type "text"}}]
   (case type
     :select (select id options)
     :checkbox (checkbox id)
     [:input {:type type
+             :style {:padding-right 0
+                     :padding-left 0
+                     :text-align :center
+                     :overflow :visible
+                     }
              :name (prn-str id)
              :key (prn-str id)
              :size size
              :max-length max-length
              :value @(apply db id)
              :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
+
 
 (defn fix-height [o]
   (let [node (reagent/dom-node o)
