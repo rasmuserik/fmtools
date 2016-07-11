@@ -8,6 +8,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.db :refer [db db!]]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -95,13 +96,19 @@
       (log 'loaded-reports)
       )))
 
+(defn <load-controls []
+  (go
+    (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
+          (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
+
 (defn <fetch []
   (go
     (dispatch-sync [:db :loading true])
-    (<! (<chan-seq [
-                    (<load-objects)
+    (<! (<chan-seq [(<load-objects)
                     (<load-reports)
-                 (<load-templates)
+                    (<load-controls)
+                    (<load-templates)
                     #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
     (dispatch-sync [:db :loading false])
     ))
+
