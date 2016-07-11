@@ -42,7 +42,7 @@ Krav til app'en:
     - [X] basic (text line)
     - [X] head-line
     - [ ] NEW: mobile-vertical text
-  - [ ] "template-control" line
+  - [X] "template-control" line
   - [-] template/report-structure
     - [X] load template/report from api
     - [X] loading indicator + actual channel for result
@@ -51,7 +51,7 @@ Krav til app'en:
     - [X] load from disk
     - [X] MAYBE refactor not to use keywords (for performance)
   - [-] report filled-out content
-    - [X] load all from api
+    - [ ] load all from api
     - [X] sync to disk
     - [ ] write changes to api
     - [ ] load incremental changes from api
@@ -72,10 +72,10 @@ Krav til app'en:
     - [X] checkbox component
     - [X] input component
     - [X] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
-  - [-] design
+  - [X] design
     - [X] simple semantic-ui responsive design
-    - [ ] vertical text
-    - [ ] avoid input truncation
+    - [X] vertical text (needs change in backend, currently supported with "rot90" hash)
+    - [X] avoid input truncation
   - [X] infrastructure
     - [X] development api proxy
     - [X] https/cors support
