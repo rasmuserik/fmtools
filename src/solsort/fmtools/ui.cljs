@@ -233,6 +233,42 @@
          :checkbox [checkbox id]
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
+
+(defn template-control [line]
+  (let [id (get line "ControlGuid")
+        ctl @(db :controls id)
+        title (get ctl "Title")
+        series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
+        ]
+    (log 'template-control line ctl)
+    [:div
+     [:h3 title]
+     (into
+      [:div]
+      (for [serie (concat [0] series)]
+        [:div.multifield
+         (get ctl (str "ChartSerieName" serie))
+        (into [:div]
+              (for [i (range
+                       (ctl "XAxisMin")
+                       (+ (ctl "XAxisMax") (ctl "XAxisStep"))
+                       (ctl "XAxisStep"))]
+                [:span {:style {:display :inline-block
+                                :text-align :center
+                                :width 60}}
+                 (if (= serie 0)
+                   (str i)
+                   [input [:data :foo :bar] :type "number"]
+                   )
+                 ]
+                )
+              )
+              ]
+        )
+      )
+     ]
+    ))
+
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
         cols (apply + (map Columns (:fields line)))
@@ -251,6 +287,7 @@
       :key id
       :on-click #(log debug-str)}
      (case line-type
+       :template-control [template-control line]
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
