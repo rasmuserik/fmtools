@@ -234,13 +234,12 @@
          :text-fixed-noframe [:span value]
          [:strong "unhandled field:" (str field-type) " " value]))]))
 
-(defn template-control [line]
+(defn template-control [line line-id]
   (let [id (get line "ControlGuid")
         ctl @(db :controls id)
         title (get ctl "Title")
         series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
         ]
-    (log 'template-control line ctl)
     [:div
      [:h3 title]
      (into
@@ -258,16 +257,8 @@
                                 :width 60}}
                  (if (= serie 0)
                    (str i)
-                   [input [:data :foo :bar] :type "number"]
-                   )
-                 ]
-                )
-              )
-              ]
-        )
-      )
-     ]
-    ))
+                   [input (concat line-id [:control serie i])
+                    :type "number"])]))]))]))
 
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
@@ -287,7 +278,7 @@
       :key id
       :on-click #(log debug-str)}
      (case line-type
-       :template-control [template-control line]
+       :template-control [template-control line id]
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
