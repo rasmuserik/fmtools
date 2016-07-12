@@ -118,10 +118,7 @@
         style (aget node "style")
         ]
     (aset style "height" (str height "px"))
-    (aset style "width" (str width "px"))
-    (aset js/window "xxx" node)
-    (js/console.log 'fix-height height width)
-    ))
+    (aset style "width" (str width "px"))))
 
 (def rot90
   (with-meta
