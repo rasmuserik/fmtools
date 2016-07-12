@@ -18,6 +18,11 @@ Krav til app'en:
 - [ ] skal fungere på nyere Android og iOS, - enten _som webapp_, eller +som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren+.
 - [ ] synkronisering med server
 
+** Flags in urlhash
+
+- rot90 :: write fields vertically
+- reset :: clear content of database
+
 ** Roadmap
 
 - [-] version 0.1
@@ -89,6 +94,8 @@ Krav til app'en:
 Current sprint:
 v0.0.10
 
+- [ ] test on devices + possible fixes
+- [X] temporarily clear offline cache to avoid conflict with  (localforage.clear) - added ~reset~ option via hash
 - [X] performance, more responsive edit (fixed through less logging on change)
 - [X] input styling, - no hide text
 - [X] render control
