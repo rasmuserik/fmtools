@@ -378,6 +378,7 @@
       #_(doall (map #(line % report-id areas) (:rows template)))
       ))))
 
+(aset js/window "onerror" (fn [err] (db! :ui :debug (str err))))
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     [:div.main-form
@@ -397,4 +398,7 @@
      [:hr]
      #_[render-template @(subscribe [:ui :current-template])]
      [render-template report]
+     [:hr]
+     [:div "DEBUG"]
+     [:div (str @(db :ui :debug))]
      ]))
