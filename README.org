@@ -22,6 +22,7 @@ Krav til app'en:
 
 - rot90 :: write fields vertically
 - reset :: clear content of database
+- noload :: do not load data from api on startup
 
 ** Roadmap
 
@@ -95,6 +96,11 @@ Current sprint:
 v0.0.10
 
 - [ ] test on devices + possible fixes
+  - [ ] test on iOS
+  - [ ] android builting
+  - [ ] android chrome
+  - [ ] android firefox
+- [X] noload option
 - [X] temporarily clear offline cache to avoid conflict with  (localforage.clear) - added ~reset~ option via hash
 - [X] performance, more responsive edit (fixed through less logging on change)
 - [X] input styling, - no hide text
