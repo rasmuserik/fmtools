@@ -14,8 +14,8 @@
   :plugins
   [[lein-cljsbuild "1.1.3"]
    [lein-ancient "0.6.8"]
-   [lein-figwheel "0.5.0-2"]
-   [lein-bikeshed "0.2.0"]
+   [lein-figwheel "0.5.4-7"]
+   [lein-bikeshed "0.3.0"]
    [lein-kibit "0.1.2"]]
 
   :source-paths ["src/"]
