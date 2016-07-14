@@ -255,6 +255,45 @@ notes - intended content
         - sequence-id
           - value
 
+** Tasklist draft after meeting 2016-07-13
+
+- v0.1.0
+  - tilføj hovedområder til områdetræ
+  - alfabetisk områder
+  - juster kameraknap
+  - synkronisering med server...
+  - synkronisering med server...
+  - synkronisering med server...
+  - indlæs kun skabelondata hvis nødvendigt
+  - virker i webkit browsere i nyere iOS og Android
+  - kun én kodeordsforespørgsel ved opstart
+  - tilføj ~Position~ til overskrifter etc.
+- v0.2.0
+  - skjul hovedområde hvis kun et
+  - oprettelse af service-rapporter
+  - ekstra logik omkring rot90
+  - valg af api-domænenavn ved start
+  - api-domænenavn i indstillinger
+  - indstillinger
+  - performance-optimering
+  - kameraknap indikerer om der er billeder
+  - sikr at synkronisering sletter gamle data
+  - tydeligere loading-indikator
+  - status for hvornår app'en sidst har synkroniseret
+  - manuel synkroniseringknap i indstillinger
+  - virker i mobil chrome + firefox
+  - ...
+- later
+  - app-packaging
+  - flydende overskrift
+  - flyt databehandling til separat tråd for bedre performance
+  - "[ ] / [ ]" responsiv
+  - afrund til 2 decimaler
+  - fuldt testet på windows phone
+  - responsiv minimal bredde til forskellige felt-typer
+  - setting for configuring image resolution
+  - billeddata gemt på disk, og ikke i datastruktur
+
 ** Notes / questions about API
 
 I assume the following:
