@@ -1,5 +1,5 @@
 [[https://waffle.io/solsort/fmtools][https://badge.waffle.io/solsort/fmtools.png]]
-[[https://travis-ci.org/solsort/fmtools.png]]
+[[https://travis-ci.org/solsort/fmtools][https://travis-ci.org/solsort/fmtools.png]]
 
 * FM-Tools [[https://fmtools.solsort.com/icon-small.png]]
 
@@ -25,79 +25,12 @@ Krav til app'en:
 - reset :: clear content of database
 - noload :: do not load data from api on startup
 
-** Roadmap
-
-- 
-- [-] version 0.1
-  - [X] basic report view 
-    - [X] choose active report
-    - [X] choose active areas
-    - [X] render line
-    - [X] repeat lines per area
-  - [-] field/line-types
-    - [X] text-fixed / evt. noframe
-    - [X] text-input / evt. noframe
-    - [X] checkbox
-    - [ ] time
-    - [ ] integer
-    - [X] 2-digit
-    - [ ] 4-digit
-    - [X] dual-field
-    - [X] fetch-from
-    - [ ] approve-reject
-    - [ ] remark
-    - [ ] decription line (input)
-    - [X] basic (text line)
-    - [X] head-line
-    - [ ] NEW: mobile-vertical text
-  - [X] "template-control" line
-  - [-] template/report-structure
-    - [X] load template/report from api
-    - [X] loading indicator + actual channel for result
-    - [ ] check for updates
-    - [X] sync to disk
-    - [X] load from disk
-    - [X] MAYBE refactor not to use keywords (for performance)
-  - [-] report filled-out content
-    - [ ] load all from api
-    - [X] sync to disk
-    - [ ] write changes to api
-    - [ ] load incremental changes from api
-  - [-] images
-    - [X] image button per line
-    - [X] ability to capture image
-    - [X] save image to disk
-    - [ ] sync image to server
-    - [X] show existing images (when online)
-    - [X] remove image
-  - [-] general
-    - [X] make all assets work offline
-    - [ ] check for connectivity changes, and sync when connected / regularly
-    - [ ] verify it works on android
-    - [ ] verify it works on iOS
-    - [ ] try to make it work on Windows Phone
-    - [ ] verify it works on phone as well as tablet
-    - [X] checkbox component
-    - [X] input component
-    - [X] memoised reactive db path lookup and write, ie. =(db :foo :bar)= and =(db! :foo :bar value)=
-  - [X] design
-    - [X] simple semantic-ui responsive design
-    - [X] vertical text (needs change in backend, currently supported with "rot90" hash)
-    - [X] avoid input truncation
-  - [X] infrastructure
-    - [X] development api proxy
-    - [X] https/cors support
-    - [X] responsive ui framework
-  - [X] documentation
-    - [X] general project documentation
-    - [X] roadmap
-    - [X] changelog
-    - [X] document data structure
- 
-Current sprint:
 ** Changelog
 See github issues for roadmap https://github.com/solsort/fmtools/milestones
 *** v0.0.11
+
+- [ ] move issues to github, milestones setup etc.
+
 *** v0.0.10
 
 - [X] update tasks/backlog
@@ -219,45 +152,6 @@ notes - intended content
         - value
         - sequence-id
           - value
-
-** Tasklist draft after meeting 2016-07-13
-
-- v0.1.0
-  - tilføj hovedområder til områdetræ
-  - alfabetisk områder
-  - juster kameraknap
-  - synkronisering med server...
-  - synkronisering med server...
-  - synkronisering med server...
-  - indlæs kun skabelondata hvis nødvendigt
-  - virker i webkit browsere i nyere iOS og Android
-  - kun én kodeordsforespørgsel ved opstart
-  - tilføj ~Position~ til overskrifter etc.
-- v0.2.0
-  - skjul hovedområde hvis kun et
-  - detection af online/offline event, og synkroniser når vi går online efter at have været offline
-  - oprettelse af service-rapporter
-  - ekstra logik omkring rot90
-  - valg af api-domænenavn ved start
-  - api-domænenavn i indstillinger
-  - indstillinger
-  - performance-optimering
-  - kameraknap indikerer om der er billeder
-  - sikr at synkronisering sletter gamle data
-  - tydeligere loading-indikator
-  - status for hvornår app'en sidst har synkroniseret
-  - manuel synkroniseringknap i indstillinger
-  - ...
-- later
-  - app-packaging
-  - flydende overskrift
-  - flyt databehandling til separat tråd for bedre performance
-  - "[ ] / [ ]" responsiv
-  - afrund til 2 decimaler
-  - fuldt testet på windows phone
-  - responsiv minimal bredde til forskellige felt-typer
-  - setting for configuring image resolution
-  - billeddata gemt på disk, og ikke i datastruktur
 
 ** Notes / questions about API
 
