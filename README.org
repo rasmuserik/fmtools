@@ -1,3 +1,4 @@
+[[https://waffle.io/solsort/fmtools][https://badge.waffle.io/solsort/fmtools.png]]
 [[https://travis-ci.org/solsort/fmtools.png]]
 
 * FM-Tools [[https://fmtools.solsort.com/icon-small.png]]
@@ -26,6 +27,7 @@ Krav til app'en:
 
 ** Roadmap
 
+- 
 - [-] version 0.1
   - [X] basic report view 
     - [X] choose active report
@@ -93,13 +95,12 @@ Krav til app'en:
     - [X] document data structure
  
 Current sprint:
-v0.0.10
+** Changelog
+See github issues for roadmap https://github.com/solsort/fmtools/milestones
+*** v0.0.11
+*** v0.0.10
 
-- [ ] test on devices + possible fixes
-  - [ ] test on iOS
-  - [ ] android builting
-  - [ ] android chrome
-  - [ ] android firefox
+- [X] update tasks/backlog
 - [X] noload option
 - [X] temporarily clear offline cache to avoid conflict with  (localforage.clear) - added ~reset~ option via hash
 - [X] performance, more responsive edit (fixed through less logging on change)
@@ -108,8 +109,7 @@ v0.0.10
 - [X] fetch control from api
 - [X] 90º rotation af tekst-felter (if header-flag, ie ~#...~ of url contains "rot90")
 
-*** Changelog
-**** v0.0.9
+*** v0.0.9
 
 - sync of filled out data + images to/from disk
 - stop using keywordize
@@ -123,20 +123,20 @@ v0.0.10
 - camera pop-in working adding of images
 - camera pop-in sensible id
 
-**** v0.0.8
+*** v0.0.8
 - roadmap for version 0.1
 - sync report/template to/from disk
 - loading indicator
 - optionally hide report, when very broad areas is choosen.
 - started image/camera pop-in ui
 
-**** v0.0.7
+*** v0.0.7
 
 - setup nrepl to work with cider
 - refactor / restructure project into separate files
 - repeat lines for objects/areas
 
-**** v0.0.6
+*** v0.0.6
 
 - progress better data sync to disk
   - write data structure to disk
@@ -149,32 +149,32 @@ v0.0.10
 - start saving filled out data into app-db
 - BUGFIX: text entry - read from db
 
-**** v0.0.5
+*** v0.0.5
 
 - do not select template directly, choose from open reports instead
 - experiments towards faster/better synchronisation from app-db to disk
 
-**** v0.0.4
+*** v0.0.4
 
 - initial traverse/store report data into database, (needs mangling)
 - traverse area/object tree structure / object-graph
 - find current selected area, and render list of nodes based on this
 
-**** v0.0.3
+*** v0.0.3
 
 - try convert camera-image into dataurl for display
 - area/object-tree - choose/show current object/area
 - changelog/roadmap
 - cors testing/debugging
 
-**** v0.0.2
+*** v0.0.2
 
 - offline version with cache manifest
 - document data structure
 - refactoring
 - issue-tracking in documentation/file
 
-**** v0.0.1
+*** v0.0.1
 
 - checkbox component that writes to application database
 - initial version of camera button (data not fetched yet)
@@ -184,41 +184,6 @@ v0.0.10
 - responsive ui
 - basic communication with api - load data
 - Proxy api on demo-deploy-server
-
-*** Backlog
-
-v0.1.0
-
-- general
-  - better data model / data mapping
-    - function for mapping api-data to internal data
-    - make implentation match documentation
-      - templates should be list instead of object
-      - ~:lines~ instead of ~:rows~ in template
-      - new objects graph format
-  - refactor/update code
-  - expand this task list, as it gets solved
-- fill out reports (templates of lines / with different kinds of fields)
-  - generic widgets
-  - fields
-    - separate ids for double-checkboxes
-- synchronise to disk / works offline
-  - better performant sync of db to disk
-    - use localforage instead of localstorage
-    - check if async single-blob is ok performancewise
-- dynamic templates (repeat lines based on objects)
-  - repeat lines based on object-graph traversal
-- sync data  to server
-- attach/show images for each line in the report
-  - photo capture
-    - make sure react-img has proper properties
-    - fetch data to db
-  - show images
-- works on mobile, and table. iOS, Android, (and Windows Phone if time permits)
-
-**** Later
-
-- proper horizontal labels (probably also needs extra option in backend)
 
 ** DB
 
@@ -270,6 +235,7 @@ notes - intended content
   - tilføj ~Position~ til overskrifter etc.
 - v0.2.0
   - skjul hovedområde hvis kun et
+  - detection af online/offline event, og synkroniser når vi går online efter at have været offline
   - oprettelse af service-rapporter
   - ekstra logik omkring rot90
   - valg af api-domænenavn ved start
@@ -281,7 +247,6 @@ notes - intended content
   - tydeligere loading-indikator
   - status for hvornår app'en sidst har synkroniseret
   - manuel synkroniseringknap i indstillinger
-  - virker i mobil chrome + firefox
   - ...
 - later
   - app-packaging
