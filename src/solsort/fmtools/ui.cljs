@@ -203,8 +203,9 @@
       [:div
        [select id
         (concat [[empty-choice]]
-                (for [[child-id] children]
-                  [(ObjectName @(subscribe [:area-object child-id])) child-id]))]
+                (sort-by first 
+                 (for [[child-id] children]
+                   [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
        (areas selected)]
       [:div])))
 
