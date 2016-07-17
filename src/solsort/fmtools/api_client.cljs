@@ -50,6 +50,7 @@
           parts (map #(assoc % "PartType" (part-types (PartType %))) parts)]
       (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template template-id))))
+
 (defn <load-templates []
   (go
     (let [templates (<! (<api "ReportTemplate"))

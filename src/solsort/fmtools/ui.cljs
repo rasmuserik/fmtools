@@ -156,7 +156,10 @@
        {})
      [:div.camera-input
       [:img.image-button
-       {:src "assets/camera.png"
+       {
+        :src (if (< 0 (count images) )
+               "assets/photos.png"
+               "assets/camera.png")
         :on-click #(db! :ui :show-controls id (not show-controls))}]]
      (if show-controls
        [:div {:style {:padding-right 44}}
@@ -165,7 +168,9 @@
         [:input
          {:type "file" :accept "image/*"
           :id id :style {:display :none}
-          :on-change #(handle-file id (aget (.-files (.-target %1)) 0))}]
+          :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
+          }
+         ]
         " \u00a0 "
         (into
          [:span.image-list]
