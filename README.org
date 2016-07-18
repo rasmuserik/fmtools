@@ -122,33 +122,39 @@ See github issues for roadmap https://github.com/solsort/fmtools/milestones
 
 notes - intended content
 
-- ~:objects~ (NB: root oid)
+- :objects (NB: root oid)
   - oid
-    - ~:name~
-    - ~"ParentId"~ oid
-    - ~:children~ oid-list
-    - ~:api-id~ id used to identify it in the api
-- ~:templates~ list
-  - ~"TemplateGuid"~
-  - ~"Name"~
-  - ~"Description"~
-  - ~:lines~ list
-    - ~"PartId"~
-    - ~"TaskDescription"~
-    - ~"LineType"~
-    - ~:fields~ list
-      - ~"FieldGuid"~
-      - ~"FieldType"~
-      - ~"Columns"~
-      - ~"DoubleField"~
-      - ~"DoubleFieldSeperator"~ (NB: typo in api)
-      - ~"FieldValue"~
-- ~:raw-report~
-- ~:ui~
-- ~:data~
+    - :name
+    - "ParentId" oid
+    - :children oid-list
+    - :api-id id used to identify it in the api
+- :templates list
+  - "TemplateGuid"
+  - "Name"
+  - "Description"
+  - :lines list
+    - "PartId"
+    - "TaskDescription"
+    - "LineType"
+    - :fields list
+      - "FieldGuid"
+      - "FieldType"
+      - "Columns"
+      - "DoubleField"
+      - "DoubleFieldSeperator" (NB: typo in api)
+      - "FieldValue"
+- :raw-report
+- :ui
+- :data
   - report-id
     - object-id
       - field-id / part-id
+        - :images - list of image
+        - :control
+          - series
+            - i -> value
+        - :field
+        - :2-field - second field value
         - value
         - sequence-id
           - value

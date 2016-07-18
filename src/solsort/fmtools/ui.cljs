@@ -226,21 +226,22 @@
                     :on-click (fn [] (log obj) false)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
-         [:span [field obj cols (conj id 1)]
+         [:span [field obj cols id]
           " " double-separator " "
-          [field obj cols (conj id 2)]])
-       (case field-type
-         :fetch-from (str (ObjectName area))
-         :approve-reject [checkbox id]
-         :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
-         :time [input id :type :time]
-         :remark [input id]
-         :text-input-noframe [input id]
-         :text-input [input id]
-         :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-         :checkbox [checkbox id]
-         :text-fixed-noframe [:span value]
-         [:strong "unhandled field:" (str field-type) " " value]))]))
+          [field obj cols (conj id :field-2)]])
+       (let [id (conj id field-type)]
+        (case field-type
+          :fetch-from (str (ObjectName area))
+          :approve-reject [checkbox id]
+          :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
+          :time [input id :type :time]
+          :remark [input id]
+          :text-input-noframe [input id]
+          :text-input [input id]
+          :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+          :checkbox [checkbox id]
+          :text-fixed-noframe [:span value]
+          [:strong "unhandled field:" (str field-type) " " value])))]))
 
 (defn template-control [line line-id]
   (let [id (get line "ControlGuid")
@@ -293,7 +294,7 @@
        :horizontal-headline [:div [:h3 desc ] fields]
        :multi-field-line [:div.multifield desc [camera-button (conj id :images)]
                           fields ]
-       :description-line [:div desc [:input {:type :text}]]
+       :description-line [:div desc [input  (conj id :description) {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 
 (defn sub-areas [id]
