@@ -33,7 +33,8 @@
       {:text-align :center}
 
       :.line
-      {:min-height 44}
+      {;:min-height 44
+       }
 
       :.main-form
       {:display :inline-block
@@ -57,11 +58,13 @@
        :height 44}
 
       :.multifield
-      {:border-bottom "0.5px solid #ccc"}
+      {:padding-bottom 5
+       :min-height 44
+       :border-bottom "0.5px solid #ccc"}
 
       ".image-button"
-      {:height 40
-       :width 40
+      {:height 37
+       :width 37
        :padding 4
        :border "2px solid black"
        :border-radius 6}
@@ -206,7 +209,7 @@
         double-separator (DoubleFieldSeperator obj)
         value (FieldValue obj)]
     [:span.fmfield {:key id
-                    :style {:width (* 11 @unit (/ columns cols))}
+                    :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
                     :on-click (fn [] (log obj) false)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
