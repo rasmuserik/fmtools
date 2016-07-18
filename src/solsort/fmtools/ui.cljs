@@ -233,7 +233,7 @@
         title (get ctl "Title")
         series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))]
     [:div
-     [:h3 title]
+     [:h3 (get line "Position" "") " " title]
      (into
       [:div]
       (for [serie (concat [0] series)]
@@ -255,7 +255,7 @@
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
         cols (apply + (map Columns (:fields line)))
-        desc (TaskDescription line)
+        desc (str (get line "Position" "") " " (TaskDescription line))
         debug-str (dissoc line :fields)
         area (AreaGuid line)
         obj-id (ObjectId obj)
