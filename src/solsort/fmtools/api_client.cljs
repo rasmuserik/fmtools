@@ -2,7 +2,9 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.definitions :refer
-    [line-types part-types field-types
+    [
+     trail-types full-sync-types
+     line-types part-types field-types
      ReportTemplateTable ReportTemplateFields ReportTemplateParts
      ReportTables ReportTable Areas FieldGuid ReportFields Objects
      AreaGuid
@@ -20,29 +22,6 @@
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(def trail-types {
-  0 :none
-  1 :object
-  2 :area
-  3 :user
-  4 :template-enabled
-  5 :template-disabled
-  6 :template-changed
-  7 :part-changed
-  8 :part-image-changed
-  9 :field-string-1-changed
-  10 :field-string-2-changed
-  11 :field-boolean-1-changed
-  12 :field-boolean-2-changed
-  13 :field-integer-1-changed
-  14 :field-integer-2-changed
-  15 :field-double-1-changed
-  16 :field-double-2-changed
-  17 :field-date-changed
-  18 :field-time-span-changed
-})
-(def full-sync-types
-  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed})
 (defn timestamp->isostring [i] (.toISOString (js/Date. i)))
 (defn str->timestamp [s] (.valueOf (js/Date. s)))
 

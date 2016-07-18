@@ -9,6 +9,7 @@
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -229,7 +230,7 @@
          [:span [field obj cols id]
           " " double-separator " "
           [field obj cols (conj id :field-2)]])
-       (let [id (conj id field-type)]
+       (let [id (conj id (field-types field-type))]
         (case field-type
           :fetch-from (str (ObjectName area))
           :approve-reject [checkbox id]

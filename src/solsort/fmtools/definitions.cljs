@@ -1,5 +1,54 @@
 (ns solsort.fmtools.definitions)
 
+(def field-paths
+  {
+"StringValue1" [:string]
+"StringValue2" [:field2 :string]
+"BooleanValue1" [:boolean]
+"BooleanValue2" [:field2 :boolean]
+"IntegerValue1" [:integer]
+"IntegerValue2" [:field2 :integer]
+"DoubleValue1" [:double]
+"DoubleValue2" [:field2 :double]
+"DateTimeValue1" [:date]
+"TimeSpanValue1" [:time]
+   })
+(def trail-types
+  { 0 :none
+                  1 :object
+                  2 :area
+                  3 :user
+                  4 :template-enabled
+                  5 :template-disabled
+                  6 :template-changed
+                  7 :part-changed
+                  8 :part-image
+                  9 "StringValue1"
+                  10 "StringValue2"
+                  11 "BooleanValue1"
+                  12 "BooleanValue2"
+                  13 "IntegerValue1"
+                  14 "IntegerValue2"
+                  15 "DoubleValue1"
+                  16 "DoubleValue2"
+                  17 "DateTimeValue1"
+                  18 "TimeSpanValue1"
+                  })
+(def full-sync-types
+  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed})
+(defonce field-types
+  {:text-fixed :string
+   :text-input :string
+   :checkbox :boolean
+   :integer :integer
+   :decimal-2-digit :double
+   :decimal-4-digit :double
+   :date :date
+   :time :time
+   :text-fixed-noframe :string
+   :text-input-noframe :string
+   :approve-reject :boolean
+   :remark :string})
 (defonce field-types
   {0   :none
    1   :text-fixed
