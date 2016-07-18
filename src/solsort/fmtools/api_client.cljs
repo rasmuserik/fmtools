@@ -10,6 +10,7 @@
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.fmtools.db :refer [db db! db-sync!]]
    [solsort.fmtools.disk-sync :as disk]
+   [clojure.set :as set]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -19,6 +20,29 @@
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(def trail-types {
+  0 :none
+  1 :object
+  2 :area
+  3 :user
+  4 :template-enabled
+  5 :template-disabled
+  6 :template-changed
+  7 :part-changed
+  8 :part-image-changed
+  9 :field-string-1-changed
+  10 :field-string-2-changed
+  11 :field-boolean-1-changed
+  12 :field-boolean-2-changed
+  13 :field-integer-1-changed
+  14 :field-integer-2-changed
+  15 :field-double-1-changed
+  16 :field-double-2-changed
+  17 :field-date-changed
+  18 :field-time-span-changed
+})
+(def full-sync-types
+  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed})
 (defn timestamp->isostring [i] (.toISOString (js/Date. i)))
 (defn str->timestamp [s] (.valueOf (js/Date. s)))
 
@@ -37,11 +61,12 @@
           trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
-          audit-types (distinct (map #(get % "AuditType") trail))
+          trail (into (or @(db :state :trail) #{})
+                      (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
           last-update (->> trail
-
                            (map #(get % "CreatedAt"))
                            (reduce max))
+          last-update (max last-update prev-sync)
           last-update (if last-update
                         ; TODO: as trailsAfter include event at timestamp, instead of after timestamp, we increment last-update timestamp here. This should probably be fixed in the api, and then the workaround here should be removed
                         (.slice
@@ -51,9 +76,10 @@
           ]
       (db-sync! :state
            {:prev-sync last-update
-            :needs-update audit-types
-            :trail (concat @(db :state :trail) trail)}))))
+            :trail trail}))))
 
+(defn updated-types []
+  (into #{} (map :type @(db :state :trail))))
 
 (defn <load-template [template-id]
   (go
@@ -125,16 +151,22 @@
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
           (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
 
-(defn <fetch []
-  (go
-    (dispatch-sync [:db :loading true])
-    (<! (<update-state))
-    (<! (<chan-seq [(<load-objects)
-                    (<load-reports)
-                    (<load-controls)
-                    (<load-templates)
-                    (disk/<save-form)
-                    #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
-    (dispatch-sync [:db :loading false])
-    ))
+(defn <do-fetch "unconditionally fetch all templates/areas/..."
+  []
+  (go (dispatch-sync [:db :loading true])
+   (<! (<chan-seq [(<load-objects)
+                   (<load-reports)
+                   (<load-controls)
+                   (<load-templates)
+                   (disk/<save-form)
+                   #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
+   (db-sync! :state :trail
+             (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
+   (dispatch-sync [:db :loading false])))
 
+(defn <fetch [] "conditionally update db"
+  (go
+    (<! (<update-state))
+    (when-not (empty? (set/intersection full-sync-types (updated-types)))
+      (<! (<do-fetch)))
+    ))
