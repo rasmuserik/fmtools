@@ -9,14 +9,20 @@
    [solsort.fmtools.db :as db]
    [solsort.fmtools.ui]
    [solsort.fmtools.api-client :as api]
-   [solsort.fmtools.disk-sync :as disk]))
+   [solsort.fmtools.disk-sync :as disk]
+   ))
 
-(defonce load-data
   (go
     (when (not= -1 (.indexOf js/location.hash "reset"))
       (<! (<p (js/localforage.clear))))
-    (<! (disk/<restore-form))
+    (defonce restore-data
+      (<! (disk/<restore-form)))
     (when (= -1 (.indexOf js/location.hash "noload"))
       (<! (api/<fetch))
       (<! (disk/<save-form)))
-    (disk/watch-changes! :data)))
+    (defonce watch
+      (do
+                     (disk/watch-changes! :state)
+                     (disk/watch-changes! :data)
+                     nil)
+      ))

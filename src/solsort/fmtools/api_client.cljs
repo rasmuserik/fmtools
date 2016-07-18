@@ -8,7 +8,8 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
-   [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.db :refer [db db! db-sync!]]
+   [solsort.fmtools.disk-sync :as disk]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -18,6 +19,9 @@
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(defn timestamp->isostring [i] (.toISOString (js/Date. i)))
+(defn str->timestamp [s] (.valueOf (js/Date. s)))
+
 (defn <api [endpoint]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
@@ -26,6 +30,30 @@
                                         ;"@fmproxy.solsort.com/api/v1/"
               endpoint)
          :credentials true))
+
+(defn <update-state []
+  (go
+    (let [prev-sync (or @(db :state :prev-sync) "2000-01-01")
+          trail (->
+                 (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
+                 (get "AuditTrails"))
+          audit-types (distinct (map #(get % "AuditType") trail))
+          last-update (->> trail
+
+                           (map #(get % "CreatedAt"))
+                           (reduce max))
+          last-update (if last-update
+                        ; TODO: as trailsAfter include event at timestamp, instead of after timestamp, we increment last-update timestamp here. This should probably be fixed in the api, and then the workaround here should be removed
+                        (.slice
+                         (timestamp->isostring (inc (str->timestamp last-update)))
+                         0 -1)
+                        prev-sync)
+          ]
+      (db-sync! :state
+           {:prev-sync last-update
+            :needs-update audit-types
+            :trail (concat @(db :state :trail) trail)}))))
+
 
 (defn <load-template [template-id]
   (go
@@ -50,7 +78,6 @@
           parts (map #(assoc % "PartType" (part-types (PartType %))) parts)]
       (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template template-id))))
-
 (defn <load-templates []
   (go
     (let [templates (<! (<api "ReportTemplate"))
@@ -73,21 +100,18 @@
            (dispatch-sync [:area-object object])
            ))))
     (log 'load-area (Name area))))
-
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
         (<! (<chan-seq (for [area (Areas areas)]
                          (<load-area area))))
         (log 'objects-loaded))))
-
 (defn <load-report [report]
   (go
     (let [data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
           role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))]
       (dispatch-sync [:raw-report report data role])
       (log 'report (ReportName report)))))
-
 (defn <load-reports []
   (go
     (let [reports (<! (<api "Report"))]
@@ -96,7 +120,6 @@
              (<load-report report))))
       (log 'loaded-reports)
       )))
-
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
@@ -105,10 +128,12 @@
 (defn <fetch []
   (go
     (dispatch-sync [:db :loading true])
+    (<! (<update-state))
     (<! (<chan-seq [(<load-objects)
                     (<load-reports)
                     (<load-controls)
                     (<load-templates)
+                    (disk/<save-form)
                     #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
     (dispatch-sync [:db :loading false])
     ))

@@ -34,6 +34,8 @@
   (memoize db-raw))
 (defn db! "Write a value into the application db" [& path]
   (dispatch (into [:db] path)))
+(defn db-sync! "Write a value into the application db" [& path]
+  (dispatch-sync (into [:db] path)))
 
 (register-sub :db
  (fn  [db [_ & path]]
