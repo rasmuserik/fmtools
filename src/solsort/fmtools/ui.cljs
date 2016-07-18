@@ -43,35 +43,33 @@
       :.camera-input
       {:display :inline-block
        :position :absolute
-       :right 0 }
+       :right 0}
 
       :.fmfield
       {:vertical-align :top
        :display :inline-block
        :text-align :center
-       :clear :right }
+       :clear :right}
 
       :.checkbox
       {:width 44
        :max-width "95%"
-       :height 44 }
+       :height 44}
 
       :.multifield
       {:border-bottom "0.5px solid #ccc"}
 
       ".image-button"
-       {:height 40
-        :width 40
-        :padding 4
-        :border "2px solid black"
-        :border-radius 6
-       }
+      {:height 40
+       :width 40
+       :padding 4
+       :border "2px solid black"
+       :border-radius 6}
       ".camera-input img"
-      {:opacity "0.5" }
+      {:opacity "0.5"}
 
       :.fields
-      {:text-align :center }
-      }
+      {:text-align :center}}
      "fmstyling"))
   (render [app]))
 (aset js/window "onresize" style)
@@ -93,7 +91,7 @@
      {:on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 (defn input  [id & {:keys [type size max-length options]
-         :or {type "text"}}]
+                    :or {type "text"}}]
   (case type
     :select (select id options)
     :checkbox (checkbox id)
@@ -101,8 +99,7 @@
              :style {:padding-right 0
                      :padding-left 0
                      :text-align :center
-                     :overflow :visible
-                     }
+                     :overflow :visible}
              :name (prn-str id)
              :key (prn-str id)
              :size size
@@ -110,14 +107,12 @@
              :value @(apply db id)
              :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
 
-
 (defn fix-height [o]
   (let [node (reagent/dom-node o)
         child (-> node (aget "children") (aget 0))
         width (aget child "clientHeight")
         height (aget child "clientWidth")
-        style (aget node "style")
-        ]
+        style (aget node "style")]
     (aset style "height" (str height "px"))
     (aset style "width" (str width "px"))))
 
@@ -134,10 +129,7 @@
                  :top "100%"
                  :left 0
                  :display :inline-block}}
-        elem
-        ]
-       ]
-      )
+        elem]])
     {:component-did-mount fix-height
      :component-did-update fix-height}))
 
@@ -152,13 +144,11 @@
        {:style {:border-left "3px solid gray"
                 :border-top "3px solid gray"
                 :padding-left "5px"
-                :padding-top "3px"
-                }}
+                :padding-top "3px"}}
        {})
      [:div.camera-input
       [:img.image-button
-       {
-        :src (if (< 0 (count images) )
+       {:src (if (< 0 (count images))
                "assets/photos.png"
                "assets/camera.png")
         :on-click #(db! :ui :show-controls id (not show-controls))}]]
@@ -169,9 +159,7 @@
         [:input
          {:type "file" :accept "image/*"
           :id id :style {:display :none}
-          :on-change #(handle-file id (aget (.-files (.-target %1)) 0))
-          }
-         ]
+          :on-change #(handle-file id (aget (.-files (.-target %1)) 0))}]
         " \u00a0 "
         (into
          [:span.image-list]
@@ -187,17 +175,12 @@
                       :top 0
                       :right 0
                       :background "rgba(255,255,255,0.7)"}
-              :on-click #(dispatch [:remove-image id img])
-              }
-             ]
+              :on-click #(dispatch [:remove-image id img])}]
             [:img {:src img
                    :style {:max-height 150
                            :vertical-align :top
-                           :max-width "100%"
-                           }}]])
-         )]
-       "")
-     ]))
+                           :max-width "100%"}}]]))]
+       "")]))
 
 ;;; Actual ui
 (defn areas [id]
@@ -210,8 +193,8 @@
        [select id
         (concat [[empty-choice]]
                 (sort-by first 
-                 (for [[child-id] children]
-                   [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
+                         (for [[child-id] children]
+                           [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
        (areas selected)]
       [:div])))
 
@@ -223,7 +206,7 @@
         double-separator (DoubleFieldSeperator obj)
         value (FieldValue obj)]
     [:span.fmfield {:key id
-                    :style {:width (* 11 @unit (/ columns cols)) }
+                    :style {:width (* 11 @unit (/ columns cols))}
                     :on-click (fn [] (log obj) false)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
@@ -231,25 +214,24 @@
           " " double-separator " "
           [field obj cols (conj id :field-2)]])
        (let [id (conj id (field-types field-type))]
-        (case field-type
-          :fetch-from (str (ObjectName area))
-          :approve-reject [checkbox id]
-          :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
-          :time [input id :type :time]
-          :remark [input id]
-          :text-input-noframe [input id]
-          :text-input [input id]
-          :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-          :checkbox [checkbox id]
-          :text-fixed-noframe [:span value]
-          [:strong "unhandled field:" (str field-type) " " value])))]))
+         (case field-type
+           :fetch-from (str (ObjectName area))
+           :approve-reject [checkbox id]
+           :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
+           :time [input id :type :time]
+           :remark [input id]
+           :text-input-noframe [input id]
+           :text-input [input id]
+           :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+           :checkbox [checkbox id]
+           :text-fixed-noframe [:span value]
+           [:strong "unhandled field:" (str field-type) " " value])))]))
 
 (defn template-control [line line-id]
   (let [id (get line "ControlGuid")
         ctl @(db :controls id)
         title (get ctl "Title")
-        series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
-        ]
+        series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))]
     [:div
      [:h3 title]
      (into
@@ -257,18 +239,18 @@
       (for [serie (concat [0] series)]
         [:div.multifield
          (get ctl (str "ChartSerieName" serie))
-        (into [:div]
-              (for [i (range
-                       (ctl "XAxisMin")
-                       (+ (ctl "XAxisMax") (ctl "XAxisStep"))
-                       (ctl "XAxisStep"))]
-                [:span {:style {:display :inline-block
-                                :text-align :center
-                                :width 60}}
-                 (if (= serie 0)
-                   (str i)
-                   [input (concat line-id [:control serie i])
-                    :type "number"])]))]))]))
+         (into [:div]
+               (for [i (range
+                        (ctl "XAxisMin")
+                        (+ (ctl "XAxisMax") (ctl "XAxisStep"))
+                        (ctl "XAxisStep"))]
+                 [:span {:style {:display :inline-block
+                                 :text-align :center
+                                 :width 60}}
+                  (if (= serie 0)
+                    (str i)
+                    [input (concat line-id [:control serie i])
+                     :type "number"])]))]))]))
 
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
@@ -292,9 +274,9 @@
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
-       :horizontal-headline [:div [:h3 desc ] fields]
+       :horizontal-headline [:div [:h3 desc] fields]
        :multi-field-line [:div.multifield desc [camera-button (conj id :images)]
-                          fields ]
+                          fields]
        :description-line [:div desc [input  (conj id :description) {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 
@@ -309,7 +291,7 @@
 
 (defn choose-report []
   (let [areas (into #{} (map ObjectId (traverse-areas :root)))
-        reports (filter #(areas (% "ObjectId"))(map second @(db :reports)))]
+        reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
     (case (count reports)
       0 (do
           (db! :ui :report-id nil)
@@ -317,14 +299,13 @@
       1 (do
           (db! :ui :report-id ((first reports) "ReportGuid"))
           [:div "Rapport: " ((first reports) "ReportName")])
-     [:div.field
-      [:label "Rapport"]
-      [select :report-id
-       (concat [[empty-choice]]
-               (for [report reports]
-                 [(report "ReportName")
-                  (report "ReportGuid")]))]]
-     )))
+      [:div.field
+       [:label "Rapport"]
+       [select :report-id
+        (concat [[empty-choice]]
+                (for [report reports]
+                  [(report "ReportName")
+                   (report "ReportGuid")]))]])))
 
 (defn set-areas! [oid]
   (log 'set-areas oid)
@@ -332,20 +313,18 @@
         parent-id (get obj "ParentId")]
     (when parent-id
       (db! :ui (if (= 0 parent-id) :root parent-id) oid)
-      (recur parent-id)
-  )))
+      (recur parent-id))))
 
 (defn choose-area [report]
   #_(if (:children @(subscribe  [:area-object (ObjectId report)]))
-    [:div.field
-     [:label "Område"]
-     [areas (or (ObjectId report) :root)]]
-    [:span.empty])
+      [:div.field
+       [:label "Område"]
+       [areas (or (ObjectId report) :root)]]
+      [:span.empty])
   (when (ObjectId report) (set-areas! (ObjectId report)))
   [:div.field
    [:label "Område"]
-   [areas :root]]
-  )
+   [areas :root]])
 
 (defn render-section [lines report-id areas]
   (for [obj areas]
@@ -365,26 +344,22 @@
         template @(subscribe [:template id])
         report-id @(subscribe [:ui :report-id])
         areas (conj (traverse-areas (ObjectId report)) {})
-        max-objects 100
-        ]
+        max-objects 100]
     (into
-      [:div.ui.form
-       [:h1 (Description template)]
-       (if (< max-objects (count areas))
-         [:div
-          [:div {:style {:display :inline-block :float :right}}[checkbox [:ui :nolimit]]]
-          [:br]
-          "Vis rapportindhold for områder med mere end " (str max-objects) " objekter (langsomt):"
-          [:br]
-          "- eller vælg underområde herover."]
-         ""
-         )
-       ]
-      (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
-        []
-        (render-lines (:rows template) report-id areas)
-      #_(doall (map #(line % report-id areas) (:rows template)))
-      ))))
+     [:div.ui.form
+      [:h1 (Description template)]
+      (if (< max-objects (count areas))
+        [:div
+         [:div {:style {:display :inline-block :float :right}} [checkbox [:ui :nolimit]]]
+         [:br]
+         "Vis rapportindhold for områder med mere end " (str max-objects) " objekter (langsomt):"
+         [:br]
+         "- eller vælg underområde herover."]
+        "")]
+     (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
+       []
+       (render-lines (:rows template) report-id areas)
+       #_(doall (map #(line % report-id areas) (:rows template)))))))
 
 (aset js/window "onerror" (fn [err] (db! :ui :debug (str err))))
 (defn loading []
@@ -402,12 +377,9 @@
               :text-align "center"
               :font-size "48px"
               :text-shadow "2px 2px 8px #000000"
-              :padding-bottom (* 0.7 js/window.innerHeight)
-              }}
-     "Loading..."
-     ]
-    [:span]
-    ))
+              :padding-bottom (* 0.7 js/window.innerHeight)}}
+     "Loading..."]
+    [:span]))
 (defn app []
   (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
     [:div.main-form
@@ -418,12 +390,10 @@
      [:div.ui.container
       [:div.ui.form
        [choose-area report]
-       [choose-report]
-       ]]
+       [choose-report]]]
      [:hr]
      #_[render-template @(subscribe [:ui :current-template])]
      [render-template report]
      [:hr]
      [:div "DEBUG"]
-     [:div (str @(db :ui :debug))]
-     ]))
+     [:div (str @(db :ui :debug))]]))

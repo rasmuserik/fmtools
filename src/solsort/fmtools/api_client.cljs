@@ -2,8 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.definitions :refer
-    [
-     trail-types full-sync-types
+    [trail-types full-sync-types
      line-types part-types field-types
      ReportTemplateTable ReportTemplateFields ReportTemplateParts
      ReportTables ReportTable Areas FieldGuid ReportFields Objects
@@ -51,11 +50,10 @@
                         (.slice
                          (timestamp->isostring (inc (str->timestamp last-update)))
                          0 -1)
-                        prev-sync)
-          ]
+                        prev-sync)]
       (db-sync! :state
-           {:prev-sync last-update
-            :trail trail}))))
+                {:prev-sync last-update
+                 :trail trail}))))
 
 (defn updated-types []
   (into #{} (map :type @(db :state :trail))))
@@ -63,7 +61,7 @@
 (defn <load-template [template-id]
   (go
     (let [template (<! (<api (str "ReportTemplate?templateGuid="
-                         template-id)))
+                                  template-id)))
           template (ReportTemplateTable template)
           fields (-> template
                      (ReportTemplateFields)
@@ -79,7 +77,7 @@
                                    (get fields (PartGuid part)))))
                  (sort-by DisplayOrder parts))
           parts (map #(assoc % "LineType" (or (line-types (LineType %))
-                                             (log "invalid-LintType" %))) parts)
+                                              (log "invalid-LintType" %))) parts)
           parts (map #(assoc % "PartType" (part-types (PartType %))) parts)]
       (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template template-id))))
@@ -97,13 +95,12 @@
 (defn <load-area [area]
   (go
     (let [objects (Objects
-                    (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))]
+                   (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))]
       ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
       (doall
        (for [object objects]
          (let [object (assoc object "AreaName" (Name area))]
-           (dispatch-sync [:area-object object])
-           ))))
+           (dispatch-sync [:area-object object])))))
     (log 'load-area (Name area))))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
@@ -123,29 +120,27 @@
       (<! (<chan-seq
            (for [report (ReportTables reports)]
              (<load-report report))))
-      (log 'loaded-reports)
-      )))
+      (log 'loaded-reports))))
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
-          (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
+      (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
   (go (dispatch-sync [:db :loading true])
-   (<! (<chan-seq [(<load-objects)
-                   (<load-reports)
-                   (<load-controls)
-                   (<load-templates)
-                   (disk/<save-form)
-                   #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
-   (db-sync! :state :trail
-             (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
-   (dispatch-sync [:db :loading false])))
+      (<! (<chan-seq [(<load-objects)
+                      (<load-reports)
+                      (<load-controls)
+                      (<load-templates)
+                      (disk/<save-form)
+                      #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
+      (db-sync! :state :trail
+                (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
+      (dispatch-sync [:db :loading false])))
 
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
     (when-not (empty? (set/intersection full-sync-types (updated-types)))
-      (<! (<do-fetch)))
-    ))
+      (<! (<do-fetch)))))
