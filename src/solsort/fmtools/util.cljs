@@ -39,3 +39,7 @@
             ks (filter #(not= (from %) (to %)) ks)]
         (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
       to)))
+
+(defn timestamp->isostring [i] (.toISOString (js/Date. i)))
+(defn str->timestamp [s] (.valueOf (js/Date. s)))
+

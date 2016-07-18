@@ -8,7 +8,7 @@
      ReportTables ReportTable Areas FieldGuid ReportFields Objects
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
-   [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
    [solsort.fmtools.db :refer [db db! db-sync!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
@@ -20,9 +20,6 @@
     :refer [register-sub subscribe register-handler
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
-
-(defn timestamp->isostring [i] (.toISOString (js/Date. i)))
-(defn str->timestamp [s] (.valueOf (js/Date. s)))
 
 (defn <api [endpoint]
   (<ajax (str "https://"
@@ -91,6 +88,13 @@
       (<! (<chan-seq (for [template (get templates "ReportTemplateTables")]
                        (<load-template (get template "TemplateGuid")))))
       (log 'loaded-templates))))
+
+; 
+;; Turns out that a file is not linked directly to the line/object,
+;; but actually to a separate object in the filled-out report on the serverside :(
+(defn handle-files [fs]
+  (log fs))
+(handle-files @(db :reps ))
 
 (defn <load-area [area]
   (go
