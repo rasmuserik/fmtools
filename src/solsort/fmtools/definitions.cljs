@@ -1,16 +1,17 @@
 (ns solsort.fmtools.definitions)
 
-(def field-paths
-  {"StringValue1" [:string]
-   "StringValue2" [:field2 :string]
-   "BooleanValue1" [:boolean]
-   "BooleanValue2" [:field2 :boolean]
-   "IntegerValue1" [:integer]
-   "IntegerValue2" [:field2 :integer]
-   "DoubleValue1" [:double]
-   "DoubleValue2" [:field2 :double]
-   "DateTimeValue1" [:date]
-   "TimeSpanValue1" [:time]})
+(def data-paths
+  [[:camera nil [:images]]
+   [:field "StringValue1" [:string]]
+   [:field "StringValue2" [:field2 :string]]
+   [:field "BooleanValue1" [:boolean]]
+   [:field "BooleanValue2" [:field2 :boolean]]
+   [:field "IntegerValue1" [:integer]]
+   [:field "IntegerValue2" [:field2 :integer]]
+   [:field "DoubleValue1" [:double]]
+   [:field "DoubleValue2" [:field2 :double]]
+   [:field "DateTimeValue1" [:date]]
+   [:field "TimeSpanValue1" [:time]]])
 (def trail-types
   {0 :none
    1 :object
@@ -33,7 +34,7 @@
    18 "TimeSpanValue1"})
 (def full-sync-types
   #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed})
-(defonce field-types
+(defonce field-typing
   {:text-fixed :string
    :text-input :string
    :checkbox :boolean

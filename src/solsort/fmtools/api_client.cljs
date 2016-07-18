@@ -113,6 +113,7 @@
     (let [data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
           role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))]
       (dispatch-sync [:raw-report report data role])
+      (db-sync! :reps (ReportGuid report) (get data "ReportTable"))
       (log 'report (ReportName report)))))
 (defn <load-reports []
   (go
