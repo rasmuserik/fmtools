@@ -139,19 +139,16 @@
                             {:id (get object "ObjectId")
                              :type :object})]
            (obj! object)
-           (dispatch-sync [:area-object object])))))
-    (log 'load-area (Name area))
-    (obj! area)
-    (add-child! :areas (:id area))
-    ))
+           (dispatch-sync [:area-object object]))))
+      (log 'load-area (Name area))
+      (obj! area)
+      (add-child! :areas (:id area)))))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
         (<! (<chan-seq (for [area (Areas areas)]
                          (<load-area area))))
         (log 'objects-loaded))))
-
-;; :obj initialisation until here
 
 (defn <load-report [report]
   (go
@@ -166,14 +163,12 @@
          (let [entry (into entry
                            {:id (get entry "PartGuid")
                             :type :part-entry})]
-           (add-child! :report-id (:id entry))
            (obj! entry))))
       (doall
        (for [entry (get table "ReportFields")]
          (let [entry (into entry
                            {:id (get entry "FieldGuid")
                             :type :field-entry})]
-           (add-child! :report-id (:id entry))
            (obj! entry))))
       (doall
        (for [entry (get table "ReportFiles")]
@@ -184,7 +179,11 @@
                             :type :file-entry})]
            (add-child! (get entry "LinkedToGuid") (:id entry))
            (obj! entry))))
-      (db-sync! :reps (ReportGuid report) (get data "ReportTable"))
+      (obj! {:id report-id
+             :children (concat
+                        (map #(get % "PartGuid") (get table "ReportParts"))
+                        (map #(get % "FieldGuid") (get table "ReportFields"))
+              )})
       (log 'report (ReportName report)))))
 (defn <load-reports []
   (go
@@ -193,17 +192,27 @@
            (for [report (ReportTables reports)]
              (let [report (into report {:id (get report "ReportGuid")
                                         :type :report})]
+               (obj! report)
                (add-child! :reports (:id report))
                (<load-report report)))))
       (log 'loaded-reports))))
+;; :obj initialisation until here
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
-      (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
+      (doall (map #(db! :controls (get % "ControlGuid") %) controls))
+      (doall (map (fn [ctl]
+                 (obj! (into ctl
+                   {:id (get ctl "ControlGuid")
+                   :type :control}))
+                 (add-child! :controls (get ctl "ControlGuid")))
+                  controls))
+      )))
 
 (obj! {:id :root :type :root
-  :children [:areas :templates :reports]})
+  :children [:areas :templates :reports :controls]})
 (obj! {:id :areas :type :root})
+(obj! {:id :controls :type :root})
 (obj! {:id :reports :type :root})
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
