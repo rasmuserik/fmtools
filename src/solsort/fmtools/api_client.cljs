@@ -35,7 +35,6 @@
    {:id parent
     :children (distinct (conj (get (obj parent) :children []) child))}))
 
-
 (defn <api [endpoint]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
@@ -100,8 +99,7 @@
                    (assoc part :fields
                           (sort-by DisplayOrder
                                    (get fields (PartGuid part)))))
-                 (sort-by DisplayOrder parts))
-          ]
+                 (sort-by DisplayOrder parts))]
       (log 'template (:id template))
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map #(obj! {:id (first %) :children (map :guid (second %))}) fields))
@@ -123,19 +121,18 @@
       (log 'loaded-templates))))
 
 (defn handle-area [area objects]
- (db! :obj
-      (into @(db :obj)
- (for [object objects]
-   (let [object (assoc object "AreaName" (Name area))
-         object (into object
-                      {:id (get object "ObjectId")
-                       :type :object})]
-     (dispatch-sync [:area-object object])
-     [(:id object) object]
-     ))))
-(log 'load-area (Name area))
-(obj! area)
-(add-child! :areas (:id area)))
+  (db! :obj
+       (into @(db :obj)
+             (for [object objects]
+               (let [object (assoc object "AreaName" (Name area))
+                     object (into object
+                                  {:id (get object "ObjectId")
+                                   :type :object})]
+                 (dispatch-sync [:area-object object])
+                 [(:id object) object]))))
+  (log 'load-area (Name area))
+  (obj! area)
+  (add-child! :areas (:id area)))
 
 (defn <load-area [area]
   (go
@@ -144,11 +141,10 @@
           area (into area
                      {:id (get area "AreaGuid")
                       :type :area
-                      :children (map #(get % "ObjectId") objects)})
-          ]
+                      :children (map #(get % "ObjectId") objects)})]
       (handle-area area objects)
       ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
- )))
+)))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
@@ -161,19 +157,19 @@
     (dispatch-sync [:raw-report report data role])
                                         ; TODO extract report-details
     (db! :obj
-     (into @(db :obj)
-           (for [entry (get table "ReportParts")]
-             (let [entry (into entry
-                               {:id (get entry "PartGuid")
-                                :type :part-entry})]
-               [(:id entry) entry]))))
+         (into @(db :obj)
+               (for [entry (get table "ReportParts")]
+                 (let [entry (into entry
+                                   {:id (get entry "PartGuid")
+                                    :type :part-entry})]
+                   [(:id entry) entry]))))
     (db! :obj
-          (into @(db :obj)
-     (for [entry (get table "ReportFields")]
-       (let [entry (into entry
-                         {:id (get entry "FieldGuid")
-                          :type :field-entry})]
-         [(:id entry) entry]))))
+         (into @(db :obj)
+               (for [entry (get table "ReportFields")]
+                 (let [entry (into entry
+                                   {:id (get entry "FieldGuid")
+                                    :type :field-entry})]
+                   [(:id entry) entry]))))
     (doall
      (for [entry (get table "ReportFiles")]
        (let [entry (into entry
@@ -186,8 +182,7 @@
     (obj! {:id report-id
            :children (concat
                       (map #(get % "PartGuid") (get table "ReportParts"))
-                      (map #(get % "FieldGuid") (get table "ReportFields"))
-                      )})
+                      (map #(get % "FieldGuid") (get table "ReportFields")))})
     (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
@@ -195,9 +190,8 @@
           data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
           role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))
           table (get data "ReportTable")]
-      (handle-report report report-id data role table)
-      )))
-    
+      (handle-report report report-id data role table))))
+
 (defn <load-reports []
   (go
     (let [reports (<! (<api "Report"))]
@@ -214,15 +208,14 @@
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
       (doall (map #(db! :controls (get % "ControlGuid") %) controls))
       (doall (map (fn [ctl]
-                 (obj! (into ctl
-                   {:id (get ctl "ControlGuid")
-                   :type :control}))
-                 (add-child! :controls (get ctl "ControlGuid")))
-                  controls))
-      )))
+                    (obj! (into ctl
+                                {:id (get ctl "ControlGuid")
+                                 :type :control}))
+                    (add-child! :controls (get ctl "ControlGuid")))
+                  controls)))))
 
 (obj! {:id :root :type :root
-  :children [:areas :templates :reports :controls]})
+       :children [:areas :templates :reports :controls]})
 (obj! {:id :areas :type :root})
 (obj! {:id :controls :type :root})
 (obj! {:id :reports :type :root})
