@@ -122,6 +122,21 @@
                             (get templates "ReportTemplateTables"))})
       (log 'loaded-templates))))
 
+(defn handle-area [area objects]
+ (db! :obj
+      (into @(db :obj)
+ (for [object objects]
+   (let [object (assoc object "AreaName" (Name area))
+         object (into object
+                      {:id (get object "ObjectId")
+                       :type :object})]
+     (dispatch-sync [:area-object object])
+     [(:id object) object]
+     ))))
+(log 'load-area (Name area))
+(obj! area)
+(add-child! :areas (:id area)))
+
 (defn <load-area [area]
   (go
     (let [objects (Objects
@@ -131,18 +146,9 @@
                       :type :area
                       :children (map #(get % "ObjectId") objects)})
           ]
+      (handle-area area objects)
       ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
-      (doall
-       (for [object objects]
-         (let [object (assoc object "AreaName" (Name area))
-               object (into object
-                            {:id (get object "ObjectId")
-                             :type :object})]
-           (obj! object)
-           (dispatch-sync [:area-object object]))))
-      (log 'load-area (Name area))
-      (obj! area)
-      (add-child! :areas (:id area)))))
+ )))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
@@ -151,35 +157,38 @@
         (log 'objects-loaded))))
 
 (defn handle-report [report report-id data role table]
-      (dispatch-sync [:raw-report report data role])
-      ; TODO extract report-details
-      (doall
-       (for [entry (get table "ReportParts")]
-         (let [entry (into entry
-                           {:id (get entry "PartGuid")
-                            :type :part-entry})]
-           (obj! entry))))
-      (doall
-       (for [entry (get table "ReportFields")]
-         (let [entry (into entry
-                           {:id (get entry "FieldGuid")
-                            :type :field-entry})]
-           (obj! entry))))
-      (doall
-       (for [entry (get table "ReportFiles")]
-         (let [entry (into entry
-                           {:id (str (get entry "LinkedToGuid")
-                                     "-"
-                                     (get entry "FileId"))
-                            :type :file-entry})]
-           (add-child! (get entry "LinkedToGuid") (:id entry))
-           (obj! entry))))
-      (obj! {:id report-id
-             :children (concat
-                        (map #(get % "PartGuid") (get table "ReportParts"))
-                        (map #(get % "FieldGuid") (get table "ReportFields"))
-              )})
-      (log 'report (ReportName report)))
+  (let [t0 (js/Date.now)]
+    (dispatch-sync [:raw-report report data role])
+                                        ; TODO extract report-details
+    (db! :obj
+     (into @(db :obj)
+           (for [entry (get table "ReportParts")]
+             (let [entry (into entry
+                               {:id (get entry "PartGuid")
+                                :type :part-entry})]
+               [(:id entry) entry]))))
+    (db! :obj
+          (into @(db :obj)
+     (for [entry (get table "ReportFields")]
+       (let [entry (into entry
+                         {:id (get entry "FieldGuid")
+                          :type :field-entry})]
+         [(:id entry) entry]))))
+    (doall
+     (for [entry (get table "ReportFiles")]
+       (let [entry (into entry
+                         {:id (str (get entry "LinkedToGuid")
+                                   "-"
+                                   (get entry "FileId"))
+                          :type :file-entry})]
+         (add-child! (get entry "LinkedToGuid") (:id entry))
+         (obj! entry))))
+    (obj! {:id report-id
+           :children (concat
+                      (map #(get % "PartGuid") (get table "ReportParts"))
+                      (map #(get % "FieldGuid") (get table "ReportFields"))
+                      )})
+    (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
     (let [report-id (get report "ReportGuid")
