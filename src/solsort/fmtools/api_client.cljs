@@ -21,6 +21,21 @@
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(defn obj [id]
+  (or @(db :obj id) {:id id}))
+
+(defn obj! [o]
+  (if (:id o)
+    (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
+    (log 'no-id o))
+  o)
+
+(defn add-child! [parent child]
+  (obj!
+   {:id parent
+    :children (distinct (conj (get (obj parent) :children []) child))}))
+
+
 (defn <api [endpoint]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
@@ -56,26 +71,40 @@
   (into #{} (map :type @(db :state :trail))))
 
 (defn <load-template [template-id]
+  (log 'a)
   (go
     (let [template (<! (<api (str "ReportTemplate?templateGuid="
                                   template-id)))
           template (ReportTemplateTable template)
+          template (obj! (into template
+                               {:id (get template "TemplateGuid")
+                                :type :template}))
           fields (-> template
                      (ReportTemplateFields)
                      (->>
                       (map #(assoc % "FieldType" (field-types (FieldType %))))
+                      (map #(into % {:id (get % "FieldGuid")
+                                     :type :field}))
+                      (map obj!)
                       (sort-by DisplayOrder)
                       (group-by PartGuid)))
           parts (-> template (ReportTemplateParts))
+          parts (map #(assoc % "LineType" (or (line-types (LineType %))
+                                              (log "invalid-LintType" %))) parts)
+          parts (map #(assoc % "PartType" (part-types (PartType %))) parts)
+          parts (map #(obj! (into % {:id (get % "PartGuid")
+                                     :type :part}))
+                     parts)
           parts (map
                  (fn [part]
                    (assoc part :fields
                           (sort-by DisplayOrder
                                    (get fields (PartGuid part)))))
                  (sort-by DisplayOrder parts))
-          parts (map #(assoc % "LineType" (or (line-types (LineType %))
-                                              (log "invalid-LintType" %))) parts)
-          parts (map #(assoc % "PartType" (part-types (PartType %))) parts)]
+          ]
+      (log 'template (:id template))
+      (obj! {:id (:id template) :children (map :id parts)})
+      (doall (map #(obj! {:id (first %) :children (map :guid (second %))}) fields))
       (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template template-id))))
 (defn <load-templates []
@@ -87,36 +116,74 @@
                           (get "TemplateGuid"))]
       (<! (<chan-seq (for [template (get templates "ReportTemplateTables")]
                        (<load-template (get template "TemplateGuid")))))
+      (obj! {:id :templates
+             :type :root
+             :children (map #(get % "TemplateGuid")
+                            (get templates "ReportTemplateTables"))})
       (log 'loaded-templates))))
-
-; 
-;; Turns out that a file is not linked directly to the line/object,
-;; but actually to a separate object in the filled-out report on the serverside :(
-(defn handle-files [fs]
-  (log fs))
-(handle-files @(db :reps ))
 
 (defn <load-area [area]
   (go
     (let [objects (Objects
-                   (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))]
+                   (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))
+          area (into area
+                     {:id (get area "AreaGuid")
+                      :type :area
+                      :children (map #(get % "ObjectId") objects)})
+          ]
       ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
       (doall
        (for [object objects]
-         (let [object (assoc object "AreaName" (Name area))]
+         (let [object (assoc object "AreaName" (Name area))
+               object (into object
+                            {:id (get object "ObjectId")
+                             :type :object})]
+           (obj! object)
            (dispatch-sync [:area-object object])))))
-    (log 'load-area (Name area))))
+    (log 'load-area (Name area))
+    (obj! area)
+    (add-child! :areas (:id area))
+    ))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
         (<! (<chan-seq (for [area (Areas areas)]
                          (<load-area area))))
         (log 'objects-loaded))))
+
+;; :obj initialisation until here
+
 (defn <load-report [report]
   (go
-    (let [data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
-          role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))]
+    (let [report-id (get report "ReportGuid")
+          data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
+          role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))
+          table (get data "ReportTable")]
       (dispatch-sync [:raw-report report data role])
+      ; TODO extract report-details
+      (doall
+       (for [entry (get table "ReportParts")]
+         (let [entry (into entry
+                           {:id (get entry "PartGuid")
+                            :type :part-entry})]
+           (add-child! :report-id (:id entry))
+           (obj! entry))))
+      (doall
+       (for [entry (get table "ReportFields")]
+         (let [entry (into entry
+                           {:id (get entry "FieldGuid")
+                            :type :field-entry})]
+           (add-child! :report-id (:id entry))
+           (obj! entry))))
+      (doall
+       (for [entry (get table "ReportFiles")]
+         (let [entry (into entry
+                           {:id (str (get entry "LinkedToGuid")
+                                     "-"
+                                     (get entry "FileId"))
+                            :type :file-entry})]
+           (add-child! (get entry "LinkedToGuid") (:id entry))
+           (obj! entry))))
       (db-sync! :reps (ReportGuid report) (get data "ReportTable"))
       (log 'report (ReportName report)))))
 (defn <load-reports []
@@ -124,12 +191,20 @@
     (let [reports (<! (<api "Report"))]
       (<! (<chan-seq
            (for [report (ReportTables reports)]
-             (<load-report report))))
+             (let [report (into report {:id (get report "ReportGuid")
+                                        :type :report})]
+               (add-child! :reports (:id report))
+               (<load-report report)))))
       (log 'loaded-reports))))
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
       (doall (map #(db! :controls (get % "ControlGuid") %) controls)))))
+
+(obj! {:id :root :type :root
+  :children [:areas :templates :reports]})
+(obj! {:id :areas :type :root})
+(obj! {:id :reports :type :root})
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
