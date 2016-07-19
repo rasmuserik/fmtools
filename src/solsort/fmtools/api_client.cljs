@@ -150,12 +150,7 @@
                          (<load-area area))))
         (log 'objects-loaded))))
 
-(defn <load-report [report]
-  (go
-    (let [report-id (get report "ReportGuid")
-          data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
-          role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))
-          table (get data "ReportTable")]
+(defn handle-report [report report-id data role table]
       (dispatch-sync [:raw-report report data role])
       ; TODO extract report-details
       (doall
@@ -184,7 +179,16 @@
                         (map #(get % "PartGuid") (get table "ReportParts"))
                         (map #(get % "FieldGuid") (get table "ReportFields"))
               )})
-      (log 'report (ReportName report)))))
+      (log 'report (ReportName report)))
+(defn <load-report [report]
+  (go
+    (let [report-id (get report "ReportGuid")
+          data (<! (<api (str "Report?reportGuid=" (ReportGuid report))))
+          role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))
+          table (get data "ReportTable")]
+      (handle-report report report-id data role table)
+      )))
+    
 (defn <load-reports []
   (go
     (let [reports (<! (<api "Report"))]
@@ -196,7 +200,6 @@
                (add-child! :reports (:id report))
                (<load-report report)))))
       (log 'loaded-reports))))
-;; :obj initialisation until here
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
