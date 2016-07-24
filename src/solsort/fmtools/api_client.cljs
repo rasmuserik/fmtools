@@ -35,14 +35,16 @@
    {:id parent
     :children (distinct (conj (get (obj parent) :children []) child))}))
 
-
-(defn <api [endpoint]
+(defn <api [endpoint & {:keys [data method]
+                        :or {data nil method "GET"}}]
   (<ajax (str "https://"
               "fmtools.solsort.com/api/v1/"
                                         ;"app.fmtools.dk/api/v1/"
                                         ;(js/location.hash.slice 1)
                                         ;"@fmproxy.solsort.com/api/v1/"
               endpoint)
+         :method method
+         :data data
          :credentials true))
 
 (defn <update-state []
@@ -90,7 +92,7 @@
                       (group-by PartGuid)))
           parts (-> template (ReportTemplateParts))
           parts (map #(assoc % "LineType" (or (line-types (LineType %))
-                                              (log "invalid-LintType" %))) parts)
+                                              (log "invalid-LineType" %))) parts)
           parts (map #(assoc % "PartType" (part-types (PartType %))) parts)
           parts (map #(obj! (into % {:id (get % "PartGuid")
                                      :type :part}))
