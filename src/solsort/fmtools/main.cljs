@@ -9,7 +9,8 @@
    [solsort.fmtools.db :as db]
    [solsort.fmtools.ui]
    [solsort.fmtools.api-client :as api]
-   [solsort.fmtools.disk-sync :as disk]))
+   [solsort.fmtools.disk-sync :as disk]
+   [solsort.fmtools.http-api-test :as http-api-test]))
 
 (go
   (when (not= -1 (.indexOf js/location.hash "reset"))
