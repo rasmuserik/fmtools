@@ -103,3 +103,11 @@
                   (fn  [db  [_ id img-url]]
                     (assoc-in db id
                               (remove #{img-url} (get-in db id)))))
+
+(defn- logexpand [id]
+  (let [obj @(db :obj id)]
+    [id (assoc obj :children (into {} (map logexpand (:children obj))))]))
+(defn logdb
+  ([k] (log (logexpand k)))
+  ([] (logdb :root)))
+;(logdb)

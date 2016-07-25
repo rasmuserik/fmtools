@@ -23,7 +23,31 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(declare app)
+;;;; Main entrypoint
+(declare loading)
+(declare choose-area)
+(declare choose-report)
+(declare render-template)
+(defn app []
+  (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
+    [:div.main-form
+     "Under development, not functional yet"
+     [loading]
+     [:h1 {:style {:text-align :center}} "FM-Tools"]
+     [:hr]
+     [:div.ui.container
+      [:div.ui.form
+       [choose-area report]
+       [choose-report]]]
+     [:hr]
+     #_[render-template @(subscribe [:ui :current-template])]
+     [render-template report]
+     [:hr]
+     [:div "DEBUG"]
+     [:div (str @(db :ui :debug))]]))
+(aset js/window "onerror" (fn [err] (db! :ui :debug (str err))))
+
+;;;; Styling
 (defonce unit (atom 40))
 (defn style []
   (reset! unit (js/Math.floor (* 0.95 (/ 1 12) (js/Math.min 800 js/window.innerWidth))))
@@ -79,6 +103,24 @@
 (js/setTimeout style 0)
 
 ;;;; Generic Components
+(defn loading "simple loading indicator, showing when (db :ui :loading)" []
+  (if @(subscribe [:db :loading])
+    [:div
+     {:style {:position :fixed
+              :display :inline-block
+              :top 0 :left 0
+              :width "100%"
+              :heigth "100%"
+              :background-color "rgba(0,0,0,0.6)"
+              :color "white"
+              :z-index 100
+              :padding-top (* 0.3 js/window.innerHeight)
+              :text-align "center"
+              :font-size "48px"
+              :text-shadow "2px 2px 8px #000000"
+              :padding-bottom (* 0.7 js/window.innerHeight)}}
+     "Loading..."]
+    [:span]))
 (defn select [id options]
   (let [current @(subscribe [:ui id])]
     (into [:select
@@ -109,8 +151,7 @@
              :max-length max-length
              :value @(apply db id)
              :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
-
-(defn fix-height [o]
+(defn- fix-height "used by rot90" [o]
   (let [node (reagent/dom-node o)
         child (-> node (aget "children") (aget 0))
         width (aget child "clientHeight")
@@ -118,8 +159,7 @@
         style (aget node "style")]
     (aset style "height" (str height "px"))
     (aset style "width" (str width "px"))))
-
-(def rot90
+(def rot90 "reagent-component rotating its content 90 degree"
   (with-meta
     (fn [elem]
       [:div
@@ -185,8 +225,23 @@
                            :max-width "100%"}}]]))]
        "")]))
 
-;;; Actual ui
-(defn areas [id]
+;;;; Area/report chooser
+(defn- sub-areas "used by traverse-areas" [id]
+  (let [area @(subscribe [:area-object id])]
+    (apply concat [area] (map sub-areas (keys (:children area))))))
+(defn traverse-areas "find all childrens of a given id" [id]
+  (let [selected @(subscribe [:ui id])]
+    (if selected
+      (into [@(subscribe [:area-object id])] (traverse-areas selected))
+      (sub-areas id))))
+(defn set-areas! "used by choose-area" [oid]
+  (log 'set-areas oid)
+  (let [obj @(db :objects oid)
+        parent-id (get obj "ParentId")]
+    (when parent-id
+      (db! :ui (if (= 0 parent-id) :root parent-id) oid)
+      (recur parent-id))))
+(defn areas "used by choose-report and choose-area" [id]
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
         selected @(subscribe [:ui id])
@@ -200,7 +255,35 @@
                            [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
        (areas selected)]
       [:div])))
+(defn choose-area "react component listing areas" [report]
+  #_(if (:children @(subscribe  [:area-object (ObjectId report)]))
+      [:div.field
+       [:label "Område"]
+       [areas (or (ObjectId report) :root)]]
+      [:span.empty])
+  (when (ObjectId report) (set-areas! (ObjectId report)))
+  [:div.field
+   [:label "Område"]
+   [areas :root]])
+(defn choose-report "react component listing reports" []
+  (let [areas (into #{} (map ObjectId (traverse-areas :root)))
+        reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
+    (case (count reports)
+      0 (do
+          (db! :ui :report-id nil)
+          [:span.empty])
+      1 (do
+          (db! :ui :report-id ((first reports) "ReportGuid"))
+          [:div "Rapport: " ((first reports) "ReportName")])
+      [:div.field
+       [:label "Rapport"]
+       [select :report-id
+        (concat [[empty-choice]]
+                (for [report reports]
+                  [(report "ReportName")
+                   (report "ReportGuid")]))]])))
 
+;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
 (defn field [obj cols id area]
   (let [field-type (FieldType obj)
@@ -229,7 +312,6 @@
            :checkbox [checkbox id]
            :text-fixed-noframe [:span value]
            [:strong "unhandled field:" (str field-type) " " value])))]))
-
 (defn template-control [line line-id]
   (let [id (get line "ControlGuid")
         ctl @(db :controls id)
@@ -254,7 +336,6 @@
                     (str i)
                     [input (concat line-id [:control serie i])
                      :type "number"])]))]))]))
-
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
         cols (apply + (map Columns (:fields line)))
@@ -282,66 +363,16 @@
                           fields]
        :description-line [:div desc [input  (conj id :description) {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
-
-(defn sub-areas [id]
-  (let [area @(subscribe [:area-object id])]
-    (apply concat [area] (map sub-areas (keys (:children area))))))
-(defn traverse-areas [id]
-  (let [selected @(subscribe [:ui id])]
-    (if selected
-      (into [@(subscribe [:area-object id])] (traverse-areas selected))
-      (sub-areas id))))
-
-(defn choose-report []
-  (let [areas (into #{} (map ObjectId (traverse-areas :root)))
-        reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
-    (case (count reports)
-      0 (do
-          (db! :ui :report-id nil)
-          [:span.empty])
-      1 (do
-          (db! :ui :report-id ((first reports) "ReportGuid"))
-          [:div "Rapport: " ((first reports) "ReportName")])
-      [:div.field
-       [:label "Rapport"]
-       [select :report-id
-        (concat [[empty-choice]]
-                (for [report reports]
-                  [(report "ReportName")
-                   (report "ReportGuid")]))]])))
-
-(defn set-areas! [oid]
-  (log 'set-areas oid)
-  (let [obj @(db :objects oid)
-        parent-id (get obj "ParentId")]
-    (when parent-id
-      (db! :ui (if (= 0 parent-id) :root parent-id) oid)
-      (recur parent-id))))
-
-(defn choose-area [report]
-  #_(if (:children @(subscribe  [:area-object (ObjectId report)]))
-      [:div.field
-       [:label "Område"]
-       [areas (or (ObjectId report) :root)]]
-      [:span.empty])
-  (when (ObjectId report) (set-areas! (ObjectId report)))
-  [:div.field
-   [:label "Område"]
-   [areas :root]])
-
 (defn render-section [lines report-id areas]
   (for [obj areas]
     (for [line lines]
       (when (= (AreaGuid line) (AreaGuid obj))
         (render-line line report-id obj)))))
-
 (defn render-lines
   [lines report-id areas]
   (apply concat
          (for [section (partition-by ColumnHeader lines)]
            (render-section section report-id areas))))
-;(db! [:ui :root true])
-
 (defn render-template [report]
   (let [id (TemplateGuid report)
         template @(subscribe [:template id])
@@ -364,39 +395,3 @@
        (render-lines (:rows template) report-id areas)
        #_(doall (map #(line % report-id areas) (:rows template)))))))
 
-(aset js/window "onerror" (fn [err] (db! :ui :debug (str err))))
-(defn loading []
-  (if @(subscribe [:db :loading])
-    [:div
-     {:style {:position :fixed
-              :display :inline-block
-              :top 0 :left 0
-              :width "100%"
-              :heigth "100%"
-              :background-color "rgba(0,0,0,0.6)"
-              :color "white"
-              :z-index 100
-              :padding-top (* 0.3 js/window.innerHeight)
-              :text-align "center"
-              :font-size "48px"
-              :text-shadow "2px 2px 8px #000000"
-              :padding-bottom (* 0.7 js/window.innerHeight)}}
-     "Loading..."]
-    [:span]))
-(defn app []
-  (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
-    [:div.main-form
-     "Under development, not functional yet"
-     [loading]
-     [:h1 {:style {:text-align :center}} "FM-Tools"]
-     [:hr]
-     [:div.ui.container
-      [:div.ui.form
-       [choose-area report]
-       [choose-report]]]
-     [:hr]
-     #_[render-template @(subscribe [:ui :current-template])]
-     [render-template report]
-     [:hr]
-     [:div "DEBUG"]
-     [:div (str @(db :ui :debug))]]))
