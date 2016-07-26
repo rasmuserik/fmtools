@@ -369,22 +369,19 @@
                           fields]
        :description-line [:div desc [input  (conj id :description) {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
-;; TODO :obj
 (defn render-section [lines report-id areas]
   (doall (for [obj areas]
      (doall (for [line lines]
               (when (= (AreaGuid line) (AreaGuid obj))
                 (render-line (get line "PartGuid") report-id obj)))))))
-;; TODO :obj
 (defn render-lines
   [lines report-id areas]
   (apply concat
          (for [section (partition-by ColumnHeader lines)]
            (render-section section report-id areas))))
-;; TODO :obj
 (defn render-template [report]
   (let [id (TemplateGuid report)
-        template @(subscribe [:template id])
+        template (get-obj id)
         report-id @(subscribe [:ui :report-id])
         areas (conj (traverse-areas (ObjectId report)) {})
         max-objects 100]
@@ -401,6 +398,6 @@
         "")]
      (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
        []
-       (render-lines (:rows template) report-id areas)
+       (render-lines (map get-obj (:children template)) report-id areas)
        #_(doall (map #(line % report-id areas) (:rows template)))))))
 
