@@ -248,6 +248,7 @@
         children (:children obj)
         selected @(subscribe [:ui id])
         child @(subscribe [:area-object selected])]
+    (log 'areas obj (get-obj id))
     (if children
       [:div
        [select id
@@ -258,11 +259,6 @@
        (areas selected)]
       [:div])))
 (defn choose-area "react component listing areas" [report]
-  #_(if (:children @(subscribe  [:area-object (ObjectId report)]))
-      [:div.field
-       [:label "Område"]
-       [areas (or (ObjectId report) :root)]]
-      [:span.empty])
   (when (ObjectId report) (set-areas! (ObjectId report)))
   [:div.field
    [:label "Område"]

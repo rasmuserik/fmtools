@@ -119,6 +119,9 @@
                      object (into object
                                   {:id (get object "ObjectId")
                                    :type :object})]
+                 (obj! object)
+                 ;; TODO performance-optimisation do not use add-child!
+                 (add-child! (get object "ParentId") (:id object))
                  (dispatch-sync [:area-object object])
                  [(:id object) object]))))
   (log 'load-area (Name area))
