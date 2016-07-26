@@ -287,34 +287,37 @@
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
+(defn single-field [obj cols id area]
+  (let [field-type (FieldType obj)
+        value (FieldValue obj)
+        id (conj id (field-types field-type))]
+       (case field-type
+         :fetch-from (str (ObjectName area))
+         :approve-reject [checkbox id]
+         :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
+         :time [input id :type :time]
+         :remark [input id]
+         :text-input-noframe [input id]
+         :text-input [input id]
+         :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+         :checkbox [checkbox id]
+         :text-fixed-noframe [:span value]
+         [:strong "unhandled field:" (str field-type) " " value])))
 (defn field [obj-id cols id area]
   (let [obj (get-obj obj-id)
-        field-type (FieldType obj)
         columns (Columns obj)
         double-field (DoubleField obj)
-        double-separator (DoubleFieldSeperator obj)
-        value (FieldValue obj)]
+        double-separator (DoubleFieldSeperator obj)]
     [:span.fmfield {:key id
                     :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
                     :on-click (fn [] (log obj) false)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
-         [:span [field obj cols id]
+         [:span (single-field obj cols id area)
           " " double-separator " "
-          [field obj cols (conj id :field-2)]])
-       (let [id (conj id (field-types field-type))]
-         (case field-type
-           :fetch-from (str (ObjectName area))
-           :approve-reject [checkbox id]
-           :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
-           :time [input id :type :time]
-           :remark [input id]
-           :text-input-noframe [input id]
-           :text-input [input id]
-           :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-           :checkbox [checkbox id]
-           :text-fixed-noframe [:span value]
-           [:strong "unhandled field:" (str field-type) " " value])))]))
+          (single-field obj cols (conj id :field-2) area)])
+       (single-field obj cols id area))]))
+
 (defn template-control [id line-id position]
   (let [ctl (get-obj id)
         title (get ctl "Title")
