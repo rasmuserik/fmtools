@@ -112,21 +112,30 @@
                       :children (map #(get % "TemplateGuid") templates)})))))
 
 (defn handle-area [area objects]
-  (db! :obj
-       (into @(db :obj)
-             (for [object objects]
-               (let [object (assoc object "AreaName" (Name area))
-                     object (into object
-                                  {:id (get object "ObjectId")
-                                   :type :object})]
-                 (obj! object)
-                 ;; TODO performance-optimisation do not use add-child!
-                 (add-child! (get object "ParentId") (:id object))
-                 (dispatch-sync [:area-object object])
-                 [(:id object) object]))))
+
+  (let [objects (for [object objects]
+                  (let [object (assoc object "AreaName" (Name area))
+                        parent (get object "ParentId")
+                        object (into object
+                                     {:parent
+                                      (if (zero? parent)
+                                        (get object "AreaGuid")
+                                        parent)
+                                      :id (get object "ObjectId")
+                                      :type :object})]
+                    ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
+                    (dispatch-sync [:area-object object])
+                    object))]
+  (doall (map obj! objects))
+
+  (doall
+   (for [[parent-id children] (group-by :parent objects)]
+     (obj! {:id parent-id
+            :children (into (or (:children (obj parent-id)) [])
+                            (map :id children))})))
   (log 'load-area (Name area))
   (obj! area)
-  (add-child! :areas (:id area)))
+  (add-child! :areas (:id area))))
 
 (defn <load-area [area]
   (go
@@ -134,10 +143,10 @@
                    (<! (<api (str "Object?areaGuid=" (AreaGuid area)))))
           area (into area
                      {:id (get area "AreaGuid")
+                      :parent :areas
                       :type :area
                       :children (map #(get % "ObjectId") objects)})]
       (handle-area area objects)
-      ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
 )))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]

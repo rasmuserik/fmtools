@@ -34,17 +34,18 @@
   "memoised function, that returns a subscription to a given path into the application db"
   (memoize db-raw))
 (defn db! "Write a value into the application db" [& path]
-  (dispatch (into [:db] path)))
+  (dispatch (into [:db] path))
+  (last path))
 (defn db-sync! "Write a value into the application db" [& path]
-  (dispatch-sync (into [:db] path)))
+  (dispatch-sync (into [:db] path))
+  (last path))
 
 (defn obj [id]
   (or @(db :obj id) {:id id}))
 (defn obj! [o]
   (if (:id o)
     (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
-    (log 'no-id o))
-  o)
+    (log nil 'no-id o)))
 
 (register-sub :db
  (fn  [db [_ & path]]
