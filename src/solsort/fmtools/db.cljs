@@ -108,6 +108,7 @@
   (let [obj @(db :obj id)]
     [id (assoc obj :children (into {} (map logexpand (:children obj))))]))
 (defn logdb
-  ([k] (log (logexpand k)))
+  ([k] (log (second (logexpand k))) nil)
   ([] (logdb :root)))
-;(logdb)
+(logdb)
+(log 'test)

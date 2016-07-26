@@ -30,6 +30,7 @@
   []
   (go
     (log 'save-form @(subscribe [:db]))
+    (<! (<localforage! (prn-str [:obj]) (clj->json @(subscribe [:db :obj]))))
     (<! (<localforage! (prn-str [:objects]) (clj->json @(subscribe [:db :objects]))))
     (<! (<localforage! (prn-str [:reports]) (clj->json @(subscribe [:db :reports]))))
     (<! (<localforage! (prn-str [:controls]) (clj->json @(subscribe [:db :controls]))))

@@ -23,7 +23,6 @@
 
 (defn obj [id]
   (or @(db :obj id) {:id id}))
-
 (defn obj! [o]
   (if (:id o)
     (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
@@ -107,18 +106,14 @@
       (log 'loaded-template template-id))))
 (defn <load-templates []
   (go
-    (let [templates (<! (<api "ReportTemplate"))
-          template-id (-> templates
-                          (get "ReportTemplateTables")
-                          (nth 0)
-                          (get "TemplateGuid"))]
-      (<! (<chan-seq (for [template (get templates "ReportTemplateTables")]
-                       (<load-template (get template "TemplateGuid")))))
-      (obj! {:id :templates
-             :type :root
-             :children (map #(get % "TemplateGuid")
-                            (get templates "ReportTemplateTables"))})
-      (log 'loaded-templates))))
+    (let [templates (get (<! (<api "ReportTemplate")) "ReportTemplateTables")]
+          (<! (<chan-seq (for [template templates]
+                           (<load-template (get template "TemplateGuid")))))
+
+          (log 'loaded-templates
+               (obj! {:id :templates
+                  :type :root
+                  :children (log (map #(get % "TemplateGuid") templates))})))))
 
 (defn handle-area [area objects]
   (db! :obj
