@@ -61,7 +61,6 @@
   (into #{} (map :type @(db :state :trail))))
 
 (defn <load-template [template-id]
-  (log 'a)
   (go
     (let [template (<! (<api (str "ReportTemplate?templateGuid="
                                   template-id)))
@@ -91,21 +90,24 @@
                           (sort-by DisplayOrder
                                    (get fields (PartGuid part)))))
                  (sort-by DisplayOrder parts))]
-      (log 'template (:id template))
+      #_(log 'template (:id template))
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map #(obj! {:id (first %) :children (map :guid (second %))}) fields))
       (dispatch-sync [:template template-id (assoc template :rows parts)])
-      (log 'loaded-template template-id))))
+      (log 'loaded-template
+           (get template "Name")
+           #_(first (:children (obj template-id)))
+           #_(obj (first (:children (obj template-id))))
+           ))))
 (defn <load-templates []
   (go
     (let [templates (get (<! (<api "ReportTemplate")) "ReportTemplateTables")]
           (<! (<chan-seq (for [template templates]
                            (<load-template (get template "TemplateGuid")))))
-
           (log 'loaded-templates
                (obj! {:id :templates
                   :type :root
-                  :children (log (map #(get % "TemplateGuid") templates))})))))
+                      :children (map #(get % "TemplateGuid") templates)})))))
 
 (defn handle-area [area objects]
   (db! :obj
@@ -214,11 +216,12 @@
                       (<load-reports)
                       (<load-controls)
                       (<load-templates)
-                      (disk/<save-form)
                       #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
       (db-sync! :state :trail
                 (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
-      (dispatch-sync [:db :loading false])))
+      (<! (disk/<save-form))
+      (dispatch-sync [:db :loading false])
+      ))
 
 (defn <fetch [] "conditionally update db"
   (go

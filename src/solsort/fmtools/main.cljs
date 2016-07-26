@@ -17,8 +17,7 @@
   (defonce restore-data
     (<! (disk/<restore-form)))
   (when (= -1 (.indexOf js/location.hash "noload"))
-    (<! (api/<fetch))
-    (<! (disk/<save-form)))
+    (<! (api/<fetch)))
   (defonce watch
     (do
       (disk/watch-changes! :state)

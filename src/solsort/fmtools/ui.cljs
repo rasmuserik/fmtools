@@ -237,7 +237,7 @@
       (into [@(subscribe [:area-object id])] (traverse-areas selected))
       (sub-areas id))))
 (defn set-areas! "used by choose-area" [oid]
-  (log 'set-areas oid)
+  ;(log 'set-areas oid)
   (let [obj @(db :objects oid)
         parent-id (get obj "ParentId")]
     (when parent-id
@@ -341,9 +341,12 @@
                     [input (concat line-id [:control serie i])
                      :type "number"])]))]))]))
 ;; TODO :obj
-(defn render-line [line report-id obj]
-  (let [line-type (LineType line)
-        cols (apply + (map Columns (:fields line)))
+(defn render-line [line-id report-id obj]
+  (let [line (get-obj (get line-id "PartGuid"))
+        ;_ (log 'here line (:children line))
+        line_ line-id
+        line-type (LineType line)
+        cols (get line "ColumnsTotal")
         desc (str (get line "Position" "") " " (TaskDescription line))
         debug-str (dissoc line :fields)
         area (AreaGuid line)
@@ -351,15 +354,15 @@
         id [:data report-id obj-id (PartGuid line)]
         fields (into
                 [:div.fields]
-                (map #(field (get % "FieldGuid") cols [:data report-id obj-id (FieldGuid %)] obj)
-                       (:fields line #_:TODO)))]
+                (map #(field (% "FieldGuid") cols [:data report-id obj-id (FieldGuid %)] obj)
+                       (:fields line_ #_:TODO)))]
     [:div.line
      {:style
       {:padding-top 10}
       :key id
       :on-click #(log debug-str)}
      (case line-type
-       :template-control [template-control line id]
+       :template-control [template-control line_ id]
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
