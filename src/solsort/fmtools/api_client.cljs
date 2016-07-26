@@ -92,7 +92,9 @@
                  (sort-by DisplayOrder parts))]
       #_(log 'template (:id template))
       (obj! {:id (:id template) :children (map :id parts)})
-      (doall (map #(obj! {:id (first %) :children (map :guid (second %))}) fields))
+      (doall (map (fn [[id children]]
+                    (obj! {:id id :children (map #(get % "FieldGuid") children)}))
+                  fields))
       (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template
            (get template "Name")
@@ -220,8 +222,7 @@
       (db-sync! :state :trail
                 (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
       (<! (disk/<save-form))
-      (dispatch-sync [:db :loading false])
-      ))
+      (dispatch-sync [:db :loading false])))
 
 (defn <fetch [] "conditionally update db"
   (go

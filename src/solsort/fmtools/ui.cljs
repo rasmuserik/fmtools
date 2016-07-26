@@ -315,14 +315,12 @@
            :checkbox [checkbox id]
            :text-fixed-noframe [:span value]
            [:strong "unhandled field:" (str field-type) " " value])))]))
-;; TODO :obj
-(defn template-control [line line-id]
-  (let [id (get line "ControlGuid")
-        ctl @(db :controls id)
+(defn template-control [id line-id position]
+  (let [ctl (get-obj id)
         title (get ctl "Title")
         series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))]
     [:div
-     [:h3 (get line "Position" "") " " title]
+     [:h3 position " " title]
      (into
       [:div]
       (for [serie (concat [0] series)]
@@ -340,11 +338,8 @@
                     (str i)
                     [input (concat line-id [:control serie i])
                      :type "number"])]))]))]))
-;; TODO :obj
 (defn render-line [line-id report-id obj]
-  (let [line (get-obj (get line-id "PartGuid"))
-        ;_ (log 'here line (:children line))
-        line_ line-id
+  (let [line (get-obj line-id)
         line-type (LineType line)
         cols (get line "ColumnsTotal")
         desc (str (get line "Position" "") " " (TaskDescription line))
@@ -354,15 +349,15 @@
         id [:data report-id obj-id (PartGuid line)]
         fields (into
                 [:div.fields]
-                (map #(field (% "FieldGuid") cols [:data report-id obj-id (FieldGuid %)] obj)
-                       (:fields line_ #_:TODO)))]
+                (map #(field % cols [:data report-id obj-id %] obj)
+                       (:children line)))]
     [:div.line
      {:style
       {:padding-top 10}
       :key id
       :on-click #(log debug-str)}
      (case line-type
-       :template-control [template-control line_ id]
+       :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
        :basic [:h3 "" desc]
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
@@ -376,7 +371,7 @@
   (doall (for [obj areas]
      (doall (for [line lines]
               (when (= (AreaGuid line) (AreaGuid obj))
-                (render-line line report-id obj)))))))
+                (render-line (get line "PartGuid") report-id obj)))))))
 ;; TODO :obj
 (defn render-lines
   [lines report-id areas]
