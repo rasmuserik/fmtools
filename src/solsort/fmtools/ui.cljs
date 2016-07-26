@@ -289,6 +289,7 @@
         (get obj "ReportName")
         (get obj "Name")
         (get obj "Description")
+        (get obj "TaskDescription")
     (:id obj))))
 (defn trace [id]
   (let [o (get-obj id)
