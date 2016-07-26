@@ -31,7 +31,7 @@
 (declare choose-report)
 (declare render-template)
 (defn app []
-  (let [report @(subscribe [:db :reports @(subscribe [:ui :report-id])])]
+  (let [report (get-obj @(subscribe [:ui :report-id]))]
     [:div.main-form
      "Under development, not functional yet"
      [loading]
@@ -382,9 +382,9 @@
 (defn render-template [report]
   (let [id (TemplateGuid report)
         template (get-obj id)
-        report-id @(subscribe [:ui :report-id])
         areas (conj (traverse-areas (ObjectId report)) {})
         max-objects 100]
+    (log report)
     (into
      [:div.ui.form
       [:h1 (Description template)]
@@ -398,6 +398,5 @@
         "")]
      (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
        []
-       (render-lines (map get-obj (:children template)) report-id areas)
-       #_(doall (map #(line % report-id areas) (:rows template)))))))
+       (render-lines (map get-obj (:children template)) (:id report) areas)))))
 
