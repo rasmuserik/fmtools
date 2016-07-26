@@ -27,6 +27,7 @@
 
 ;;;; Main entrypoint
 (declare loading)
+(declare trace)
 (declare choose-area)
 (declare choose-report)
 (declare render-template)
@@ -36,6 +37,7 @@
      "Under development, not functional yet"
      [loading]
      [:h1 {:style {:text-align :center}} "FM-Tools"]
+     [:hr] [trace :root]
      [:hr]
      [:div.ui.container
       [:div.ui.form
@@ -259,14 +261,14 @@
        (areas selected)]
       [:div])))
 (defn choose-area "react component listing areas" [report]
-  (when (ObjectId report) (set-areas! (ObjectId report)))
+  ;(when (ObjectId report) (set-areas! (ObjectId report)))
   [:div.field
    [:label "Område"]
    [areas :root]])
 (defn choose-report "react component listing reports" []
   (let [areas (into #{} (map ObjectId (traverse-areas :root)))
         reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
-    (case (count reports)
+    (case 3;(count reports)
       0 (do
           (db! :ui :report-id nil)
           [:span.empty])
@@ -280,6 +282,34 @@
                 (for [report reports]
                   [(report "ReportName")
                    (report "ReportGuid")]))]])))
+
+(defn trace-name [obj]
+  (str (or
+        (get obj "ObjectName")
+        (get obj "ReportName")
+        (get obj "Name")
+        (get obj "Description")
+    (:id obj))))
+(defn trace [id]
+  (let [o (get-obj id)
+        children (:children o)
+        selected @(db :ui id)
+        child (get-obj selected)]
+         (if children
+           [:div
+            [select id
+             (concat [[empty-choice]]
+                     (for [child-id children]
+                     [(trace-name (get-obj child-id))
+                      child-id])
+                     )]
+             [trace selected]
+            (if (not selected)
+            [:div (trace-name o) " " (str o)]
+            "")]
+           (if (:id o)
+             [:div (trace-name o) " " (str o)]
+             [:div ""]))))
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
@@ -395,4 +425,3 @@
      (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
        []
        (render-lines (map get-obj (:children template)) (:id report) areas)))))
-
