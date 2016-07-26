@@ -23,6 +23,8 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(def get-obj solsort.fmtools.db/obj)
+
 ;;;; Main entrypoint
 (declare loading)
 (declare choose-area)
@@ -285,8 +287,9 @@
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
-(defn field [obj cols id area]
-  (let [field-type (FieldType obj)
+(defn field [obj-id cols id area]
+  (let [obj (get-obj obj-id)
+        field-type (FieldType obj)
         columns (Columns obj)
         double-field (DoubleField obj)
         double-separator (DoubleFieldSeperator obj)
@@ -312,6 +315,7 @@
            :checkbox [checkbox id]
            :text-fixed-noframe [:span value]
            [:strong "unhandled field:" (str field-type) " " value])))]))
+;; TODO :obj
 (defn template-control [line line-id]
   (let [id (get line "ControlGuid")
         ctl @(db :controls id)
@@ -336,6 +340,7 @@
                     (str i)
                     [input (concat line-id [:control serie i])
                      :type "number"])]))]))]))
+;; TODO :obj
 (defn render-line [line report-id obj]
   (let [line-type (LineType line)
         cols (apply + (map Columns (:fields line)))
@@ -346,8 +351,8 @@
         id [:data report-id obj-id (PartGuid line)]
         fields (into
                 [:div.fields]
-                (map #(field % cols [:data report-id obj-id (FieldGuid %)] obj)
-                     (:fields line)))]
+                (map #(field (get % "FieldGuid") cols [:data report-id obj-id (FieldGuid %)] obj)
+                       (:fields line #_:TODO)))]
     [:div.line
      {:style
       {:padding-top 10}
@@ -363,16 +368,19 @@
                           fields]
        :description-line [:div desc [input  (conj id :description) {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
+;; TODO :obj
 (defn render-section [lines report-id areas]
-  (for [obj areas]
-    (for [line lines]
-      (when (= (AreaGuid line) (AreaGuid obj))
-        (render-line line report-id obj)))))
+  (doall (for [obj areas]
+     (doall (for [line lines]
+              (when (= (AreaGuid line) (AreaGuid obj))
+                (render-line line report-id obj)))))))
+;; TODO :obj
 (defn render-lines
   [lines report-id areas]
   (apply concat
          (for [section (partition-by ColumnHeader lines)]
            (render-section section report-id areas))))
+;; TODO :obj
 (defn render-template [report]
   (let [id (TemplateGuid report)
         template @(subscribe [:template id])

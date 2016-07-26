@@ -24,6 +24,7 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+
 (declare db)
 (defn db-raw [& path]
   (if path
@@ -36,6 +37,14 @@
   (dispatch (into [:db] path)))
 (defn db-sync! "Write a value into the application db" [& path]
   (dispatch-sync (into [:db] path)))
+
+(defn obj [id]
+  (or @(db :obj id) {:id id}))
+(defn obj! [o]
+  (if (:id o)
+    (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
+    (log 'no-id o))
+  o)
 
 (register-sub :db
  (fn  [db [_ & path]]

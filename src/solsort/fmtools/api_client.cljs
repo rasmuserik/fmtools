@@ -9,7 +9,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
-   [solsort.fmtools.db :refer [db db! db-sync!]]
+   [solsort.fmtools.db :refer [db db! db-sync! obj obj!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
    [solsort.util
@@ -20,14 +20,6 @@
     :refer [register-sub subscribe register-handler
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
-
-(defn obj [id]
-  (or @(db :obj id) {:id id}))
-(defn obj! [o]
-  (if (:id o)
-    (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
-    (log 'no-id o))
-  o)
 
 (defn add-child! [parent child]
   (obj!
