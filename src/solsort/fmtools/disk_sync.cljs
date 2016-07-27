@@ -17,9 +17,6 @@
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
-   [re-frame.core :as re-frame
-    :refer [register-sub subscribe register-handler
-            dispatch dispatch-sync]]
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
@@ -30,7 +27,7 @@
   []
   (go
     (log 'save-form @(db))
-    (<! (<localforage! (prn-str [:obj]) (clj->json @(subscribe [:db :obj]))))))
+    (<! (<localforage! (prn-str [:obj]) (clj->json @(db :obj))))))
 
 (defn <restore-form
   "load current template/reports from disk"

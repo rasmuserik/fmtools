@@ -17,9 +17,7 @@
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
-   [re-frame.core :as re-frame
-    :refer [register-sub subscribe register-handler
-            dispatch dispatch-sync]]
+   [re-frame.core :as re-frame :refer [dispatch]]
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
@@ -31,7 +29,7 @@
 (declare choose-report)
 (declare render-template)
 (defn app []
-  (let [report (get-obj @(subscribe [:ui :report-id]))]
+  (let [report (get-obj @(db :ui :report-id))]
     [:div.main-form
      "Under development, not functional yet"
      [loading]
@@ -112,7 +110,7 @@
 
 ;;;; Generic Components
 (defn loading "simple loading indicator, showing when (db :ui :loading)" []
-  (if @(subscribe [:db :loading])
+  (if @(db :loading)
     [:div
      {:style {:position :fixed
               :display :inline-block
@@ -130,11 +128,11 @@
      "Loading..."]
     [:span]))
 (defn select [id options]
-  (let [current @(subscribe [:ui id])]
+  (let [current @(db :ui id)]
     (into [:select
            {:value (prn-str current)
             :onChange
-            #(dispatch [:ui id (read-string (.-value (.-target %1)))])}]
+            #(db! :ui id (read-string (.-value (.-target %1))))}]
           (for [[k v] options]
             (let [v (prn-str v)]
               [:option {:key v :value v} k])))))
@@ -239,7 +237,7 @@
   (let [area (get-obj id)]
     (apply concat [id] (map sub-areas (:children area)))))
 (defn traverse-areas "find all childrens of a given id" [id]
-  (let [selected @(subscribe [:ui id])]
+  (let [selected @(db :ui id)]
     (if selected
       (into [id] (traverse-areas selected))
       (sub-areas id))))
@@ -400,6 +398,6 @@
          [:br]
          "- eller vælg underområde herover."]
         "")]
-     (if (and (< max-objects (count areas)) (not @(subscribe [:ui :nolimit])))
+     (if (and (< max-objects (count areas)) (not @(db :ui :nolimit)))
        []
        (render-lines (map get-obj (:children template)) (:id report) areas)))))

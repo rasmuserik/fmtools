@@ -16,9 +16,6 @@
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
      log page-ready render dom->clj next-tick]]
-   [re-frame.core :as re-frame
-    :refer [register-sub subscribe register-handler
-            dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
 ;; TODO more clear separation of object-loads, and restructure/write to db
@@ -119,8 +116,6 @@
                                         parent)
                                       :id (get object "ObjectId")
                                       :type :object})]
-                    ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
-                    ;(dispatch-sync [:area-object object])
                     object))]
   (doall (map obj! objects))
   ;;TODO performance (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objects)))
@@ -213,16 +208,16 @@
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
-  (go (dispatch-sync [:db :loading true])
+  (go (db! :loading true)
       (<! (<chan-seq [(<load-objects)
                       (<load-reports)
                       (<load-controls)
                       (<load-templates)
-                      #_(go (let [user (<! (<api "User"))] (dispatch [:user user])))]))
+                      ]))
       (db-sync! :state :trail
                 (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
       (<! (disk/<save-form))
-      (dispatch-sync [:db :loading false])))
+      (db! :loading false)))
 
 (defn <fetch [] "conditionally update db"
   (go
