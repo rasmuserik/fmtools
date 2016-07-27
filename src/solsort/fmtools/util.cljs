@@ -30,30 +30,6 @@
 (defonce empty-choice "· · ·")
 (defn fourth-first [[v _ _ k]] [k v])
 
-(def localforage-db
-  (.createInstance js/localforage
-                   #js {
-                        :name "JsonData"
-                        :version "0.1"
-                        :storeName "JsonData"
-                        :description "JSON data store"
-                        }))
-
-(def localforage-images
-  (.createInstance js/localforage
-                   #js {
-                        :name "ImageData"
-                        :version "0.1"
-                        :storeName "ImageData"
-                        :description "Image store"
-                        }))
-
-(defn <localforage-db [k] (<p (.getItem localforage-db k)))
-(defn <localforage-db! [k v] (<p (.setItem localforage-db k v)))
-
-(defn <localforage-images [k] (<p (.getItem localforage-images k)))
-(defn <localforage-images! [k v] (<p (.setItem localforage-images k v)))
-
 (defn to-map
   [o]
   (cond

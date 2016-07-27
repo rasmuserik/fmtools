@@ -4,11 +4,11 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta
-                                 empty-choice <chan-seq localforage-db
-                                 <localforage-db! <localforage-db fourth-first]]
+                                 empty-choice <chan-seq fourth-first]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [devtools.core :as devtools]
    [cljs.pprint]
+   [cljsjs.localforage]
    [cognitect.transit :as transit]
    [solsort.misc :refer [<blob-url]]
    [solsort.util
@@ -27,6 +27,30 @@
   (when-not (= o(get @disk-db (:id o)))
     (swap! disk-db assoc (:id o) o)
     (swap! needs-sync assoc (:id o) o)))
+
+(def localforage-db
+  (.createInstance js/localforage
+                   #js {
+                        :name "JsonData"
+                        :version "0.1"
+                        :storeName "JsonData"
+                        :description "JSON data store"
+                        }))
+
+(def localforage-images
+  (.createInstance js/localforage
+                   #js {
+                        :name "ImageData"
+                        :version "0.1"
+                        :storeName "ImageData"
+                        :description "Image store"
+                        }))
+
+(defn <localforage-db [k] (<p (.getItem localforage-db k)))
+(defn <localforage-db! [k v] (<p (.setItem localforage-db k v)))
+
+(defn <localforage-images [k] (<p (.getItem localforage-images k)))
+(defn <localforage-images! [k v] (<p (.setItem localforage-images k v)))
 
 (defn- <sync-to-disk! []
   (go
