@@ -27,7 +27,6 @@
 
 ;;;; Main entrypoint
 (declare loading)
-(declare trace)
 (declare choose-area)
 (declare choose-report)
 (declare render-template)
@@ -37,11 +36,17 @@
      "Under development, not functional yet"
      [loading]
      [:h1 {:style {:text-align :center}} "FM-Tools"]
-     [:hr] [trace :root]
      [:hr]
      [:div.ui.container
       [:div.ui.form
-       [choose-area report]
+       [:div.field
+        [:label "Område"]
+        [choose-area
+         (if (= -1 (.indexOf js/location.hash "DEBUG"))
+           :areas
+           :root
+           )
+         ]]
        [choose-report]]]
      [:hr]
      #_[render-template @(subscribe [:ui :current-template])]
@@ -179,10 +184,11 @@
         elem]])
     {:component-did-mount fix-height
      :component-did-update fix-height}))
-
+(identity js/window.location.href)
 ;;; Camera button
 (defn handle-file [id file]
   (go (dispatch [:add-image id (<! (<blob-url file))])))
+
 (defn camera-button [id]
   (let [show-controls (get @(db :ui :show-controls) id)
         images @(apply db id)]
@@ -231,21 +237,21 @@
 
 ;;;; Area/report chooser
 (defn- sub-areas "used by traverse-areas" [id]
-  (let [area @(subscribe [:area-object id])]
-    (apply concat [area] (map sub-areas (keys (:children area))))))
+  (let [area (get-obj id)]
+    (apply concat [id] (map sub-areas (:children area)))))
 (defn traverse-areas "find all childrens of a given id" [id]
   (let [selected @(subscribe [:ui id])]
     (if selected
-      (into [@(subscribe [:area-object id])] (traverse-areas selected))
+      (into [id] (traverse-areas selected))
       (sub-areas id))))
-(defn set-areas! "used by choose-area" [oid]
+#_(defn set-areas! "used by choose-area" [oid]
   ;(log 'set-areas oid)
   (let [obj @(db :objects oid)
         parent-id (get obj "ParentId")]
     (when parent-id
       (db! :ui (if (= 0 parent-id) :root parent-id) oid)
       (recur parent-id))))
-(defn areas "used by choose-report and choose-area" [id]
+#_(defn areas "used by choose-report and choose-area" [id]
   (let [obj @(subscribe [:area-object id])
         children (:children obj)
         selected @(subscribe [:ui id])
@@ -260,15 +266,41 @@
                            [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
        (areas selected)]
       [:div])))
-(defn choose-area "react component listing areas" [report]
+#_(defn choose-area "react component listing areas" [report]
   ;(when (ObjectId report) (set-areas! (ObjectId report)))
-  [:div.field
-   [:label "Område"]
-   [areas :root]])
+  )
+(defn choose-area-name [obj]
+  (str (or
+        (get obj "ObjectName")
+        (get obj "ReportName")
+        (get obj "Name")
+        (get obj "Description")
+        (get obj "TaskDescription")
+        (:id obj))))
+(defn choose-area [id]
+  (let [o (get-obj id)
+        children (:children o)
+        selected @(db :ui id)
+        child (get-obj selected)]
+    (when (or (and children (not selected))
+              (and (not children) (:id o)))
+      (log 'choosen-area (choose-area-name o) o)
+      )
+    (if children
+      [:div
+       [select id
+        (concat [[empty-choice]]
+                (for [child-id children]
+                  [(choose-area-name (get-obj child-id))
+                   child-id])
+                )]
+       [choose-area selected]]
+      [:div])))
+
 (defn choose-report "react component listing reports" []
-  (let [areas (into #{} (map ObjectId (traverse-areas :root)))
+  (let [areas (into #{}  (traverse-areas :areas))
         reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
-    (case 3;(count reports)
+    (case (count reports)
       0 (do
           (db! :ui :report-id nil)
           [:span.empty])
@@ -282,35 +314,6 @@
                 (for [report reports]
                   [(report "ReportName")
                    (report "ReportGuid")]))]])))
-
-(defn trace-name [obj]
-  (str (or
-        (get obj "ObjectName")
-        (get obj "ReportName")
-        (get obj "Name")
-        (get obj "Description")
-        (get obj "TaskDescription")
-    (:id obj))))
-(defn trace [id]
-  (let [o (get-obj id)
-        children (:children o)
-        selected @(db :ui id)
-        child (get-obj selected)]
-         (if children
-           [:div
-            [select id
-             (concat [[empty-choice]]
-                     (for [child-id children]
-                     [(trace-name (get-obj child-id))
-                      child-id])
-                     )]
-             [trace selected]
-            (if (not selected)
-            [:div (trace-name o) " " (str o)]
-            "")]
-           (if (:id o)
-             [:div (trace-name o) " " (str o)]
-             [:div ""]))))
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
@@ -409,7 +412,7 @@
 (defn render-template [report]
   (let [id (TemplateGuid report)
         template (get-obj id)
-        areas (conj (traverse-areas (ObjectId report)) {})
+        areas (conj (doall (map get-obj (traverse-areas (ObjectId report)))) {})
         max-objects 100]
     (log report)
     (into
