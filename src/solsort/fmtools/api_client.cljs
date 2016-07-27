@@ -21,6 +21,7 @@
             dispatch dispatch-sync]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+;; TODO more clear separation of object-loads, and restructure/write to db
 (defn add-child! [parent child]
   (obj!
    {:id parent
@@ -112,7 +113,6 @@
                       :children (map #(get % "TemplateGuid") templates)})))))
 
 (defn handle-area [area objects]
-
   (let [objects (for [object objects]
                   (let [object (assoc object "AreaName" (Name area))
                         parent (get object "ParentId")

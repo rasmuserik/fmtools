@@ -244,31 +244,6 @@
     (if selected
       (into [id] (traverse-areas selected))
       (sub-areas id))))
-#_(defn set-areas! "used by choose-area" [oid]
-  ;(log 'set-areas oid)
-  (let [obj @(db :objects oid)
-        parent-id (get obj "ParentId")]
-    (when parent-id
-      (db! :ui (if (= 0 parent-id) :root parent-id) oid)
-      (recur parent-id))))
-#_(defn areas "used by choose-report and choose-area" [id]
-  (let [obj @(subscribe [:area-object id])
-        children (:children obj)
-        selected @(subscribe [:ui id])
-        child @(subscribe [:area-object selected])]
-    (log 'areas obj (get-obj id))
-    (if children
-      [:div
-       [select id
-        (concat [[empty-choice]]
-                (sort-by first 
-                         (for [[child-id] children]
-                           [(.trim (str (ObjectName @(subscribe [:area-object child-id])))) child-id])))]
-       (areas selected)]
-      [:div])))
-#_(defn choose-area "react component listing areas" [report]
-  ;(when (ObjectId report) (set-areas! (ObjectId report)))
-  )
 (defn choose-area-name [obj]
   (str (or
         (get obj "ObjectName")
@@ -299,7 +274,7 @@
 
 (defn choose-report "react component listing reports" []
   (let [areas (into #{}  (traverse-areas :areas))
-        reports (filter #(areas (% "ObjectId")) (map second @(db :reports)))]
+        reports (filter #(areas (% "ObjectId")) (map get-obj (:children (get-obj :reports))))]
     (case (count reports)
       0 (do
           (db! :ui :report-id nil)
