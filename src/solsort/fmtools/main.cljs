@@ -4,8 +4,8 @@
    [cljs.core.async.macros :refer [go]])
   (:require
    [cljs.core.async :as async :refer [<!]]
-   [solsort.util :refer [<p]]
-   [solsort.fmtools.util]
+   [solsort.util :refer [<p log]]
+   [solsort.fmtools.util :refer [localforage-db]]
    [solsort.fmtools.db :as db]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.ui]
@@ -14,9 +14,11 @@
    [solsort.fmtools.api-client :as api]
    [solsort.fmtools.disk-sync :as disk]))
 
+(log "FFFF" localforage-db)
+
 (go
   (when (not= -1 (.indexOf js/location.hash "reset"))
-    (<! (<p (js/localforage.clear))))
+    (<! (<p (.clear localforage-db))))
   (db/db! [:loading] true)
   (defonce restore-data
     (<! (disk/<restore)))

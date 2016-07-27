@@ -6,7 +6,7 @@
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
      TemplateGuid Description DoubleField]]
-   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
+   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db-async! db! db]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]

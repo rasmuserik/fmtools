@@ -3,8 +3,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.util :refer [log next-tick]]
-   [reagent.core :as reagent :refer []]
-    ))
+   [reagent.core :as reagent :refer []]))
 
 (defonce api-db (atom nil))
 

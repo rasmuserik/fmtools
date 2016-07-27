@@ -4,14 +4,13 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer
-    [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage!
-     <localforage fourth-first throttle tap-chan]]
+    [clj->json json->clj third to-map delta empty-choice <chan-seq
+     fourth-first throttle tap-chan]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.disk-sync :refer [save-obj!]]
    [solsort.fmtools.api-client]
    [devtools.core :as devtools]
    [cljs.pprint]
-   [cljsjs.localforage]
    [cognitect.transit :as transit]
    [solsort.misc :refer [<blob-url]]
    [solsort.util
