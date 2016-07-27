@@ -76,7 +76,7 @@
                       (map #(into % {:id (get % "FieldGuid")
                                      :type :field}))
                       (map obj!)
-                      (sort-by DisplayOrder)
+                      (sort-by DisplayOrder) ; TODO optimize
                       (group-by PartGuid)))
           parts (-> template (ReportTemplateParts))
           parts (map #(assoc % "LineType" (or (line-types (LineType %))
@@ -91,16 +91,12 @@
                           (sort-by DisplayOrder
                                    (get fields (PartGuid part)))))
                  (sort-by DisplayOrder parts))]
-      #_(log 'template (:id template))
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map (fn [[id children]]
                     (obj! {:id id :children (map #(get % "FieldGuid") children)}))
                   fields))
-      (dispatch-sync [:template template-id (assoc template :rows parts)])
       (log 'loaded-template
            (get template "Name")
-           #_(first (:children (obj template-id)))
-           #_(obj (first (:children (obj template-id))))
            ))))
 (defn <load-templates []
   (go
@@ -124,9 +120,10 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     ;; NB: this is a tad slow - optimisation of [:area-object] would yield benefit
-                    (dispatch-sync [:area-object object])
+                    ;(dispatch-sync [:area-object object])
                     object))]
   (doall (map obj! objects))
+  ;;TODO performance (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objects)))
 
   (doall
    (for [[parent-id children] (group-by :parent objects)]
@@ -156,37 +153,29 @@
         (log 'objects-loaded))))
 
 (defn handle-report [report report-id data role table]
-  (let [t0 (js/Date.now)]
-    (dispatch-sync [:raw-report report data role])
-                                        ; TODO extract report-details
-    (db! :obj
-         (into @(db :obj)
-               (for [entry (get table "ReportParts")]
-                 (let [entry (into entry
-                                   {:id (get entry "PartGuid")
-                                    :type :part-entry})]
-                   [(:id entry) entry]))))
-    (db! :obj
-         (into @(db :obj)
-               (for [entry (get table "ReportFields")]
-                 (let [entry (into entry
-                                   {:id (get entry "FieldGuid")
-                                    :type :field-entry})]
-                   [(:id entry) entry]))))
-    (doall
-     (for [entry (get table "ReportFiles")]
-       (let [entry (into entry
-                         {:id (str (get entry "LinkedToGuid")
-                                   "-"
-                                   (get entry "FileId"))
-                          :type :file-entry})]
-         (add-child! (get entry "LinkedToGuid") (:id entry))
-         (obj! entry))))
-    (obj! {:id report-id
-           :children (concat
-                      (map #(get % "PartGuid") (get table "ReportParts"))
-                      (map #(get % "FieldGuid") (get table "ReportFields")))})
+  (let [t0 (js/Date.now)
+        fields
+        (for [entry (get table "ReportParts")]
+          (into entry
+                {:id (get entry "PartGuid")
+                 :type :part-entry}))
+        parts
+        (for [entry (get table "ReportFields")]
+          (into entry
+                {:id (get entry "FieldGuid")
+                 :type :field-entry}))
+        files
+        (for [entry (get table "ReportFiles")]
+                (into entry
+                            {:id (str (get entry "LinkedToGuid")
+                                      "-"
+                                      (get entry "FileId"))
+                             :type :file-entry}))
+        objs (concat fields parts files)
+        ]
+    (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
+
 (defn <load-report [report]
   (go
     (let [report-id (get report "ReportGuid")
@@ -209,7 +198,6 @@
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
-      (doall (map #(db! :controls (get % "ControlGuid") %) controls))
       (doall (map (fn [ctl]
                     (obj! (into ctl
                                 {:id (get ctl "ControlGuid")

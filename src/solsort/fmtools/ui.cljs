@@ -8,7 +8,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
-   [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.db :refer [db db! db-sync!]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
     :refer
@@ -49,12 +49,11 @@
          ]]
        [choose-report]]]
      [:hr]
-     #_[render-template @(subscribe [:ui :current-template])]
      [render-template report]
      [:hr]
      [:div "DEBUG"]
      [:div (str @(db :ui :debug))]]))
-(aset js/window "onerror" (fn [err] (db! :ui :debug (str err))))
+(aset js/window "onerror" (fn [err] (db-sync! :ui :debug (str err))))
 
 ;;;; Styling
 (defonce unit (atom 40))

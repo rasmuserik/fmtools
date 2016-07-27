@@ -4,7 +4,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
-   [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.db :refer [db db! db-sync!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -29,12 +29,8 @@
   "write the current data in the database to disk"
   []
   (go
-    (log 'save-form @(subscribe [:db]))
-    (<! (<localforage! (prn-str [:obj]) (clj->json @(subscribe [:db :obj]))))
-    (<! (<localforage! (prn-str [:objects]) (clj->json @(subscribe [:db :objects]))))
-    (<! (<localforage! (prn-str [:reports]) (clj->json @(subscribe [:db :reports]))))
-    (<! (<localforage! (prn-str [:controls]) (clj->json @(subscribe [:db :controls]))))
-    (<! (<localforage! (prn-str [:templates]) (clj->json @(subscribe [:db :templates]))))))
+    (log 'save-form @(db))
+    (<! (<localforage! (prn-str [:obj]) (clj->json @(subscribe [:db :obj]))))))
 
 (defn <restore-form
   "load current template/reports from disk"
@@ -45,9 +41,9 @@
        (try
          (let [path (concat (read-string k) [(json->clj v)])]
            (log 'restore i path)
-           (apply db! path)
+           (apply db-sync! path)
            (swap! disk assoc-in (butlast path) (last path))
-           (apply db! :disk path))
+           (apply db-sync! :disk path))
          (catch js/Object e (js/console.log e)))
        js/undefined)
      #(close! c))
