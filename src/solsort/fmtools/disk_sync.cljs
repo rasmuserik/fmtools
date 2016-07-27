@@ -32,7 +32,6 @@
   (.createInstance js/localforage
                    #js {
                         :name "JsonData"
-                        :version "0.1"
                         :storeName "JsonData"
                         :description "JSON data store"
                         }))
@@ -41,7 +40,6 @@
   (.createInstance js/localforage
                    #js {
                         :name "ImageData"
-                        :version "0.1"
                         :storeName "ImageData"
                         :description "Image store"
                         }))
