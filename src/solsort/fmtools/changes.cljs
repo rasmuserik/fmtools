@@ -27,20 +27,19 @@
 (defonce changes (mult change-chan))
 (defn- handle-changes!-impl []
   (go
-   (let [objs (into #{} (vals @(db :obj)))
-         changes (remove @prev-objs objs)]
-     (when-not (empty? changes)
-      (>! change-chan changes))
-     (reset! prev-objs objs))))
+    (let [objs (into #{} (vals @(db :obj)))
+          changes (remove @prev-objs objs)]
+      (when-not (empty? changes)
+        (>! change-chan changes))
+      (reset! prev-objs objs))))
 (def handle-changes! (throttle handle-changes!-impl 1000))
 
 (defonce init
-    (do
-      (let [c (tap-chan changes)]
-        (go-loop []
-          (js/console.log 'change-loop (<! c))
-          (recur)
-          ))
-      (ratom/run!
-      @(db :obj)
-      (handle-changes!))))
+  (do
+    (let [c (tap-chan changes)]
+      (go-loop []
+        (js/console.log 'change-loop (<! c))
+        (recur)))
+    (ratom/run!
+     @(db :obj)
+     (handle-changes!))))

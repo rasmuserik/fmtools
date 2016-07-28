@@ -43,17 +43,15 @@
         [:label "Område"]
         [choose-area (if @(db :ui :debug) :root :areas)]]
        [choose-report]
-     [:hr]
-     [render-template report]
-     [:hr]
-     [settings]
-     (if @(db :ui :debug)
-       [:div
-        [:h1 "DEBUG Log"]
-        [:div (str @(db :ui :debug-log))]]
-       [:div]
-       )
-       ]]]))
+       [:hr]
+       [render-template report]
+       [:hr]
+       [settings]
+       (if @(db :ui :debug)
+         [:div
+          [:h1 "DEBUG Log"]
+          [:div (str @(db :ui :debug-log))]]
+         [:div])]]]))
 (aset js/window "onerror" (fn [err] (db-sync! :ui :debug-log (str err))))
 
 ;;;; Styling
@@ -67,7 +65,7 @@
 
       :.line
       {;:min-height 44
-       }
+}
 
       :.main-form
       {:display :inline-block
@@ -258,18 +256,16 @@
         selected @(db :ui id)
         child (get-obj selected)]
     (when (and @(db :ui :debug)
-           (or (and children (not selected))
-               (and (not children) (:id o))))
-      (log 'choosen-area (choose-area-name o) o)
-      )
+               (or (and children (not selected))
+                   (and (not children) (:id o))))
+      (log 'choosen-area (choose-area-name o) o))
     (if children
       [:div
        [select id
         (concat [[empty-choice]]
                 (for [child-id children]
                   [(choose-area-name (get-obj child-id))
-                   child-id])
-                )]
+                   child-id]))]
        [choose-area selected]]
       [:div])))
 
@@ -297,18 +293,18 @@
   (let [field-type (FieldType obj)
         value (FieldValue obj)
         id (conj id (field-types field-type))]
-       (case field-type
-         :fetch-from (str (ObjectName area))
-         :approve-reject [checkbox id]
-         :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
-         :time [input id :type :time]
-         :remark [input id]
-         :text-input-noframe [input id]
-         :text-input [input id]
-         :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
-         :checkbox [checkbox id]
-         :text-fixed-noframe [:span value]
-         [:strong "unhandled field:" (str field-type) " " value])))
+    (case field-type
+      :fetch-from (str (ObjectName area))
+      :approve-reject [checkbox id]
+      :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
+      :time [input id :type :time]
+      :remark [input id]
+      :text-input-noframe [input id]
+      :text-input [input id]
+      :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+      :checkbox [checkbox id]
+      :text-fixed-noframe [:span value]
+      [:strong "unhandled field:" (str field-type) " " value])))
 (defn field [obj-id cols id area]
   (let [obj (get-obj obj-id)
         columns (Columns obj)
@@ -359,7 +355,7 @@
         fields (into
                 [:div.fields]
                 (map #(field % cols [:data report-id obj-id %] obj)
-                       (:children line)))]
+                     (:children line)))]
     [:div.line
      {:style
       {:padding-top 10}
@@ -377,9 +373,9 @@
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 (defn render-section [lines report-id areas]
   (doall (for [obj areas]
-     (doall (for [line lines]
-              (when (= (AreaGuid line) (AreaGuid obj))
-                (render-line (get line "PartGuid") report-id obj)))))))
+           (doall (for [line lines]
+                    (when (= (AreaGuid line) (AreaGuid obj))
+                      (render-line (get line "PartGuid") report-id obj)))))))
 (defn render-lines
   [lines report-id areas]
   (apply concat
@@ -418,5 +414,4 @@
         (<! (<p (js/localforage.clear)))
         (db! {})
         (<! (<do-fetch)))}
-    "reset + reload"]
-   ])
+    "reset + reload"]])

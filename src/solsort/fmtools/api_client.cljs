@@ -92,17 +92,16 @@
                     (obj! {:id id :children (map #(get % "FieldGuid") children)}))
                   fields))
       (log 'loaded-template
-           (get template "Name")
-           ))))
+           (get template "Name")))))
 (defn <load-templates []
   (go
     (let [templates (get (<! (<api "ReportTemplate")) "ReportTemplateTables")]
-          (<! (<chan-seq (for [template templates]
-                           (<load-template (get template "TemplateGuid")))))
-          (log 'loaded-templates
-               (obj! {:id :templates
+      (<! (<chan-seq (for [template templates]
+                       (<load-template (get template "TemplateGuid")))))
+      (log 'loaded-templates
+           (obj! {:id :templates
                   :type :root
-                      :children (map #(get % "TemplateGuid") templates)})))))
+                  :children (map #(get % "TemplateGuid") templates)})))))
 
 (defn handle-area [area objects]
   (let [objects (for [object objects]
@@ -116,17 +115,17 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     object))]
-  (doall (map obj! objects))
+    (doall (map obj! objects))
   ;;TODO performance (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objects)))
 
-  (doall
-   (for [[parent-id children] (group-by :parent objects)]
-     (obj! {:id parent-id
-            :children (into (or (:children (obj parent-id)) [])
-                            (map :id children))})))
-  (log 'load-area (Name area))
-  (obj! area)
-  (add-child! :areas (:id area))))
+    (doall
+     (for [[parent-id children] (group-by :parent objects)]
+       (obj! {:id parent-id
+              :children (into (or (:children (obj parent-id)) [])
+                              (map :id children))})))
+    (log 'load-area (Name area))
+    (obj! area)
+    (add-child! :areas (:id area))))
 (defn <load-area [area]
   (go
     (let [objects (Objects
@@ -136,8 +135,7 @@
                       :parent :areas
                       :type :area
                       :children (map #(get % "ObjectId") objects)})]
-      (handle-area area objects)
-)))
+      (handle-area area objects))))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
         (log 'areas areas (Areas areas))
@@ -159,13 +157,12 @@
                  :type :field-entry}))
         files
         (for [entry (get table "ReportFiles")]
-                (into entry
-                            {:id (str (get entry "LinkedToGuid")
-                                      "-"
-                                      (get entry "FileId"))
-                             :type :file-entry}))
-        objs (concat fields parts files)
-        ]
+          (into entry
+                {:id (str (get entry "LinkedToGuid")
+                          "-"
+                          (get entry "FileId"))
+                 :type :file-entry}))
+        objs (concat fields parts files)]
     (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
@@ -208,8 +205,7 @@
       (<! (<chan-seq [(<load-objects)
                       (<load-reports)
                       (<load-controls)
-                      (<load-templates)
-                      ]))
+                      (<load-templates)]))
       (db-sync! :obj :state :trail
                 (filter #(nil? (full-sync-types (:type %))) @(db :obj :state :trail)))
       (<! (disk/<save-form))
