@@ -9,6 +9,7 @@
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db db! db-sync!]]
+   [solsort.fmtools.api-client :as api :refer [<do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
     :refer
@@ -28,6 +29,7 @@
 (declare choose-area)
 (declare choose-report)
 (declare render-template)
+(declare settings)
 (defn app []
   (let [report (get-obj @(db :ui :report-id))]
     [:div.main-form
@@ -39,19 +41,20 @@
       [:div.ui.form
        [:div.field
         [:label "Område"]
-        [choose-area
-         (if (= -1 (.indexOf js/location.hash "DEBUG"))
-           :areas
-           :root
-           )
-         ]]
-       [choose-report]]]
+        [choose-area (if @(db :ui :debug) :root :areas)]]
+       [choose-report]
      [:hr]
      [render-template report]
      [:hr]
-     [:div "DEBUG"]
-     [:div (str @(db :ui :debug))]]))
-(aset js/window "onerror" (fn [err] (db-sync! :ui :debug (str err))))
+     [settings]
+     (if @(db :ui :debug)
+       [:div
+        [:h1 "DEBUG Log"]
+        [:div (str @(db :ui :debug-log))]]
+       [:div]
+       )
+       ]]]))
+(aset js/window "onerror" (fn [err] (db-sync! :ui :debug-log (str err))))
 
 ;;;; Styling
 (defonce unit (atom 40))
@@ -138,6 +141,7 @@
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
   (let [value @(apply db id)]
+    (log 'checkbox id value)
     [:img.checkbox
      {:on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
@@ -401,3 +405,18 @@
      (if (and (< max-objects (count areas)) (not @(db :ui :nolimit)))
        []
        (render-lines (map get-obj (:children template)) (:id report) areas)))))
+
+;;;; Settings
+(defn settings []
+  [:div
+   [:h1 "Indstillinger"]
+   [:p [checkbox [:ui :debug]] "debug enabled"]
+   [:span.blue.ui.button {:on-click #(<do-fetch)} "reload"]
+   [:span.red.ui.button
+    {:on-click
+     #(go
+        (<! (<p (js/localforage.clear)))
+        (db! {})
+        (<! (<do-fetch)))}
+    "reset + reload"]
+   ])
