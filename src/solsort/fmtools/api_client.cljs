@@ -35,11 +35,11 @@
 
 (defn <update-state []
   (go
-    (let [prev-sync (or @(db :state :prev-sync) "2000-01-01")
+    (let [prev-sync (or @(db :obj :state :prev-sync) "2000-01-01")
           trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
-          trail (into (or @(db :state :trail) #{})
+          trail (into (or @(db :obj :state :trail) #{})
                       (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
           last-update (->> trail
                            (map #(get % "CreatedAt"))
@@ -51,12 +51,11 @@
                          (timestamp->isostring (inc (str->timestamp last-update)))
                          0 -1)
                         prev-sync)]
-      (db-sync! :state
+      (db-sync! :obj :state
                 {:prev-sync last-update
                  :trail trail}))))
-
 (defn updated-types []
-  (into #{} (map :type @(db :state :trail))))
+  (into #{} (map :type @(db :obj :state :trail))))
 
 (defn <load-template [template-id]
   (go
@@ -128,7 +127,6 @@
   (log 'load-area (Name area))
   (obj! area)
   (add-child! :areas (:id area))))
-
 (defn <load-area [area]
   (go
     (let [objects (Objects
@@ -170,7 +168,6 @@
         ]
     (db-sync! :obj (into @(db :obj) (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
-
 (defn <load-report [report]
   (go
     (let [report-id (get report "ReportGuid")
@@ -178,7 +175,6 @@
           role (<! (<api (str "Report/Role?reportGuid=" (ReportGuid report))))
           table (get data "ReportTable")]
       (handle-report report report-id data role table))))
-
 (defn <load-reports []
   (go
     (let [reports (<! (<api "Report"))]
@@ -214,11 +210,10 @@
                       (<load-controls)
                       (<load-templates)
                       ]))
-      (db-sync! :state :trail
-                (filter #(nil? (full-sync-types (:type %))) @(db :state :trail)))
+      (db-sync! :obj :state :trail
+                (filter #(nil? (full-sync-types (:type %))) @(db :obj :state :trail)))
       (<! (disk/<save-form))
       (db! :loading false)))
-
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))

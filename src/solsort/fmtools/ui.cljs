@@ -141,7 +141,6 @@
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
   (let [value @(apply db id)]
-    (log 'checkbox id value)
     [:img.checkbox
      {:on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
