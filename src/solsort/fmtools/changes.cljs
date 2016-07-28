@@ -35,12 +35,12 @@
 (def handle-changes! (throttle handle-changes!-impl 1000))
 
 (defonce init
-  (ratom/run!
-   (let [c (tap-chan changes)]
-   (go-loop []
-     (js/console.log 'change-loop (<! c))
-     (recur)
-     ))
-
-   @(db :obj)
-   (handle-changes!)))
+    (do
+      (let [c (tap-chan changes)]
+        (go-loop []
+          (js/console.log 'change-loop (<! c))
+          (recur)
+          ))
+      (ratom/run!
+      @(db :obj)
+      (handle-changes!))))
