@@ -141,8 +141,10 @@
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
   (let [value @(apply db id)]
+    (log 'checkbox value)
     [:img.checkbox
-     {:on-click #(apply db! (concat id [(not value)]))
+     {
+      :on-click #(apply db! (concat id [(not value)]))
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 (defn input  [id & {:keys [type size max-length options]
                     :or {type "text"}}]
@@ -257,8 +259,9 @@
         children (:children o)
         selected @(db :ui id)
         child (get-obj selected)]
-    (when (or (and children (not selected))
-              (and (not children) (:id o)))
+    (when (and @(db :ui :debug)
+           (or (and children (not selected))
+               (and (not children) (:id o))))
       (log 'choosen-area (choose-area-name o) o)
       )
     (if children
