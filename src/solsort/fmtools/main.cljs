@@ -12,11 +12,12 @@
    [solsort.fmtools.data-index]
    [solsort.fmtools.changes :as changes]
    [solsort.fmtools.api-client :as api]
-   [solsort.fmtools.disk-sync :as disk]))
+   [solsort.fmtools.disk-sync :as disk]
+   [solsort.fmtools.localforage :as lf]))
 
 (go
   (when (not= -1 (.indexOf js/location.hash "reset"))
-    (<! (<p (.clear disk/localforage-db))))
+    (<! (<p (.clear lf/localforage-db))))
   (db/db! [:loading] true)
   (defonce restore-data
     (<! (disk/<restore)))
