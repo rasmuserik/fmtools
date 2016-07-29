@@ -21,7 +21,7 @@
     (<! (disk/<restore-form)))
   (when (= -1 (.indexOf js/location.hash "noload"))
     (<! (api/<fetch)))
-  (when (empty? @(db/db :entries))
+  (when (empty? (db/xb [:entries]))
     (update-entry-index!))
   (defonce watch
     (do

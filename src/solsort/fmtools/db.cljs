@@ -47,11 +47,10 @@
    (let [val @(apply db-impl path)]
      (if (nil? val) default val))))
 
-(defn obj [id]
-  (or @(db :obj id) {:id id}))
+(defn obj [id] (xb [:obj id] {:id id}))
 (defn obj! [o]
   (if (:id o)
-    (db-sync! :obj (:id o) (into (or @(db :obj (:id o)) {}) o))
+    (db-sync! :obj (:id o) (into (xb [:obj (:id o)] {}) o))
     (log nil 'no-id o)))
 
 (register-sub :db
