@@ -40,6 +40,9 @@
 (defn db-sync! "Write a value into the application db" [& path]
   (dispatch-sync (into [:db] path))
   (last path))
+(defn db-async!
+  [& args]
+  (next-tick #(apply db-sync! args)))
 (defn db
   ([] (db []))
   ([path] @(apply db-impl path))

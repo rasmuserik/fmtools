@@ -10,7 +10,7 @@
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.ui]
    [solsort.fmtools.data-index]
-   [solsort.fmtools.changes]
+   [solsort.fmtools.changes :as changes]
    [solsort.fmtools.api-client :as api]
    [solsort.fmtools.disk-sync :as disk]))
 
@@ -23,8 +23,9 @@
     (<! (api/<fetch)))
   (when (empty? (db/db [:entries]))
     (update-entry-index!))
-  (defonce watch
+  (defonce initialisation
     (do
+      (changes/init)
       (disk/watch-changes! :state)
       (disk/watch-changes! :data)
       nil)))

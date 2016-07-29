@@ -9,7 +9,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
-   [solsort.fmtools.db :refer [db db! db-sync! obj obj!]]
+   [solsort.fmtools.db :refer [db db-sync! obj obj!]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
@@ -202,7 +202,7 @@
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
-  (go (db! :loading true)
+  (go (db-sync! :loading true)
       (<! (<chan-seq [(<load-objects)
                       (<load-reports)
                       (<load-controls)
@@ -211,7 +211,7 @@
                 (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
       (<! (disk/<save-form))
       (update-entry-index!)
-      (db! :loading false)))
+      (db-sync! :loading false)))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))

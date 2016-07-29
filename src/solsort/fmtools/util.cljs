@@ -18,6 +18,7 @@
 (defn clj->json [s] (transit/write (transit/writer :json) s))
 (defn json->clj [s] (transit/read (transit/reader :json) s))
 (defn third [col] (nth col 2))
+(defn delay-fn [f] (fn [& args] (next-tick #(apply f args))))
 
 (defn <chan-seq [arr] (async/reduce conj nil (async/merge arr)))
 (defn fourth-first [[v _ _ k]] [k v])

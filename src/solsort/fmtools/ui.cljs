@@ -8,7 +8,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
-   [solsort.fmtools.db :refer [db! db-sync! db]]
+   [solsort.fmtools.db :refer [db-async! db-sync! db]]
    [solsort.fmtools.api-client :as api :refer [<do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
@@ -133,14 +133,14 @@
     (into [:select
            {:value (prn-str current)
             :onChange
-            #(db! :ui id (read-string (.-value (.-target %1))))}]
+            #(db-async! :ui id (read-string (.-value (.-target %1))))}]
           (for [[k v] options]
             (let [v (prn-str v)]
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
   (let [value (db id)]
     [:img.checkbox
-     {:on-click (fn [] (apply db! (concat id [(not value)])) nil)
+     {:on-click (fn [] (apply db-async! (concat id [(not value)])) nil)
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 (defn input  [id & {:keys [type size max-length options]
                     :or {type "text"}}]
@@ -157,7 +157,7 @@
              :size size
              :max-length max-length
              :value (db id)
-             :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
+             :on-change #(apply db-async! (concat id [(.-value (.-target %1))]))}]))
 (defn- fix-height "used by rot90" [o]
   (let [node (reagent/dom-node o)
         child (-> node (aget "children") (aget 0))
@@ -202,7 +202,7 @@
        {:src (if (< 0 (count images))
                "assets/photos.png"
                "assets/camera.png")
-        :on-click #(db! :ui :show-controls id (not show-controls))}]]
+        :on-click #(db-async! :ui :show-controls id (not show-controls))}]]
      (if show-controls
        [:div {:style {:padding-right 44}}
         [:label {:for id}
@@ -274,10 +274,10 @@
         reports (filter #(areas (% "ObjectId")) (map get-obj (:children (get-obj :reports))))]
     (case (count reports)
       0 (do
-          (db! :ui :report-id nil)
+          (db-async! :ui :report-id nil)
           [:span.empty])
       1 (do
-          (db! :ui :report-id ((first reports) "ReportGuid"))
+          (db-async! :ui :report-id ((first reports) "ReportGuid"))
           [:div "Rapport: " ((first reports) "ReportName")])
       [:div.field
        [:label "Rapport"]
@@ -427,6 +427,6 @@
     {:on-click
      #(go
         (<! (<p (js/localforage.clear)))
-        (db! {})
+        (db-sync! {})
         (<! (<do-fetch)))}
     "reset + reload"]])

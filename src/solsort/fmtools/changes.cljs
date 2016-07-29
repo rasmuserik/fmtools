@@ -14,7 +14,7 @@
    [solsort.misc :refer [<blob-url]]
    [solsort.util
     :refer
-    [chan? <p <ajax <seq<! js-seq normalize-css load-style! put!close!
+    [run-once chan? <p <ajax <seq<! js-seq normalize-css load-style! put!close!
      parse-json-or-nil log page-ready render dom->clj next-tick]]
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
@@ -34,12 +34,13 @@
       (reset! prev-objs objs))))
 (def handle-changes! (throttle handle-changes!-impl 1000))
 
-(defonce init
-  (do
-    (let [c (tap-chan changes)]
-      (go-loop []
-        (js/console.log 'change-loop (<! c))
-        (recur)))
-    (ratom/run!
-     (db [:obj])
-     (handle-changes!))))
+(def init
+  (run-once
+   (fn []
+     (let [c (tap-chan changes)]
+       (go-loop []
+         (js/console.log 'change-loop (<! c))
+         (recur)))
+     (ratom/run!
+      (db [:obj])
+      (handle-changes!)))))
