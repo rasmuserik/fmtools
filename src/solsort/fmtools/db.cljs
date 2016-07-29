@@ -25,20 +25,27 @@
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
 
-(declare db)
+(declare db-impl)
 (defn db-raw [& path]
   (if path
-    (reaction (get @(apply db (butlast path)) (last path)))
+    (reaction (get @(apply db-impl (butlast path)) (last path)))
     (subscribe [:db])))
-(def db
+(def db-impl
   "memoised function, that returns a subscription to a given path into the application db"
   (memoize db-raw))
+(def db db-impl)
 (defn db! "Write a value into the application db" [& path]
   (dispatch (into [:db] path))
   (last path))
 (defn db-sync! "Write a value into the application db" [& path]
   (dispatch-sync (into [:db] path))
   (last path))
+(defn xb
+  ([] (xb []))
+  ([path] @(apply db-impl path))
+  ([path default]
+   (let [val @(apply db-impl path)]
+     (if (nil? val) default val))))
 
 (defn obj [id]
   (or @(db :obj id) {:id id}))
