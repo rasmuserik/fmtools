@@ -8,6 +8,7 @@
    [solsort.fmtools.util]
    [solsort.fmtools.db :as db]
    [solsort.fmtools.ui]
+   [solsort.fmtools.data-index]
    [solsort.fmtools.changes]
    [solsort.fmtools.api-client :as api]
    [solsort.fmtools.disk-sync :as disk]))
