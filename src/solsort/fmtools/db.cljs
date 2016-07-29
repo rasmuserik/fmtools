@@ -35,13 +35,8 @@
   (memoize db-raw))
 (defn db! "Write a value into the application db" [path value]
   (dispatch-sync (into [:db] (concat path [value])))
-  (last value))
-(defn db-sync! "Write a value into the application db" [& path]
-  (dispatch-sync (into [:db] path))
-  (last path))
-(defn db-async!
-  [& args]
-  (next-tick #(apply db-sync! args)))
+  value)
+(defn db-async! [path value] (next-tick #(db! path value)))
 (defn db
   ([] (db []))
   ([path] @(apply db-impl path))
@@ -52,7 +47,7 @@
 (defn obj [id] (db [:obj id] {:id id}))
 (defn obj! [o]
   (if (:id o)
-    (db-sync! :obj (:id o) (into (db [:obj (:id o)] {}) o))
+    (db! [:obj (:id o)] (into (db [:obj (:id o)] {}) o))
     (log nil 'no-id o)))
 
 (register-sub :db

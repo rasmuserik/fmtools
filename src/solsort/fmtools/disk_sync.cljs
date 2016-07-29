@@ -4,7 +4,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
-   [solsort.fmtools.db :refer [db db! db-sync!]]
+   [solsort.fmtools.db :refer [db db!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -36,11 +36,12 @@
     (js/localforage.iterate
      (fn [v k i]
        (try
-         (let [path (concat (read-string k) [(json->clj v)])]
+         (let [path (read-string k)
+               val (json->clj v)]
            (log 'restore i path)
-           (apply db-sync! path)
-           (swap! disk assoc-in (butlast path) (last path))
-           (apply db-sync! :disk path))
+           (db! path val)
+           (swap! disk assoc-in path val)
+           (db! (concat [:disk] path) val))
          (catch js/Object e (js/console.log e)))
        js/undefined)
      #(close! c))

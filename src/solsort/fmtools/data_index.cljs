@@ -1,7 +1,7 @@
 (ns solsort.fmtools.data-index
   (:require
    [solsort.util :refer [log]]
-  [solsort.fmtools.db :refer [db db! db-sync! obj]]))
+  [solsort.fmtools.db :refer [db db! obj]]))
 
 ;; experiments to make index of actual data entries, - turns out that we do not have object id 
 (def entry-type #{:part-entry :field-entry})
@@ -9,7 +9,7 @@
   ;;(apply log args)
   nil)
 (defn update-entry-index! []
-  (db-sync! :entries
+  (db! [:entries]
   (reduce
    (fn [acc entry]
      (let [id (:id entry)

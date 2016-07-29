@@ -9,7 +9,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
-   [solsort.fmtools.db :refer [db db-sync! obj obj!]]
+   [solsort.fmtools.db :refer [db db! obj obj!]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
@@ -52,7 +52,7 @@
                          (timestamp->isostring (inc (str->timestamp last-update)))
                          0 -1)
                         prev-sync)]
-      (db-sync! :obj :state
+      (db! [:obj :state]
                 {:prev-sync last-update
                  :trail trail}))))
 (defn updated-types []
@@ -117,7 +117,7 @@
                                       :type :object})]
                     object))]
     (doall (map obj! objects))
-  ;;TODO performance (db-sync! :obj (into (db [:obj]) (map (fn [o] [(:id o) o]) objects)))
+  ;;TODO performance (db.....! :obj (into (db [:obj]) (map (fn [o] [(:id o) o]) objects)))
 
     (doall
      (for [[parent-id children] (group-by :parent objects)]
@@ -164,7 +164,7 @@
                           (get entry "FileId"))
                  :type :file-entry}))
         objs (concat fields parts files)]
-    (db-sync! :obj (into (db [:obj]) (map (fn [o] [(:id o) o]) objs)))
+    (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
@@ -202,16 +202,16 @@
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
-  (go (db-sync! :loading true)
+  (go (db! [:loading] true)
       (<! (<chan-seq [(<load-objects)
                       (<load-reports)
                       (<load-controls)
                       (<load-templates)]))
-      (db-sync! :obj :state :trail
+      (db! [:obj :state :trail]
                 (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
       (<! (disk/<save-form))
       (update-entry-index!)
-      (db-sync! :loading false)))
+      (db! [:loading] false)))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
