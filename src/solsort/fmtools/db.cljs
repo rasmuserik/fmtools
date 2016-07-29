@@ -33,10 +33,9 @@
 (def db-impl
   "memoised function, that returns a subscription to a given path into the application db"
   (memoize db-raw))
-(def db db-impl)
-(defn db! "Write a value into the application db" [& path]
-  (dispatch (into [:db] path))
-  (last path))
+(defn db! "Write a value into the application db" [path value]
+  (dispatch-sync (into [:db] (concat path [value])))
+  (last value))
 (defn db-sync! "Write a value into the application db" [& path]
   (dispatch-sync (into [:db] path))
   (last path))
