@@ -10,6 +10,7 @@
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
    [solsort.fmtools.db :refer [db db! db-sync! obj obj!]]
+   [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
    [solsort.util
@@ -209,6 +210,7 @@
       (db-sync! :obj :state :trail
                 (filter #(nil? (full-sync-types (:type %))) @(db :obj :state :trail)))
       (<! (disk/<save-form))
+      (update-entry-index!)
       (db! :loading false)))
 (defn <fetch [] "conditionally update db"
   (go

@@ -7,6 +7,7 @@
    [solsort.util :refer [<p]]
    [solsort.fmtools.util]
    [solsort.fmtools.db :as db]
+   [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.ui]
    [solsort.fmtools.data-index]
    [solsort.fmtools.changes]
@@ -20,6 +21,8 @@
     (<! (disk/<restore-form)))
   (when (= -1 (.indexOf js/location.hash "noload"))
     (<! (api/<fetch)))
+  (when (empty? @(db/db :entries))
+    (update-entry-index!))
   (defonce watch
     (do
       (disk/watch-changes! :state)

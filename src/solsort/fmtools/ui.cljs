@@ -140,7 +140,7 @@
 (defn checkbox [id]
   (let [value @(apply db id)]
     [:img.checkbox
-     {:on-click #(apply db! (concat id [(not value)]))
+     {:on-click (fn [] (apply db! (concat id [(not value)])) nil)
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
 (defn input  [id & {:keys [type size max-length options]
                     :or {type "text"}}]
@@ -289,10 +289,20 @@
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
-(defn single-field [obj cols id area]
+(defn data-id [k]
+  [:obj (or @(db :entries k) :missing-data-object)])
+  (def field-name "mapping from field-type to value name in api"
+    {:aprove-reject "Boolean"
+     :time "TimeSpan"
+     :text-input-noframe "String"
+     :text-input "String"
+     :decimal-2-digit "Double"
+     :checkbox "Boolean"
+     })
+(defn single-field [obj cols id area pos]
   (let [field-type (FieldType obj)
         value (FieldValue obj)
-        id (conj id (field-types field-type))]
+        id (conj id (str (field-name field-type) "Value" pos))]
     (case field-type
       :fetch-from (str (ObjectName area))
       :approve-reject [checkbox id]
@@ -309,16 +319,18 @@
   (let [obj (get-obj obj-id)
         columns (Columns obj)
         double-field (DoubleField obj)
-        double-separator (DoubleFieldSeperator obj)]
+        double-separator (DoubleFieldSeperator obj)
+        id (data-id id)]
+    ;(log id (data-id id))
     [:span.fmfield {:key id
                     :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
-                    :on-click (fn [] (log obj) false)}
+                    :on-click (fn [] (log id obj) nil)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
-         [:span (single-field obj cols id area)
+         [:span (single-field obj cols id area 1)
           " " double-separator " "
-          (single-field obj cols (conj id :field-2) area)])
-       (single-field obj cols id area))]))
+          (single-field obj cols id area 2)])
+       (single-field obj cols id area 1))]))
 
 (defn template-control [id line-id position]
   (let [ctl (get-obj id)
@@ -344,6 +356,7 @@
                     [input (concat line-id [:control serie i])
                      :type "number"])]))]))]))
 (defn render-line [line-id report-id obj]
+
   (let [line (get-obj line-id)
         line-type (LineType line)
         cols (get line "ColumnsTotal")
@@ -352,14 +365,16 @@
         area (AreaGuid line)
         obj-id (ObjectId obj)
         id [:data report-id obj-id (PartGuid line)]
+        id (data-id [report-id nil (PartGuid line)]) ; TODO not-nil
+        data-id @(db :entries id)
         fields (into
                 [:div.fields]
-                (map #(field % cols [:data report-id obj-id %] obj)
+                (map #(field % cols [report-id obj-id %] obj)
                      (:children line)))]
     [:div.line
      {:style
       {:padding-top 10}
-      :key id
+      :key [obj-id line-id]
       :on-click #(log debug-str)}
      (case line-type
        :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
