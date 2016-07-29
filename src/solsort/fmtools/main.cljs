@@ -15,6 +15,10 @@
    [solsort.fmtools.disk-sync :as disk]
    [solsort.fmtools.localforage :as lf]))
 
+;; Primitive error handling for now
+(.addEventListener js/window "error"
+                   (fn [err] (log "Error" err)))
+
 (go
   (when (not= -1 (.indexOf js/location.hash "reset"))
     (<! (<p (.clear lf/localforage-db))))
