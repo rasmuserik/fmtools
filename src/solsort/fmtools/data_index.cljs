@@ -1,7 +1,7 @@
 (ns solsort.fmtools.data-index
   (:require
    [solsort.util :refer [log]]
-  [solsort.fmtools.db :refer [xb db! db-sync! obj]]))
+  [solsort.fmtools.db :refer [db db! db-sync! obj]]))
 
 ;; experiments to make index of actual data entries, - turns out that we do not have object id 
 (def entry-type #{:part-entry :field-entry})
@@ -31,6 +31,6 @@
        (assoc acc path (:id entry))
        ))
    {}
-   (filter #(entry-type (:type %))(vals (xb [:obj])))))
+   (filter #(entry-type (:type %))(vals (db [:obj])))))
   (log 'updated-entry-index))
 (update-entry-index!)

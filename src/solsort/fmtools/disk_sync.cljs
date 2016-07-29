@@ -4,7 +4,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
-   [solsort.fmtools.db :refer [xb db! db-sync!]]
+   [solsort.fmtools.db :refer [db db! db-sync!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -26,8 +26,8 @@
   "write the current data in the database to disk"
   []
   (go
-    (log 'save-form (xb))
-    (<! (<localforage! (prn-str [:obj]) (clj->json (xb [:obj]))))))
+    (log 'save-form (db))
+    (<! (<localforage! (prn-str [:obj]) (clj->json (db [:obj]))))))
 
 (defn <restore-form
   "load current template/reports from disk"
@@ -72,4 +72,4 @@
 
 (defn watch-changes! [& path]
   (ratom/run!
-   (handle-changes! path (xb path))))
+   (handle-changes! path (db path))))

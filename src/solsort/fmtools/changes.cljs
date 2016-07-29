@@ -6,7 +6,7 @@
    [solsort.fmtools.util :refer
     [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage!
      <localforage fourth-first throttle tap-chan]]
-   [solsort.fmtools.db :refer [xb db! db-sync!]]
+   [solsort.fmtools.db :refer [db db! db-sync!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -27,7 +27,7 @@
 (defonce changes (mult change-chan))
 (defn- handle-changes!-impl []
   (go
-    (let [objs (into #{} (vals (xb [:obj])))
+    (let [objs (into #{} (vals (db [:obj])))
           changes (remove @prev-objs objs)]
       (when-not (empty? changes)
         (>! change-chan changes))
@@ -41,5 +41,5 @@
         (js/console.log 'change-loop (<! c))
         (recur)))
     (ratom/run!
-     (xb [:obj])
+     (db [:obj])
      (handle-changes!))))

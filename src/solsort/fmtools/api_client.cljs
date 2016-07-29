@@ -9,7 +9,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
-   [solsort.fmtools.db :refer [xb db! db-sync! obj obj!]]
+   [solsort.fmtools.db :refer [db db! db-sync! obj obj!]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
@@ -36,11 +36,11 @@
 
 (defn <update-state []
   (go
-    (let [prev-sync (xb [:obj :state :prev-sync] "2000-01-01")
+    (let [prev-sync (db [:obj :state :prev-sync] "2000-01-01")
           trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
-          trail (into (xb [:obj :state :trail] #{})
+          trail (into (db [:obj :state :trail] #{})
                       (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
           last-update (->> trail
                            (map #(get % "CreatedAt"))
@@ -56,7 +56,7 @@
                 {:prev-sync last-update
                  :trail trail}))))
 (defn updated-types []
-  (into #{} (map :type (xb [:obj :state :trail]))))
+  (into #{} (map :type (db [:obj :state :trail]))))
 
 (defn <load-template [template-id]
   (go
@@ -164,7 +164,7 @@
                           (get entry "FileId"))
                  :type :file-entry}))
         objs (concat fields parts files)]
-    (db-sync! :obj (into (xb [:obj]) (map (fn [o] [(:id o) o]) objs)))
+    (db-sync! :obj (into (db [:obj]) (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
@@ -208,7 +208,7 @@
                       (<load-controls)
                       (<load-templates)]))
       (db-sync! :obj :state :trail
-                (filter #(nil? (full-sync-types (:type %))) (xb [:obj :state :trail])))
+                (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
       (<! (disk/<save-form))
       (update-entry-index!)
       (db! :loading false)))

@@ -8,7 +8,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
-   [solsort.fmtools.db :refer [db! db-sync! xb]]
+   [solsort.fmtools.db :refer [db! db-sync! db]]
    [solsort.fmtools.api-client :as api :refer [<do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
@@ -31,7 +31,7 @@
 (declare render-template)
 (declare settings)
 (defn app []
-  (let [report (get-obj (xb [:ui :report-id]))]
+  (let [report (get-obj (db [:ui :report-id]))]
     [:div.main-form
      "Under development, not functional yet"
      [loading]
@@ -41,16 +41,16 @@
       [:div.ui.form
        [:div.field
         [:label "Område"]
-        [choose-area (if (xb [:ui :debug]) :root :areas)]]
+        [choose-area (if (db [:ui :debug]) :root :areas)]]
        [choose-report]
        [:hr]
        [render-template report]
        [:hr]
        [settings]
-       (if (xb [:ui :debug])
+       (if (db [:ui :debug])
          [:div
           [:h1 "DEBUG Log"]
-          [:div (str (xb [:ui :debug-log]))]]
+          [:div (str (db [:ui :debug-log]))]]
          [:div])]]]))
 (aset js/window "onerror" (fn [err] (db-sync! :ui :debug-log (str err))))
 
@@ -111,7 +111,7 @@
 
 ;;;; Generic Components
 (defn loading "simple loading indicator, showing when (db [:loading])" []
-  (if (xb [:loading])
+  (if (db [:loading])
     [:div
      {:style {:position :fixed
               :display :inline-block
@@ -129,7 +129,7 @@
      "Loading..."]
     [:span]))
 (defn select [id options]
-  (let [current (xb [:ui id])]
+  (let [current (db [:ui id])]
     (into [:select
            {:value (prn-str current)
             :onChange
@@ -138,7 +138,7 @@
             (let [v (prn-str v)]
               [:option {:key v :value v} k])))))
 (defn checkbox [id]
-  (let [value (xb id)]
+  (let [value (db id)]
     [:img.checkbox
      {:on-click (fn [] (apply db! (concat id [(not value)])) nil)
       :src (if value "assets/check.png" "assets/uncheck.png")}]))
@@ -156,7 +156,7 @@
              :key (prn-str id)
              :size size
              :max-length max-length
-             :value (xb id)
+             :value (db id)
              :on-change #(apply db! (concat id [(.-value (.-target %1))]))}]))
 (defn- fix-height "used by rot90" [o]
   (let [node (reagent/dom-node o)
@@ -188,8 +188,8 @@
   (go (dispatch [:add-image id (<! (<blob-url file))])))
 
 (defn camera-button [id]
-  (let [show-controls (get (xb [:ui :show-controls]) id)
-        images (xb id)]
+  (let [show-controls (get (db [:ui :show-controls]) id)
+        images (db id)]
     [:div
      (if show-controls
        {:style {:border-left "3px solid gray"
@@ -238,7 +238,7 @@
   (let [area (get-obj id)]
     (apply concat [id] (map sub-areas (:children area)))))
 (defn traverse-areas "find all childrens of a given id" [id]
-  (let [selected (xb [:ui id])]
+  (let [selected (db [:ui id])]
     (if selected
       (into [id] (traverse-areas selected))
       (sub-areas id))))
@@ -253,9 +253,9 @@
 (defn choose-area [id]
   (let [o (get-obj id)
         children (:children o)
-        selected (xb [:ui id])
+        selected (db [:ui id])
         child (get-obj selected)]
-    (when (and (xb [:ui :debug])
+    (when (and (db [:ui :debug])
                (or (and children (not selected))
                    (and (not children) (:id o))))
       (log 'choosen-area (choose-area-name o) o))
@@ -290,7 +290,7 @@
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
 (defn data-id [k]
-  [:obj (or (xb [:entries k]) :missing-data-object)])
+  [:obj (or (db [:entries k]) :missing-data-object)])
   (def field-name "mapping from field-type to value name in api"
     {:aprove-reject "Boolean"
      :time "TimeSpan"
@@ -366,7 +366,7 @@
         obj-id (ObjectId obj)
         id [:data report-id obj-id (PartGuid line)]
         id (data-id [report-id nil (PartGuid line)]) ; TODO not-nil
-        data-id (xb [:entries id])
+        data-id (db [:entries id])
         fields (into
                 [:div.fields]
                 (map #(field % cols [report-id obj-id %] obj)
@@ -413,7 +413,7 @@
          [:br]
          "- eller vælg underområde herover."]
         "")]
-     (if (and (< max-objects (count areas)) (not (xb [:ui :nolimit])))
+     (if (and (< max-objects (count areas)) (not (db [:ui :nolimit])))
        []
        (render-lines (map get-obj (:children template)) (:id report) areas)))))
 

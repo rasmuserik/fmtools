@@ -40,17 +40,17 @@
 (defn db-sync! "Write a value into the application db" [& path]
   (dispatch-sync (into [:db] path))
   (last path))
-(defn xb
-  ([] (xb []))
+(defn db
+  ([] (db []))
   ([path] @(apply db-impl path))
   ([path default]
    (let [val @(apply db-impl path)]
      (if (nil? val) default val))))
 
-(defn obj [id] (xb [:obj id] {:id id}))
+(defn obj [id] (db [:obj id] {:id id}))
 (defn obj! [o]
   (if (:id o)
-    (db-sync! :obj (:id o) (into (xb [:obj (:id o)] {}) o))
+    (db-sync! :obj (:id o) (into (db [:obj (:id o)] {}) o))
     (log nil 'no-id o)))
 
 (register-sub :db
