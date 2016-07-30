@@ -291,11 +291,11 @@
                                          (traverse-areas :areas))))
         templates (remove #(open-templates (:id %)) templates)
         ]
-    [(find-area :areas)
-     (map #(get % "ActiveAreaGuids") templates)]
-    (map #(get % "Name") templates)
-  ))
-
+    (if (= :object (:type obj))
+      templates
+      [])))
+(defn create-report [obj-id template-id name]
+  (log 'create-report obj-id template-id name))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
@@ -305,19 +305,38 @@
               [(report "ReportName")
                (report "ReportGuid")]))]])
 (defn choose-report "react component listing reports" []
-  (let [reports (current-open-reports (traverse-areas :areas))]
+  (let [reports (current-open-reports (traverse-areas :areas))
+        available-templates (list-available-templates)]
     [:div
      (case (count reports)
       0 (do
           (db-async! [:ui :report-id] nil)
-          (render-report-list reports)
+          ""
+          ;(render-report-list reports)
           #_[:span.empty])
       1 (do
           (db-async! [:ui :report-id] ((first reports) "ReportGuid"))
           (render-report-list reports)
           #_[:div "Rapport: " ((first reports) "ReportName")])
       (render-report-list reports))
-     (str (list-available-templates))
+     (if (empty? available-templates)
+       ""
+       [:div.field
+        [:label "Opret rapport"]
+        [:p [input [:ui :new-report-name]]]
+        (into [:div {:style {:text-align :right}}]
+              (map
+               (fn [template]
+                 [:button.ui.button
+                  {:on-click #(create-report (find-area :areas) (:id template) (db [:ui :new-report-name]))}
+                  (get template "Name")
+                  ])
+               (list-available-templates)
+               )
+              )
+        ;(str (map key (list-available-templates)))
+        ]
+       )
      ]))
 
 ;;;; Actual report
