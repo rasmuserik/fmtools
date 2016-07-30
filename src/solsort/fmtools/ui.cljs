@@ -9,7 +9,7 @@
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db-async! db! db]]
-   [solsort.fmtools.api-client :as api :refer [<do-fetch]]
+   [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.util
     :refer
@@ -22,6 +22,9 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(defn warn [& args]
+  (apply log "Warning:" args)
+  nil)
 (def get-obj solsort.fmtools.db/obj)
 
 ;;;; Main entrypoint
@@ -295,7 +298,24 @@
       templates
       [])))
 (defn create-report [obj-id template-id name]
-  (log 'create-report obj-id template-id name))
+  (go
+    (db! [:ui :new-report-name] "")
+    (log 'create-report obj-id template-id name)
+    (let [creation-response (<! (<ajax
+               (str "https://"
+                    "fmtools.solsort.com/api/v1/"
+                    "Report?objectId=" obj-id
+                    "&templateGuid="template-id
+                    "&reportName=" name)
+               :method "POST"))
+          new-report-id (get creation-response "ReportGuid")]
+      (if new-report-id
+        (do
+          (<! (<do-fetch)) ; TODO this should just be fetch, but we have to do-fetch, as created reports are missing from audit trail
+          (db! [:ui :report-id] new-report-id ))
+        (warn "failed making new report" obj-id template-id name creation-response))
+      )
+    ))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
