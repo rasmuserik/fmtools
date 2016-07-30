@@ -279,19 +279,21 @@
       id)))
 (defn all-reports []
   (map get-obj (:children (get-obj :reports))))
+(defn all-templates []
+  (map get-obj (:children (get-obj :templates))))
+
 (defn current-open-reports [areas]
         (filter #((into #{} areas) (% "ObjectId"))
                 (all-reports)))
 
-(defn list-available-templates []
-  (distinct (map :type (vals (db [:obj]))))
-  (let [templates (filter #(= :template (:type %)) (vals (db [:obj])))
+(defn list-available-templates [areas]
+  (let [templates (all-templates)
         obj (get-obj (find-area :areas))
         area-guid (get obj "AreaGuid")
         templates (filter #((into #{} (get % "ActiveAreaGuids")) area-guid) templates)
         open-templates (into #{} (map #(get % "TemplateGuid")
                                       (current-open-reports
-                                         (traverse-areas :areas))))
+                                       areas)))
         templates (remove #(open-templates (:id %)) templates)
         ]
     (if (= :object (:type obj))
@@ -325,8 +327,9 @@
               [(report "ReportName")
                (report "ReportGuid")]))]])
 (defn choose-report "react component listing reports" []
-  (let [reports (current-open-reports (traverse-areas :areas))
-        available-templates (list-available-templates)]
+  (let [areas (doall (traverse-areas :areas))
+        reports (current-open-reports areas)
+        available-templates (list-available-templates areas)]
     [:div
      (case (count reports)
       0 (do
@@ -351,7 +354,7 @@
                   {:on-click #(create-report (find-area :areas) (:id template) (db [:ui :new-report-name]))}
                   (get template "Name")
                   ])
-               (list-available-templates)
+               available-templates
                )
               )
         ;(str (map key (list-available-templates)))
