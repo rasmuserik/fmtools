@@ -5,7 +5,6 @@
    [org.clojure/clojurescript "1.8.51"]
    [org.clojure/core.async "0.2.374"]
    [cljsjs/localforage "1.3.1-0"]
-   [solsort/util "0.1.2"]
    [com.cognitect/transit-cljs "0.8.237"]
    [reagent "0.5.1"]
    [binaryage/devtools "0.6.1"]
@@ -18,7 +17,7 @@
    [lein-bikeshed "0.2.0"]
    [lein-kibit "0.1.2"]]
 
-  :source-paths ["src/"]
+  :source-paths ["src/" "util/src/"]
 
   :profiles
   {:dev
@@ -41,7 +40,7 @@
   :cljsbuild
   {:builds
    [{:id "dev"
-     :source-paths ["src/"]
+     :source-paths ["src/" "util/src/"]
      :figwheel
      {:websocket-host :js-client-host
       ;~(or (System/getenv "FIGWHEEL_HOST") (.getHostAddress (java.net.InetAddress/getLocalHost)))
@@ -54,7 +53,7 @@
       :output-dir "resources/public/out"
       :source-map-timestamp true }}
     {:id "dist"
-     :source-paths ["src"]
+     :source-paths ["src" "util/src/"]
      :compiler
      {:output-to "index.js"
       :main solsort.fmtools.main
