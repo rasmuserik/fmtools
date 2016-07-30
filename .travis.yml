@@ -1,8 +1,9 @@
 language: clojure
 lein: lein2
+before_install:
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  - git submodule update --init --recursive
 script: 
-  - git submodule init
-  - git submodule update
   - lein2 cljsbuild once dist
 #  - lein2 bikeshed -m 1000
 #  - lein2 kibit
