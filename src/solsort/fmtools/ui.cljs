@@ -37,6 +37,7 @@
      [loading]
      [:h1 {:style {:text-align :center}} "FM-Tools"]
      [:hr]
+
      [:div.ui.container
       [:div.ui.form
        [:div.field
@@ -268,24 +269,56 @@
                    child-id]))]
        [choose-area selected]]
       [:div])))
+(defn find-area [id]
+  (let [selected (db [:ui id])]
+    (if selected
+      (find-area selected)
+      id)))
+(defn all-reports []
+  (map get-obj (:children (get-obj :reports))))
+(defn current-open-reports [areas]
+        (filter #((into #{} areas) (% "ObjectId"))
+                (all-reports)))
 
+(defn list-available-templates []
+  (distinct (map :type (vals (db [:obj]))))
+  (let [templates (filter #(= :template (:type %)) (vals (db [:obj])))
+        obj (get-obj (find-area :areas))
+        area-guid (get obj "AreaGuid")
+        templates (filter #((into #{} (get % "ActiveAreaGuids")) area-guid) templates)
+        open-templates (into #{} (map #(get % "TemplateGuid")
+                                      (current-open-reports
+                                         (traverse-areas :areas))))
+        templates (remove #(open-templates (:id %)) templates)
+        ]
+    [(find-area :areas)
+     (map #(get % "ActiveAreaGuids") templates)]
+    (map #(get % "Name") templates)
+  ))
+
+(defn render-report-list [reports]
+  [:div.field
+   [:label "Rapport"]
+   [select :report-id
+    (concat [[empty-choice]]
+            (for [report reports]
+              [(report "ReportName")
+               (report "ReportGuid")]))]])
 (defn choose-report "react component listing reports" []
-  (let [areas (into #{}  (traverse-areas :areas))
-        reports (filter #(areas (% "ObjectId")) (map get-obj (:children (get-obj :reports))))]
-    (case (count reports)
+  (let [reports (current-open-reports (traverse-areas :areas))]
+    [:div
+     (case (count reports)
       0 (do
           (db-async! [:ui :report-id] nil)
-          [:span.empty])
+          (render-report-list reports)
+          #_[:span.empty])
       1 (do
           (db-async! [:ui :report-id] ((first reports) "ReportGuid"))
-          [:div "Rapport: " ((first reports) "ReportName")])
-      [:div.field
-       [:label "Rapport"]
-       [select :report-id
-        (concat [[empty-choice]]
-                (for [report reports]
-                  [(report "ReportName")
-                   (report "ReportGuid")]))]])))
+          (render-report-list reports)
+          #_[:div "Rapport: " ((first reports) "ReportName")])
+      (render-report-list reports))
+     (str (list-available-templates))
+     ]))
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
