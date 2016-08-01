@@ -357,7 +357,7 @@
                available-templates
                )
               )
-        ;(str (map key (list-available-templates)))
+        #_(str (map key (list-available-templates)))
         ]
        )
      ]))
