@@ -439,7 +439,6 @@
         debug-str (dissoc line :fields)
         area (AreaGuid line)
         obj-id (ObjectId obj)
-        id [:data report-id obj-id (PartGuid line)]
         id (data-id [report-id obj-id (PartGuid line)])
         data-id (db [:entries id])
         fields (into
@@ -459,7 +458,7 @@
        :horizontal-headline [:div [:h3 desc] fields]
        :multi-field-line [:div.multifield desc [camera-button (conj id :images)]
                           fields]
-       :description-line [:div desc [input  (conj id :description) {:type :text}]]
+       :description-line [:div desc [input  (conj id "Remarks") {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 (defn render-section [lines report-id areas]
   (doall (for [obj areas]
