@@ -367,12 +367,13 @@
 (defn data-id [k]
   [:obj (or (db [:entries k]) :missing-data-object)])
   (def field-name "mapping from field-type to value name in api"
-    {:aprove-reject "Boolean"
+    {:approve-reject "String"
      :time "TimeSpan"
      :text-input-noframe "String"
      :text-input "String"
      :decimal-2-digit "Double"
      :checkbox "Boolean"
+     :remark "String"
      })
 (defn single-field [obj cols id area pos]
   (let [field-type (FieldType obj)
@@ -380,7 +381,7 @@
         id (conj id (str (field-name field-type) "Value" pos))]
     (case field-type
       :fetch-from (str (ObjectName area))
-      :approve-reject [checkbox id]
+      :approve-reject [checkbox id] ; TODO: not checkbox - string value "Approve" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
       :time [input id :type :time]
       :remark [input id]
@@ -399,7 +400,7 @@
     ;(log id (data-id id))
     [:span.fmfield {:key id
                     :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
-                    :on-click (fn [] (log id obj) nil)}
+                    :on-click (fn [] (log {:obj obj :id id :id-obj (db id)}) nil)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
          [:span (single-field obj cols id area 1)
@@ -436,10 +437,11 @@
         line-type (LineType line)
         cols (get line "ColumnsTotal")
         desc (str (get line "Position" "") " " (TaskDescription line))
-        debug-str (dissoc line :fields)
         area (AreaGuid line)
         obj-id (ObjectId obj)
         id (data-id [report-id obj-id (PartGuid line)])
+        debug-str (dissoc line :fields)
+        debug-str (str [report-id obj-id (PartGuid line) id])
         data-id (db [:entries id])
         fields (into
                 [:div.fields]
