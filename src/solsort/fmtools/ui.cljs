@@ -381,7 +381,7 @@
         id (conj id (str (field-name field-type) "Value" pos))]
     (case field-type
       :fetch-from (str (ObjectName area))
-      :approve-reject [checkbox id] ; TODO: not checkbox - string value "Approve" "None" ""
+      :approve-reject [checkbox id] ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
       :time [input id :type :time]
       :remark [input id]
