@@ -440,7 +440,7 @@
         area (AreaGuid line)
         obj-id (ObjectId obj)
         id [:data report-id obj-id (PartGuid line)]
-        id (data-id [report-id nil (PartGuid line)]) ; TODO not-nil
+        id (data-id [report-id obj-id (PartGuid line)])
         data-id (db [:entries id])
         fields (into
                 [:div.fields]
