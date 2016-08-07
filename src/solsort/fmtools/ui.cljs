@@ -133,14 +133,18 @@
      "Loading..."]
     [:span]))
 (defn select [id options]
-  (let [current (db [:ui id])]
+  (let [current (db id)]
     (into [:select
-           {:value (prn-str current)
+           {:style {:padding-left 0
+                    :padding-right 0}
+            :value (prn-str current)
             :onChange
-            #(db-async! [:ui id] (read-string (.-value (.-target %1))))}]
+            #(db-async! id (read-string (.-value (.-target %1))))}]
           (for [[k v] options]
             (let [v (prn-str v)]
-              [:option {:key v :value v} k])))))
+              [:option {:style {:padding-left 0
+                                :padding-right 0}
+                        :key v :value v} k])))))
 (defn checkbox [id]
   (let [value (db id)]
     [:img.checkbox
@@ -265,7 +269,7 @@
       (log 'choosen-area (choose-area-name o) o))
     (if children
       [:div
-       [select id
+       [select [:ui id]
         (concat [[empty-choice]]
                 (for [child-id children]
                   [(choose-area-name (get-obj child-id))
@@ -321,7 +325,7 @@
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
-   [select :report-id
+   [select [:ui :report-id]
     (concat [[empty-choice]]
             (for [report reports]
               [(report "ReportName")
@@ -381,7 +385,11 @@
         id (conj id (str (field-name field-type) "Value" pos))]
     (case field-type
       :fetch-from (str (ObjectName area))
-      :approve-reject [checkbox id] ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
+      :approve-reject [select id {"" ""
+                               "Godkendt" "Approved"
+                               "Afvist" "Rejected"
+                               "-" "None"}]
+                                        ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
       :time [input id :type :time]
       :remark [input id]
