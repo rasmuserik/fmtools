@@ -387,7 +387,9 @@
       :remark [input id]
       :text-input-noframe [input id]
       :text-input [input id]
-      :decimal-2-digit [input id :size 2 :max-length 2 :type "number"]
+      :decimal-2-digit [input id :type "number"]
+      :decimal-4-digit [input id :type "number"]
+      :integer [input id :type "number"]
       :checkbox [checkbox id]
       :text-fixed-noframe [:span value]
       [:strong "unhandled field:" (str field-type) " " value])))
