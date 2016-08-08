@@ -77,8 +77,11 @@
                       (map #(into % {:id (get % "FieldGuid")
                                      :type :field}))
                       (map obj!)
-                      (sort-by DisplayOrder) ; TODO optimize
-                      (group-by PartGuid)))
+                      (group-by PartGuid)
+                      (map (fn [[k v]] [k (sort-by DisplayOrder v)]))
+                      (into {})
+                      )
+                     )
           parts (-> template (ReportTemplateParts))
           parts (map #(assoc % "LineType" (or (line-types (LineType %))
                                               (log "invalid-LintType" %))) parts)
@@ -89,8 +92,7 @@
           parts (map
                  (fn [part]
                    (assoc part :fields
-                          (sort-by DisplayOrder
-                                   (get fields (PartGuid part)))))
+                                   (get fields (PartGuid part))))
                  (sort-by DisplayOrder parts))]
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map (fn [[id children]]
@@ -120,8 +122,7 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     object))]
-    (doall (map obj! objects))
-  ;;TODO performance (db.....! :obj (into (db [:obj]) (map (fn [o] [(:id o) o]) objects)))
+    (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) objects)))
 
     (doall
      (for [[parent-id children] (group-by :parent objects)]

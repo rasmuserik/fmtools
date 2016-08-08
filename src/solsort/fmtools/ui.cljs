@@ -44,7 +44,8 @@
       [:div.ui.form
        [:div.field
         [:label "Område"]
-        [choose-area (if (db [:ui :debug]) :root :areas)]]
+        [choose-area (if (db [:ui :debug]) :root :areas)]
+        ]
        [choose-report]
        [:hr]
        [render-template report]
