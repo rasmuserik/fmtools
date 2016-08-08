@@ -19,6 +19,10 @@
      log page-ready render dom->clj next-tick]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(defonce api-db (atom nil))
+(defn api-to-db! []
+  (db! [:obj] (into (db [:obj]) @api-db)))
+
 ;; TODO more clear separation of object-loads, and restructure/write to db
 (defn add-child! [parent child]
   (obj!
@@ -164,7 +168,7 @@
                           (get entry "FileId"))
                  :type :file-entry}))
         objs (concat fields parts files)]
-    (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) objs)))
+    (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objs)))
     (log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
@@ -207,6 +211,7 @@
                       (<load-reports)
                       (<load-controls)
                       (<load-templates)]))
+      (api-to-db!)
       (db! [:obj :state :trail]
                 (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
       (<! (disk/<save-form))

@@ -515,5 +515,6 @@
      #(go
         (<! (<p (js/localforage.clear)))
         (db! [] {})
+        (js/location.reload)
         (<! (<do-fetch)))}
     "reset + reload"]])
