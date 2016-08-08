@@ -11,7 +11,6 @@
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe tap mult]]
    [cognitect.transit :as transit]))
 
-
 (def third util/third)
 (def delay-fn util/delay-fn)
 (def <chan-seq util/<chan-seq)

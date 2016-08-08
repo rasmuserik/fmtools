@@ -18,7 +18,6 @@
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
-   [re-frame.core :as re-frame :refer [dispatch]]
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
@@ -193,7 +192,9 @@
 (identity js/window.location.href)
 ;;; Camera button
 (defn handle-file [id file]
-  (go (dispatch [:add-image id (<! (<blob-url file))])))
+  (go (let [image (<! (<blob-url file))]
+        (log 'TODO-images id image)
+        )))
 
 (defn camera-button [id]
   (let [show-controls (get (db [:ui :show-controls]) id)
@@ -234,7 +235,7 @@
                       :top 0
                       :right 0
                       :background "rgba(255,255,255,0.7)"}
-              :on-click #(dispatch [:remove-image id img])}]
+              :on-click #(log 'todo [:remove-image id img])}]
             [:img {:src img
                    :style {:max-height 150
                            :vertical-align :top
