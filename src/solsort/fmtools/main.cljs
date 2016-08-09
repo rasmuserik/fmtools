@@ -37,4 +37,4 @@
       (changes/init)
       nil))
   (catch js/Error e
-         (log "Error!" e (.-stack e)))))
+         (log "Exception in main" e (.-stack e)))))

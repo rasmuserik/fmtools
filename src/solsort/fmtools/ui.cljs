@@ -1,12 +1,15 @@
 (ns solsort.fmtools.ui
   (:require-macros
-   [cljs.core.async.macros :refer [go go-loop alt!]])
+   [cljs.core.async.macros :refer [go go-loop alt!]]
+   [solsort.fmtools.macros :refer [<?]])
   (:require
    [solsort.fmtools.definitions :refer
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
      TemplateGuid Description DoubleField]]
-   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
+   [solsort.fmtools.util
+    :as fmutil
+    :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db-async! db! db]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
@@ -516,8 +519,10 @@
    [:span.red.ui.button
     {:on-click
      #(go
-        (<! (<p (.clear lf/localforage-db)))
+       (try
+        (<? (<p (.clear lf/localforage-db)))
         (db! [] {})
         (js/location.reload)
-        (<! (<do-fetch)))}
+        (<? (<do-fetch))
+        (catch js/Error e (log "Exception in settings" e))))}
     "reset + reload"]])
