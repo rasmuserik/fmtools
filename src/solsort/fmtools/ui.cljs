@@ -11,6 +11,7 @@
    [solsort.fmtools.db :refer [db-async! db! db]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
+   [solsort.fmtools.localforage :as lf]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -515,7 +516,7 @@
    [:span.red.ui.button
     {:on-click
      #(go
-        (<! (<p (js/localforage.clear)))
+        (<! (<p (.clear lf/localforage-db)))
         (db! [] {})
         (js/location.reload)
         (<! (<do-fetch)))}
