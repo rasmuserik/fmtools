@@ -25,6 +25,11 @@
 (defonce prev-objs (atom #{}))
 (defonce change-chan (chan))
 (defonce changes (mult change-chan))
+(defonce change-loop
+  (let [c (tap-chan changes)]
+    (go-loop []
+      (js/console.log 'change-loop (<! c))
+      (recur))))
 (defn- handle-changes!-impl []
   (go
     (let [objs (into #{} (vals (db [:obj])))
@@ -34,13 +39,12 @@
       (reset! prev-objs objs))))
 (def handle-changes! (throttle handle-changes!-impl 1000))
 
-(def init
-  (run-once
-   (fn []
-     (let [c (tap-chan changes)]
-       (go-loop []
-         (js/console.log 'change-loop (<! c))
-         (recur)))
-     (ratom/run!
-      (db [:obj])
-      (handle-changes!)))))
+(defonce watcher (atom nil))
+(defn unwatch! []
+  (when @watcher
+    (reagent/dispose! @watcher)
+    (reset! watcher nil)))
+(defn watch! []
+  (when-not @watcher
+    (reset! watcher (ratom/run! (log 'here) (db [:obj]) (handle-changes!)))))
+(def init watch!)

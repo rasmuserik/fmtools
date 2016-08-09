@@ -6,7 +6,7 @@
    [org.clojure/core.async "0.2.374"]
    [cljsjs/localforage "1.3.1-0"]
    [com.cognitect/transit-cljs "0.8.237"]
-   [reagent "0.5.1"]
+   [reagent "0.6.0-rc"]
    [binaryage/devtools "0.6.1"]]
 
   :plugins

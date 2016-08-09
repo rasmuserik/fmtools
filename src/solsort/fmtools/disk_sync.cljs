@@ -71,6 +71,16 @@
        (reduce (fn [disk [path val]](assoc-in disk path val)) disk changes))
        )))
 
-(defn watch-changes! [& path]
-  (ratom/run!
-   (handle-changes! path (db path))))
+(defonce reactions (atom {}))
+(defn dont-watch-changes! [key]
+  (let [r (get @reactions key)]
+    (when r
+      (reagent.ratom/dispose! r)
+      (swap! reactions dissoc key)))
+  )
+(defn watch-changes! [key]
+  (when-not (get @reactions key)
+    (swap!
+     reactions assoc key
+     (ratom/run!
+      (handle-changes! [key] (db [key]))))))
