@@ -62,6 +62,12 @@
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
+(defn js-obj-push [obj k v] (.push (or (aget obj k) (aset obj k #js[])) v) )
+(defn group-by-part-guid [fields]
+  (let [m #js{}]
+    (doall (for [o fields] (js-obj-push m (PartGuid o) o)))
+    (js->clj m)))
+
 (defn <load-template [template-id]
   (go
     (let [template (<! (<api (str "ReportTemplate?templateGuid="
@@ -76,18 +82,20 @@
                       (map #(assoc % "FieldType" (field-types (FieldType %))))
                       (map #(into % {:id (get % "FieldGuid")
                                      :type :field}))
-                      (map obj!)
-                      (group-by PartGuid)
+                      ))
+          _
+          (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) fields)))
+          fields (->> fields
+                      (group-by-part-guid)
                       (map (fn [[k v]] [k (sort-by DisplayOrder v)]))
-                      (into {})
-                      )
-                     )
+                      (into {}))
           parts (-> template (ReportTemplateParts))
           parts (map #(assoc % "LineType" (or (line-types (LineType %))
                                               (log "invalid-LintType" %))) parts)
           parts (map #(assoc % "PartType" (part-types (PartType %))) parts)
           parts (map #(obj! (into % {:id (get % "PartGuid")
                                      :type :part}))
+                                        ; TODO replace this with (db! ...)
                      parts)
           parts (map
                  (fn [part]
@@ -96,6 +104,7 @@
                  (sort-by DisplayOrder parts))]
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map (fn [[id children]]
+                                        ; TODO replace this with (db! ...)
                     (obj! {:id id :children (map #(get % "FieldGuid") children)}))
                   fields))
       (log 'loaded-template
@@ -207,17 +216,19 @@
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
-  (go (db! [:loading] true)
-      (<! (<chan-seq [(<load-objects)
-                      (<load-reports)
-                      (<load-controls)
-                      (<load-templates)]))
-      (api-to-db!)
-      (db! [:obj :state :trail]
-                (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
-      (<! (disk/<save-form))
-      (update-entry-index!)
-      (db! [:loading] false)))
+  (if (db [:loading])
+    (go nil)
+      (go (db! [:loading] true)
+       (<! (<chan-seq [(<load-objects)
+                       (<load-reports)
+                       (<load-controls)
+                       (<load-templates)]))
+       (api-to-db!)
+       (db! [:obj :state :trail]
+            (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
+       (<! (disk/<save-form))
+       (update-entry-index!)
+       (db! [:loading] false))))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))

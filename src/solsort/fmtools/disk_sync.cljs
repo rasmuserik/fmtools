@@ -26,7 +26,7 @@
   "write the current data in the database to disk"
   []
   (go
-    (log 'save-form (db))
+    (log 'save-form)
     (<! (<localforage! (prn-str [:obj]) (clj->json (db [:obj]))))))
 
 (defn <restore-form

@@ -311,7 +311,7 @@
     (log 'create-report obj-id template-id name)
     (let [creation-response (<! (<ajax
                (str "https://"
-                    "fmtools.solsort.com/api/v1/"
+                    "fmproxy.solsort.com/api/v1/"
                     "Report?objectId=" obj-id
                     "&templateGuid="template-id
                     "&reportName=" name)
@@ -324,6 +324,18 @@
         (warn "failed making new report" obj-id template-id name creation-response))
       )
     ))
+(defn finish-report [report-id]
+  (go
+    (log 'finish-report)
+    (let [response (<! (<ajax ; TODO not absolute url
+                                 (str "https://"
+                                      "fmproxy.solsort.com/api/v1/"
+                                      "Report?ReportGuid=" report-id
+                                      )
+                                 :method "PUT"))
+          ]
+      (log 'finish-report-response response)
+    )))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
@@ -331,7 +343,14 @@
     (concat [[empty-choice]]
             (for [report reports]
               [(report "ReportName")
-               (report "ReportGuid")]))]])
+               (report "ReportGuid")]))]
+   (if ((into #{} (map :id reports)) (db [:ui :report-id]))
+     [:p {:style {:text-align :right}}
+      [:button.ui.red.button
+       {:on-click #(finish-report (db [:ui :report-id]))}
+      "Afslut rapport"]]
+     "")
+   ])
 (defn choose-report "react component listing reports" []
   (let [areas (doall (traverse-areas :areas))
         reports (current-open-reports areas)
