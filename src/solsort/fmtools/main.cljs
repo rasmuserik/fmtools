@@ -1,11 +1,12 @@
 (ns solsort.fmtools.main
   (:require-macros
    [reagent.ratom :as ratom]
-   [cljs.core.async.macros :refer [go]])
+   [cljs.core.async.macros :refer [go]]
+   [solsort.fmtools.macros :refer [<?]])
   (:require
    [cljs.core.async :as async :refer [<!]]
    [solsort.util :refer [<p log]]
-   [solsort.fmtools.util]
+   [solsort.fmtools.util :as fmutil]
    [solsort.fmtools.db :as db]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.ui]
@@ -20,6 +21,7 @@
                    (fn [err] (log "Error" err)))
 
 (go
+ (try
   (when (not= -1 (.indexOf js/location.hash "reset"))
     (<! (<p (.clear lf/localforage-db))))
   (db/db! [:loading] true)
@@ -27,10 +29,12 @@
     (<! (disk/<restore)))
   (db/db! [:loading] false)
   (when (= -1 (.indexOf js/location.hash "noload"))
-    (<! (api/<fetch)))
+    (<? (api/<fetch)))
   (when (empty? (db/db [:entries]))
     (update-entry-index!))
   (defonce initialisation
     (do
       (changes/init)
-      nil)))
+      nil))
+  (catch js/Error e
+         (log "Error!" e (.-stack e)))))
