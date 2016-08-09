@@ -30,13 +30,6 @@
 (defonce empty-choice "· · ·")
 (defn fourth-first [[v _ _ k]] [k v])
 
-(defn to-map
-  [o]
-  (cond
-    (map? o) o
-    (sequential? o) (zipmap (range) o)
-    :else {}))
-
 (defn delta
   "get changes from a to b"
   [from to]
