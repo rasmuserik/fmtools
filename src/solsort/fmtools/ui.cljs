@@ -24,7 +24,7 @@
 (defn warn [& args]
   (apply log "Warning:" args)
   nil)
-(def get-obj solsort.fmtools.db/obj)
+(defn get-obj [id] (db [:obj id]))
 
 ;;;; Main entrypoint
 (declare loading)

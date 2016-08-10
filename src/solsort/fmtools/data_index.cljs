@@ -1,7 +1,7 @@
 (ns solsort.fmtools.data-index
   (:require
    [solsort.util :refer [log]]
-  [solsort.fmtools.db :refer [db db! obj]]))
+  [solsort.fmtools.db :refer [db db!]]))
 
 ;; experiments to make index of actual data entries, - turns out that we do not have object id 
 (def entry-type #{:part-entry :field-entry})
@@ -17,7 +17,7 @@
                         (get entry "TemplateFieldGuid")
                         (get entry "TemplatePartGuid"))
            part-id (get entry "PartGuid")
-           part (obj (get entry "PartGuid"))
+           part (db [:obj (get entry "PartGuid")])
            ;; Note: It seems like we do not get actual objIds from server
            obj-id (get part "ObjectId" :missing)
            report-id (get part "ReportGuid")

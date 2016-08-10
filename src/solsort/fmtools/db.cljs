@@ -25,9 +25,3 @@
   ([path default]
    (let [val @(apply db-impl path)]
      (if (nil? val) default val))))
-
-(defn obj [id] (db [:obj id] {:id id}))
-(defn obj! [o]
-  (if (:id o)
-    (db! [:obj (:id o)] (into (db [:obj (:id o)] {}) o))
-    (log nil 'no-id o)))
