@@ -238,7 +238,6 @@
               (<load-objects)
               (<load-reports)
               (<load-controls)]))
-        (log 'loaded @api-db)
         (api-to-db!)
         (db! [:obj :state :trail]
              (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))

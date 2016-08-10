@@ -44,8 +44,7 @@
       [:div.ui.form
        [:div.field
         [:label "Område"]
-        [choose-area (if (db [:ui :debug]) :root :areas)]
-        ]
+        [choose-area (if (db [:ui :debug]) :root :areas)]]
        [choose-report]
        [:hr]
        [render-template report]
@@ -194,8 +193,7 @@
 ;;; Camera button
 (defn handle-file [id file]
   (go (let [image (<! (<blob-url file))]
-        (log 'TODO-images id image)
-        )))
+        (log 'TODO-images id image))))
 
 (defn camera-button [id]
   (let [show-controls (get (db [:ui :show-controls]) id)
@@ -290,8 +288,8 @@
   (map get-obj (:children (get-obj :templates))))
 
 (defn current-open-reports [areas]
-        (filter #((into #{} areas) (% "ObjectId"))
-                (all-reports)))
+  (filter #((into #{} areas) (% "ObjectId"))
+          (all-reports)))
 
 (defn list-available-templates [areas]
   (let [templates (all-templates)
@@ -301,8 +299,7 @@
         open-templates (into #{} (map #(get % "TemplateGuid")
                                       (current-open-reports
                                        areas)))
-        templates (remove #(open-templates (:id %)) templates)
-        ]
+        templates (remove #(open-templates (:id %)) templates)]
     (if (= :object (:type obj))
       templates
       [])))
@@ -311,32 +308,27 @@
     (db! [:ui :new-report-name] "")
     (log 'create-report obj-id template-id name)
     (let [creation-response (<! (<ajax
-               (str "https://"
-                    "fmproxy.solsort.com/api/v1/"
-                    "Report?objectId=" obj-id
-                    "&templateGuid="template-id
-                    "&reportName=" name)
-               :method "POST"))
+                                 (str "https://"
+                                      "fmproxy.solsort.com/api/v1/"
+                                      "Report?objectId=" obj-id
+                                      "&templateGuid=" template-id
+                                      "&reportName=" name)
+                                 :method "POST"))
           new-report-id (get creation-response "ReportGuid")]
       (if new-report-id
         (do
           (<! (<do-fetch)) ; TODO this should just be fetch, but we have to do-fetch, as created reports are missing from audit trail
-          (db! [:ui :report-id] new-report-id ))
-        (warn "failed making new report" obj-id template-id name creation-response))
-      )
-    ))
+          (db! [:ui :report-id] new-report-id))
+        (warn "failed making new report" obj-id template-id name creation-response)))))
 (defn finish-report [report-id]
   (go
     (log 'finish-report)
     (let [response (<! (<ajax ; TODO not absolute url
-                                 (str "https://"
-                                      "fmproxy.solsort.com/api/v1/"
-                                      "Report?ReportGuid=" report-id
-                                      )
-                                 :method "PUT"))
-          ]
-      (log 'finish-report-response response)
-    )))
+                        (str "https://"
+                             "fmproxy.solsort.com/api/v1/"
+                             "Report?ReportGuid=" report-id)
+                        :method "PUT"))]
+      (log 'finish-report-response response))))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
@@ -349,25 +341,24 @@
      [:p {:style {:text-align :right}}
       [:button.ui.red.button
        {:on-click #(finish-report (db [:ui :report-id]))}
-      "Afslut rapport"]]
-     "")
-   ])
+       "Afslut rapport"]]
+     "")])
 (defn choose-report "react component listing reports" []
   (let [areas (doall (traverse-areas :areas))
         reports (current-open-reports areas)
         available-templates (list-available-templates areas)]
     [:div
      (case (count reports)
-      0 (do
-          (db-async! [:ui :report-id] nil)
-          ""
+       0 (do
+           (db-async! [:ui :report-id] nil)
+           ""
           ;(render-report-list reports)
-          #_[:span.empty])
-      1 (do
-          (db-async! [:ui :report-id] ((first reports) "ReportGuid"))
-          (render-report-list reports)
-          #_[:div "Rapport: " ((first reports) "ReportName")])
-      (render-report-list reports))
+           #_[:span.empty])
+       1 (do
+           (db-async! [:ui :report-id] ((first reports) "ReportGuid"))
+           (render-report-list reports)
+           #_[:div "Rapport: " ((first reports) "ReportName")])
+       (render-report-list reports))
      (if (empty? available-templates)
        ""
        [:div.field
@@ -378,29 +369,22 @@
                (fn [template]
                  [:button.ui.button
                   {:on-click #(create-report (find-area :areas) (:id template) (db [:ui :new-report-name]))}
-                  (get template "Name")
-                  ])
-               available-templates
-               )
-              )
-        #_(str (map key (list-available-templates)))
-        ]
-       )
-     ]))
+                  (get template "Name")])
+               available-templates))
+        #_(str (map key (list-available-templates)))])]))
 
 ;;;; Actual report
 (def do-rot90 (not= -1 (.indexOf js/location.hash "rot90")))
 (defn data-id [k]
   [:obj (or (db [:entries k]) :missing-data-object)])
-  (def field-name "mapping from field-type to value name in api"
-    {:approve-reject "String"
-     :time "TimeSpan"
-     :text-input-noframe "String"
-     :text-input "String"
-     :decimal-2-digit "Double"
-     :checkbox "Boolean"
-     :remark "String"
-     })
+(def field-name "mapping from field-type to value name in api"
+  {:approve-reject "String"
+   :time "TimeSpan"
+   :text-input-noframe "String"
+   :text-input "String"
+   :decimal-2-digit "Double"
+   :checkbox "Boolean"
+   :remark "String"})
 (defn single-field [obj cols id area pos]
   (let [field-type (FieldType obj)
         value (FieldValue obj)
@@ -408,9 +392,9 @@
     (case field-type
       :fetch-from (str (ObjectName area))
       :approve-reject [select id {"" ""
-                               "Godkendt" "Approved"
-                               "Afvist" "Rejected"
-                               "-" "None"}]
+                                  "Godkendt" "Approved"
+                                  "Afvist" "Rejected"
+                                  "-" "None"}]
                                         ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
       :time [input id :type :time]
@@ -429,7 +413,6 @@
         double-field (DoubleField obj)
         double-separator (DoubleFieldSeperator obj)
         id (data-id id)]
-    ;(log id (data-id id))
     [:span.fmfield {:key id
                     :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
                     :on-click (fn [] (log {:obj obj :id id :id-obj (db id)}) nil)}
@@ -509,7 +492,6 @@
         template (get-obj id)
         areas (conj (doall (map get-obj (traverse-areas (ObjectId report)))) {})
         max-objects 100]
-    (log report)
     (into
      [:div.ui.form
       [:h1 (Description template)]

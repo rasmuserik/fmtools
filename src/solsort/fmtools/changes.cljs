@@ -46,5 +46,5 @@
     (reset! watcher nil)))
 (defn watch! []
   (when-not @watcher
-    (reset! watcher (ratom/run! (log 'here) (db [:obj]) (handle-changes!)))))
+    (reset! watcher (ratom/run! (db [:obj]) (handle-changes!)))))
 (def init watch!)
