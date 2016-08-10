@@ -9,7 +9,7 @@
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [third to-map delta empty-choice <chan-seq <localforage fourth-first timestamp->isostring str->timestamp]]
-   [solsort.fmtools.db :refer [db db! obj obj!]]
+   [solsort.fmtools.db :refer [db db!]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [solsort.fmtools.changes :as changes]
@@ -23,6 +23,15 @@
 (defonce api-db (atom nil))
 (defn api-to-db! []
   (db! [:obj] (into (db [:obj]) @api-db)))
+(defn obj [id] (get @api-db id {}))
+(defn obj! [o]
+    (let [id (:id o)
+          prev (get @api-db (:id o) {})
+          o (into prev o)]
+      (if id
+      (swap! api-db assoc id o)
+    (log 'obj! 'missing-id o))
+    o))
 
 ;; TODO more clear separation of object-loads, and restructure/write to db
 (defn add-child! [parent child]
@@ -84,7 +93,7 @@
                                      :type :field}))
                       ))
           _
-          (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) fields)))
+          (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) fields)))
           fields (->> fields
                       (group-by-part-guid)
                       (map (fn [[k v]] [k (sort-by DisplayOrder v)]))
@@ -131,7 +140,7 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     object))]
-    (db! [:obj] (into (db [:obj]) (map (fn [o] [(:id o) o]) objects)))
+    (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objects)))
 
     (doall
      (for [[parent-id children] (group-by :parent objects)]
@@ -215,6 +224,8 @@
   (obj! {:id :areas :type :root})
   (obj! {:id :controls :type :root})
   (obj! {:id :reports :type :root}))
+(init-root)
+(update-entry-index!)
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
@@ -224,12 +235,11 @@
           (init-root)
           (changes/unwatch!)
           (<! (<chan-seq
-               [
-                (<load-templates)
+               [(<load-templates)
                 (<load-objects)
                 (<load-reports)
-                (<load-controls)
-                       ]))
+                (<load-controls)]))
+          (log 'loaded @api-db)
        (api-to-db!)
        (db! [:obj :state :trail]
             (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
