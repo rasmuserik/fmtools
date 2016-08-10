@@ -25,12 +25,12 @@
   (db! [:obj] (into (db [:obj]) @api-db)))
 (defn obj [id] (get @api-db id {}))
 (defn obj! [o]
-    (let [id (:id o)
-          prev (get @api-db (:id o) {})
-          o (into prev o)]
-      (if id
+  (let [id (:id o)
+        prev (get @api-db (:id o) {})
+        o (into prev o)]
+    (if id
       (swap! api-db assoc id o)
-    (log 'obj! 'missing-id o))
+      (log 'obj! 'missing-id o))
     o))
 
 ;; TODO more clear separation of object-loads, and restructure/write to db
@@ -67,14 +67,14 @@
                          0 -1)
                         prev-sync)]
       (db! [:obj :state]
-                {:prev-sync last-update
-                 :trail trail}))))
+           {:prev-sync last-update
+            :trail trail}))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
-(defn js-obj-push [obj k v] (.push (or (aget obj k) (aset obj k #js[])) v) )
+(defn js-obj-push [obj k v] (.push (or (aget obj k) (aset obj k #js [])) v))
 (defn group-by-part-guid [fields]
-  (let [m #js{}]
+  (let [m #js {}]
     (doall (for [o fields] (js-obj-push m (PartGuid o) o)))
     (js->clj m)))
 (defn <load-template [template-id]
@@ -90,8 +90,7 @@
                      (->>
                       (map #(assoc % "FieldType" (field-types (FieldType %))))
                       (map #(into % {:id (get % "FieldGuid")
-                                     :type :field}))
-                      ))
+                                     :type :field}))))
           _
           (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) fields)))
           fields (->> fields
@@ -109,7 +108,7 @@
           parts (map
                  (fn [part]
                    (assoc part :fields
-                                   (get fields (PartGuid part))))
+                          (get fields (PartGuid part))))
                  (sort-by DisplayOrder parts))]
       (obj! {:id (:id template) :children (map :id parts)})
       (doall (map (fn [[id children]]
@@ -231,22 +230,22 @@
   []
   (if (db [:loading])
     (go nil)
-      (go (db! [:loading] true)
-          (init-root)
-          (changes/unwatch!)
-          (<! (<chan-seq
-               [(<load-templates)
-                (<load-objects)
-                (<load-reports)
-                (<load-controls)]))
-          (log 'loaded @api-db)
-       (api-to-db!)
-       (db! [:obj :state :trail]
-            (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
-       (<! (disk/<save-form))
-       (update-entry-index!)
-       (changes/watch!)
-       (db! [:loading] false))))
+    (go (db! [:loading] true)
+        (init-root)
+        (changes/unwatch!)
+        (<! (<chan-seq
+             [(<load-templates)
+              (<load-objects)
+              (<load-reports)
+              (<load-controls)]))
+        (log 'loaded @api-db)
+        (api-to-db!)
+        (db! [:obj :state :trail]
+             (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
+        (<! (disk/<save-form))
+        (update-entry-index!)
+        (changes/watch!)
+        (db! [:loading] false))))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
