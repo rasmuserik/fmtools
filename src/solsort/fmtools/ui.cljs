@@ -246,7 +246,6 @@
   (let [area (get-obj id)]
     (apply concat [id] (map sub-areas (:children area)))))
 (defn traverse-areas "find all childrens of a given id" [id]
-  (log 'traverse id)
   (let [selected (db [:ui id])]
     (if selected
       (into [id] (traverse-areas selected))

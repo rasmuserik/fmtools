@@ -6,7 +6,8 @@
    [solsort.fmtools.util :refer
     [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage!
      <localforage fourth-first throttle tap-chan]]
-   [solsort.fmtools.db :refer [db]]
+   [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.api-client :refer [api-db]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -25,10 +26,19 @@
 (defonce prev-objs (atom #{}))
 (defonce change-chan (chan))
 (defonce changes (mult change-chan))
+(defn handle-change! [o]
+  (let [api-obj (get @api-db (:id o))]
+    (if-not
+     (or (= o api-obj)
+         (:local o))
+      (db! [:obj (:id o)] (into o {:local true
+                                   "ModifiedAt" (.slice (.toISOString (js/Date.)) 0 19)}))
+      (when-not (= o api-obj)(log 'handle-change o)))))
+
 (defonce change-loop
   (let [c (tap-chan changes)]
     (go-loop []
-      (js/console.log 'change-loop (<! c))
+      (doall (map handle-change! (<! c)))
       (recur))))
 (defn- handle-changes!-impl []
   (go

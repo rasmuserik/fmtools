@@ -12,7 +12,6 @@
    [solsort.fmtools.db :refer [db db!]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
-   [solsort.fmtools.changes :as changes]
    [clojure.set :as set]
    [solsort.util
     :refer
@@ -232,7 +231,6 @@
     (go nil)
     (go (db! [:loading] true)
         (init-root)
-        (changes/unwatch!)
         (<! (<chan-seq
              [(<load-templates)
               (<load-objects)
@@ -243,7 +241,6 @@
              (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
         (<! (disk/<save-form))
         (update-entry-index!)
-        (changes/watch!)
         (db! [:loading] false))))
 (defn <fetch [] "conditionally update db"
   (go
