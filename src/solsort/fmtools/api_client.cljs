@@ -68,7 +68,6 @@
   (let [m #js{}]
     (doall (for [o fields] (js-obj-push m (PartGuid o) o)))
     (js->clj m)))
-
 (defn <load-template [template-id]
   (go
     (let [template (<! (<api (str "ReportTemplate?templateGuid="
@@ -199,6 +198,7 @@
                (add-child! :reports (:id report))
                (<load-report report)))))
       (log 'loaded-reports))))
+
 (defn <load-controls []
   (go
     (let [controls (get (<! (<api "ReportTemplate/Control")) "ReportControls")]
@@ -209,22 +209,27 @@
                     (add-child! :controls (get ctl "ControlGuid")))
                   controls)))))
 
-(obj! {:id :root :type :root
-       :children [:areas :templates :reports :controls]})
-(obj! {:id :areas :type :root})
-(obj! {:id :controls :type :root})
-(obj! {:id :reports :type :root})
+(defn init-root []
+  (obj! {:id :root :type :root
+         :children [:areas :templates :reports :controls]})
+  (obj! {:id :areas :type :root})
+  (obj! {:id :controls :type :root})
+  (obj! {:id :reports :type :root}))
 
 (defn <do-fetch "unconditionally fetch all templates/areas/..."
   []
   (if (db [:loading])
     (go nil)
       (go (db! [:loading] true)
+          (init-root)
           (changes/unwatch!)
-       (<! (<chan-seq [(<load-objects)
-                       (<load-reports)
-                       (<load-controls)
-                       (<load-templates)]))
+          (<! (<chan-seq
+               [
+                (<load-templates)
+                (<load-objects)
+                (<load-reports)
+                (<load-controls)
+                       ]))
        (api-to-db!)
        (db! [:obj :state :trail]
             (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
