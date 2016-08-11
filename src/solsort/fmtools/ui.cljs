@@ -316,7 +316,7 @@
           new-report-id (get creation-response "ReportGuid")]
       (if new-report-id
         (do
-          (<! (<do-fetch)) ; TODO this should just be fetch, but we have to do-fetch, as created reports are missing from audit trail
+          (<! (<fetch))
           (db! [:ui :report-id] new-report-id))
         (warn "failed making new report" obj-id template-id name creation-response)))))
 (defn finish-report [report-id]
