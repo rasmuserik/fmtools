@@ -20,6 +20,7 @@
           trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
+          _ (log 'trail trail)
           trail (into (db [:obj :state :trail] #{})
                       (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
           last-update (->> trail

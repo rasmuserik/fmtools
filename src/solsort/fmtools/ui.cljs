@@ -8,6 +8,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage fourth-first]]
    [solsort.misc :refer [<blob-url]]
+   [solsort.ui :refer [loading checkbox input select rot90]]
    [solsort.fmtools.db :refer [db-async! db! db]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
@@ -27,7 +28,6 @@
 (defn get-obj [id] (db [:obj id]))
 
 ;;;; Main entrypoint
-(declare loading)
 (declare choose-area)
 (declare choose-report)
 (declare render-template)
@@ -112,84 +112,6 @@
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 
-;;;; Generic Components
-(defn loading "simple loading indicator, showing when (db [:loading])" []
-  (if (db [:loading])
-    [:div
-     {:style {:position :fixed
-              :display :inline-block
-              :top 0 :left 0
-              :width "100%"
-              :heigth "100%"
-              :background-color "rgba(0,0,0,0.6)"
-              :color "white"
-              :z-index 100
-              :padding-top (* 0.3 js/window.innerHeight)
-              :text-align "center"
-              :font-size "48px"
-              :text-shadow "2px 2px 8px #000000"
-              :padding-bottom (* 0.7 js/window.innerHeight)}}
-     "Loading..."]
-    [:span]))
-(defn select [id options]
-  (let [current (db id)]
-    (into [:select
-           {:style {:padding-left 0
-                    :padding-right 0}
-            :value (prn-str current)
-            :onChange
-            #(db-async! id (read-string (.-value (.-target %1))))}]
-          (for [[k v] options]
-            (let [v (prn-str v)]
-              [:option {:style {:padding-left 0
-                                :padding-right 0}
-                        :key v :value v} k])))))
-(defn checkbox [id]
-  (let [value (db id)]
-    [:img.checkbox
-     {:on-click (fn [] (db-async! id (not value)) nil)
-      :src (if value "assets/check.png" "assets/uncheck.png")}]))
-(defn input  [id & {:keys [type size max-length options]
-                    :or {type "text"}}]
-  (case type
-    :select (select id options)
-    :checkbox (checkbox id)
-    [:input {:type type
-             :style {:padding-right 0
-                     :padding-left 0
-                     :text-align :center
-                     :overflow :visible}
-             :name (prn-str id)
-             :key (prn-str id)
-             :size size
-             :max-length max-length
-             :value (db id)
-             :on-change #(db-async! id (.-value (.-target %1)))}]))
-(defn- fix-height "used by rot90" [o]
-  (let [node (reagent/dom-node o)
-        child (-> node (aget "children") (aget 0))
-        width (aget child "clientHeight")
-        height (aget child "clientWidth")
-        style (aget node "style")]
-    (aset style "height" (str height "px"))
-    (aset style "width" (str width "px"))))
-(def rot90 "reagent-component rotating its content 90 degree"
-  (with-meta
-    (fn [elem]
-      [:div
-       {:style {:position "relative"
-                :display :inline-block}}
-       [:div
-        {:style {:transform-origin "0% 0%"
-                 :transform "rotate(-90deg)"
-                 :position "absolute"
-                 :top "100%"
-                 :left 0
-                 :display :inline-block}}
-        elem]])
-    {:component-did-mount fix-height
-     :component-did-update fix-height}))
-(identity js/window.location.href)
 ;;; Camera button
 (defn handle-file [id file]
   (go (let [image (<! (<blob-url file))]
