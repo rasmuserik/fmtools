@@ -1,14 +1,13 @@
 (ns solsort.fmtools.ui
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
-   [solsort.fmtools.macros :refer [<?]])
+   [solsort.macros :refer [<?]])
   (:require
    [solsort.fmtools.definitions :refer
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util
-    :as fmutil
     :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
    [solsort.misc :refer [<blob-url]]
    [solsort.fmtools.db :refer [db-async! db! db]]

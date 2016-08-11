@@ -2,10 +2,9 @@
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]]
-   [solsort.fmtools.macros :refer [<?]])
+   [solsort.macros :refer [<?]])
   (:require
    [solsort.fmtools.util
-    :as fmutil
     :refer [clj->json json->clj third to-map delta
                                  empty-choice <chan-seq fourth-first]]
    [solsort.fmtools.db :refer [db db! api-db]]
