@@ -4,7 +4,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
-   [solsort.fmtools.db :refer [db db!]]
+   [solsort.fmtools.db :refer [db db! api-db]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -30,32 +30,42 @@
 (defn- <sync-to-disk! []
   (go
     (when-not (empty? @needs-sync)
+      (log 'writing-to-disk)
       (let [objs @needs-sync]
         (log 'syncing-to-disk (count objs))
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
-          (<! (<localforage! (prn-str k) (clj->json o)))
+          (<! (<localforage! (prn-str (:id o)) (clj->json o)))
           (when-not (empty? objs)
-            (recur (first objs) (rest objs))))))))
+            (recur (first objs) (rest objs)))))
+      (log 'writing-done))))
 (defonce disk-writer
   (go-loop []
     (<! (<sync-to-disk!))
     (<! (timeout 100))
     (recur)))
+
 (defn <restore
   "load current template/reports from disk"
   []
   (let [c (chan)]
     (reset! disk-db {})
     (js/localforage.iterate
-     (fn [v k i]
-       (next-tick #(try
-          (swap! disk-db assoc (read-string k) (json->clj v))
-          (catch js/Object e (js/console.log e))))
+     (fn [v]
+        (try
+          (let [o (json->clj v)]
+           (swap! disk-db assoc (:id o) o))
+          (catch js/Object e (js/console.log e)))
        js/undefined)
      (fn []
        (db! [:obj] @disk-db)
-       (log 'restore (count (db [:obj]))(db [:obj :state]) )
+       (reset!
+        api-db
+        (into {}
+              (remove
+               (fn [_ o] (:local o))
+               @disk-db)))
+       (log 'restore (count (db [:obj])))
        (close! c)))
     c))

@@ -27,22 +27,30 @@
 (defonce prev-objs (atom #{}))
 (defonce change-chan (chan))
 (defonce changes (mult change-chan))
-(defn handle-change! [o]
+(defn handle-change! [objs]
   (go
-    (let [api-obj (get @api-db (:id o))]
-     (if-not
-         (or (= o api-obj)
-             (:local o))
-       (db! [:obj (:id o)] (into o {:local true
-                                    "ModifiedAt" (.slice (.toISOString (js/Date.)) 0 19)}))
-       (do
-         (save-obj! o)
-         )))))
+    (log 'handle-change (count objs))
+    (doall
+     (map
+      (fn [o]
+        (let [api-obj (get @api-db (:id o))]
+          (when (= o (db [:obj (:id o)]))
+            (if-not
+                (or (= o api-obj)
+                    (:local o))
+              (do
+                (db! [:obj (:id o)] (into o {:local true
+                                             "ModifiedAt" (.slice (.toISOString (js/Date.)) 0 19)})))
+              (do
+                (save-obj! o)
+                )))
+          ))
+      objs))))
 
 (defonce change-loop
   (let [c (tap-chan changes)]
     (go-loop []
-      (doall (map handle-change! (<! c)))
+      (<! (handle-change! (<! c)))
       (recur))))
 
 (defn- handle-changes!-impl []

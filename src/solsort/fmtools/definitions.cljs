@@ -31,9 +31,11 @@
    15 "DoubleValue1"
    16 "DoubleValue2"
    17 "DateTimeValue1"
-   18 "TimeSpanValue1"})
+   18 "TimeSpanValue1"
+   19 :report
+   })
 (def full-sync-types
-  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed})
+  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed :report})
 (defonce field-typing
   {:text-fixed :string
    :text-input :string
