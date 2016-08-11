@@ -1,9 +1,7 @@
 (ns solsort.fmtools.api-client
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
-   [solsort.fmtools.definitions :refer
-    [trail-types full-sync-types
-     ]]
+   [solsort.fmtools.definitions :refer [trail-types full-sync-types]]
    [solsort.fmtools.util :refer [str->timestamp timestamp->isostring]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.load-api-data :refer [<load-api-db! init-root! <api]]
@@ -35,7 +33,8 @@
                          0 -1)
                         prev-sync)]
       (db! [:obj :state]
-           {:prev-sync last-update
+           {:id :state
+            :prev-sync last-update
             :trail trail}))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
@@ -52,7 +51,6 @@
         (api-to-db!)
         (db! [:obj :state :trail]
              (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
-        (<! (disk/<save-form))
         (update-entry-index!)
         (db! [:loading] false))))
 (defn <fetch [] "conditionally update db"

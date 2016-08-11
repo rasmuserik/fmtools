@@ -20,67 +20,42 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
-(def disk (atom {}))
+(defonce disk-db (atom {}))
+(defonce needs-sync (atom {}))
+(defn save-obj! [o]
+  (when-not (= o(get @disk-db (:id o)))
+    (swap! disk-db assoc (:id o) o)
+    (swap! needs-sync assoc (:id o) o)))
 
-(defn <save-form
-  "write the current data in the database to disk"
-  []
+(defn- <sync-to-disk! []
   (go
-    (log 'save-form)
-    (<! (<localforage! (prn-str [:obj]) (clj->json (db [:obj]))))))
-
-(defn <restore-form
+    (when-not (empty? @needs-sync)
+      (let [objs @needs-sync]
+        (log 'syncing-to-disk (count objs))
+        (reset! needs-sync {})
+        (loop [[k o] (first objs)
+               objs (rest objs)]
+          (<! (<localforage! (prn-str k) (clj->json o)))
+          (when-not (empty? objs)
+            (recur (first objs) (rest objs))))))))
+(defonce disk-writer
+  (go-loop []
+    (<! (<sync-to-disk!))
+    (<! (timeout 100))
+    (recur)))
+(defn <restore
   "load current template/reports from disk"
   []
   (let [c (chan)]
+    (reset! disk-db {})
     (js/localforage.iterate
      (fn [v k i]
-       (try
-         (let [path (read-string k)
-               val (json->clj v)]
-           (log 'restore i path)
-           (db! path val)
-           (swap! disk assoc-in path val)
-           (db! (concat [:disk] path) val))
-         (catch js/Object e (js/console.log e)))
+       (next-tick #(try
+          (swap! disk-db assoc (read-string k) (json->clj v))
+          (catch js/Object e (js/console.log e))))
        js/undefined)
-     #(close! c))
+     (fn []
+       (db! [:obj] @disk-db)
+       (log 'restore (count (db [:obj]))(db [:obj :state]) )
+       (close! c)))
     c))
-
-(defn find-changes [a b prefix]
-  (if (= a b)
-    []
-    (if (map? a)
-      (if (map? b)
-        (let [ks (distinct (concat (keys a) (keys b)))]
-          (apply concat (map #(find-changes (a %) (b %) (conj prefix %)) ks)))
-        (apply concat [[prefix b]] (map #(find-changes (second %) nil (conj prefix (first %))) a))
-        )
-      (if (map? b)
-        (apply concat (if (nil? a) [] [[prefix nil]])
-               (map #(find-changes nil (second %) (conj prefix (first %))) b))
-        [[prefix b]])
-      )))
-
-(defn handle-changes! [path db]
-  (swap!
-   disk
-   (fn [disk]
-     (let [changes (find-changes (get-in disk path) db (into [] path))]
-       (doall (map (fn [[a b]] (<localforage! (prn-str a) (clj->json b))) changes))
-       (reduce (fn [disk [path val]](assoc-in disk path val)) disk changes))
-       )))
-
-(defonce reactions (atom {}))
-(defn dont-watch-changes! [key]
-  (let [r (get @reactions key)]
-    (when r
-      (reagent.ratom/dispose! r)
-      (swap! reactions dissoc key)))
-  )
-(defn watch-changes! [key]
-  (when-not (get @reactions key)
-    (swap!
-     reactions assoc key
-     (ratom/run!
-      (handle-changes! [key] (db [key]))))))

@@ -17,8 +17,10 @@
 (go
   (when (not= -1 (.indexOf js/location.hash "reset"))
     (<! (<p (js/localforage.clear))))
+  (db/db! [:loading] true)
   (defonce restore-data
-    (<! (disk/<restore-form)))
+    (<! (disk/<restore)))
+  (db/db! [:loading] false)
   (when (= -1 (.indexOf js/location.hash "noload"))
     (<! (api/<fetch)))
   (when (empty? (db/db [:entries]))
@@ -26,6 +28,4 @@
   (defonce initialisation
     (do
       (changes/init)
-      (disk/watch-changes! :state)
-      (disk/watch-changes! :data)
       nil)))
