@@ -43,5 +43,3 @@
             ks (filter #(not= (from %) (to %)) ks)]
         (into {} (map (fn [k]  [k (delta (from k) (to k))])  ks)))
       to)))
-
-

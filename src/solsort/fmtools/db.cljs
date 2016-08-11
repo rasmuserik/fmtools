@@ -6,6 +6,7 @@
    [reagent.core :as reagent :refer []]
     ))
 
+(defonce api-db (atom nil))
 (defonce db-atom (reagent/atom {}))
 (declare db-impl)
 (defn db-raw [& path]

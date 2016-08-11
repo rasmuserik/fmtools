@@ -6,8 +6,8 @@
    [solsort.fmtools.util :refer
     [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage!
      <localforage fourth-first throttle tap-chan]]
-   [solsort.fmtools.db :refer [db db!]]
-   [solsort.fmtools.api-client :refer [api-db]]
+   [solsort.fmtools.db :refer [db db! api-db]]
+   [solsort.fmtools.api-client]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
