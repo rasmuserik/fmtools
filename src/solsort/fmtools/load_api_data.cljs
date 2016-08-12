@@ -9,7 +9,6 @@
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
    [solsort.fmtools.util :refer [<chan-seq]]
    [solsort.fmtools.db :refer [api-db]]
-   [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.util :refer [<ajax log js-obj-push]]
    [cljs.core.async :as async :refer [<!]]))
 
@@ -79,17 +78,17 @@
                                         ; TODO replace this with (db! ...)
                     (obj! {:id id :children (map #(get % "FieldGuid") children)}))
                   fields))
-      (log 'loaded-template
+      #_(log 'loaded-template
            (get template "Name")))))
 (defn <load-templates []
   (go
     (let [templates (get (<! (<api "ReportTemplate")) "ReportTemplateTables")]
       (<! (<chan-seq (for [template templates]
                        (<load-template (get template "TemplateGuid")))))
-      (log 'loaded-templates
-           (obj! {:id :templates
-                  :type :root
-                  :children (map #(get % "TemplateGuid") templates)})))))
+      (obj! {:id :templates
+             :type :root
+             :children (map #(get % "TemplateGuid") templates)})
+      #_(log 'loaded-templates))))
 
 (defn handle-area [area objects]
   (let [objects (for [object objects]
@@ -110,7 +109,7 @@
        (obj! {:id parent-id
               :children (into (or (:children (obj parent-id)) [])
                               (map :id children))})))
-    (log 'load-area (Name area))
+    #_(log 'load-area (Name area))
     (obj! area)
     (add-child! :areas (:id area))))
 (defn <load-area [area]
@@ -125,10 +124,10 @@
       (handle-area area objects))))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]
-        (log 'areas areas (Areas areas))
+        #_(log 'areas areas (Areas areas))
         (<! (<chan-seq (for [area (Areas areas)]
                          (<load-area area))))
-        (log 'objects-loaded))))
+        #_(log 'objects-loaded))))
 
 (defn handle-report [report report-id data role table]
   (let [t0 (js/Date.now)
@@ -151,7 +150,7 @@
                  :type :file-entry}))
         objs (concat fields parts files)]
     (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objs)))
-    (log 'report (ReportName report) (- (js/Date.now) t0))))
+    #_(log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
   (go
     (let [report-id (get report "ReportGuid")
@@ -169,7 +168,7 @@
                (obj! report)
                (add-child! :reports (:id report))
                (<load-report report)))))
-      (log 'loaded-reports))))
+      #_(log 'loaded-reports))))
 
 (defn <load-controls []
   (go

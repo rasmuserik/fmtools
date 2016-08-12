@@ -29,22 +29,20 @@
 (defonce changes (mult change-chan))
 (defn handle-change! [objs]
   (go
-    (log 'handle-change (count objs))
+    #_(log 'handle-change (count objs))
     (doall
      (map
       (fn [o]
         (let [api-obj (get @api-db (:id o))]
           (when (= o (db [:obj (:id o)]))
             (if (or (= o api-obj)
-                    (:local o))
+                    (:local o)
+                    (not (:type o)))
               (do
                 (save-obj! o)
                 (sync-obj! o))
               (do
-                (log 'local)
-                (db! [:obj (:id o)] (into o {:local true
-                                             })))
-              ))
+                (db! [:obj (:id o)] (into o {:local true})))))
           ))
       objs))))
 

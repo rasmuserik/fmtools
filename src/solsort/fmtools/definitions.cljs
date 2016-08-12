@@ -35,7 +35,7 @@
    19 :report
    })
 (def full-sync-types
-  #{:object :area :user :template-enabled :template-disabled :template-changed :part-changed :part-image-changed :report})
+  #{:object :area :user :template-enabled :template-disabled :template-changed :report})
 (defonce field-typing
   {:text-fixed :string
    :text-input :string

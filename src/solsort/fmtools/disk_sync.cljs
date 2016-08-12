@@ -30,16 +30,13 @@
 (defn- <sync-to-disk! []
   (go
     (when-not (empty? @needs-sync)
-      (log 'writing-to-disk)
       (let [objs @needs-sync]
-        (log 'syncing-to-disk (count objs))
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
           (<! (<localforage! (prn-str (:id o)) (clj->json o)))
           (when-not (empty? objs)
-            (recur (first objs) (rest objs)))))
-      (log 'writing-done))))
+            (recur (first objs) (rest objs))))))))
 (defonce disk-writer
   (go-loop []
     (<! (<sync-to-disk!))

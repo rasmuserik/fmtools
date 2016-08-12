@@ -8,7 +8,7 @@
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
-   [solsort.util :refer [log <ajax]]
+   [solsort.util :refer [log <ajax <chan-seq]]
    [cljs.core.async :as async :refer [>! timeout]]))
 
 
@@ -21,7 +21,7 @@
           trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
-          _ (log 'trail trail)
+          ;_ (log 'trail trail)
           trail (into (db [:obj :state :trail] #{})
                       (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
           last-update (->> trail
@@ -55,11 +55,33 @@
              (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
         (update-entry-index!)
         (db! [:loading] false))))
+(defn update-part-trail! [trail]
+  (let [id (get trail "PrimaryGuid")
+        o (db [:obj id])
+        updated (into o {"Performed" (get trail "FieldBoolean")
+                         "Remarks" (get trail "FieldString")
+                         "Amount" (get trail "FieldInteger")})]
+    (when (= o updated)
+      (let [updated (dissoc updated :local)]
+        (swap! api-db assoc id updated)
+        (db [:obj id] updated)))))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
     (when-not (empty? (set/intersection full-sync-types (updated-types)))
-      (<! (<do-fetch)))))
+      (<! (<do-fetch)))
+    (when-not (empty? (db [:obj :state :trail]))
+      (log 'handle-trail (db [:obj :state :trail]))
+      (doall
+       (for [o (db [:obj :state :trail])]
+         (case (:type o)
+           :part-changed (update-part-trail! o)
+           ;; TODO field-changed
+           (log (:type o) 'not 'handled)
+           )
+         ))
+      (db! [:obj :state :trail] #{}))
+    ))
 
 (defonce needs-sync (atom {}))
 (defn sync-obj! [o]
@@ -80,29 +102,35 @@
 (defonce part-sync-fields
   #{"PartGuid" "ReportGuid" "Performed" "Remarks" "Amount" "ObjectId"})
 (defn <sync-part! [o]
-  (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
-    (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
-           :method "PUT" :data payload)))
-(defn sync-to-server! []
+  (go
+    (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
+      (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
+              :method "PUT" :data payload)))))
+(defn <sync-to-server! []
   (go
     (let [objs (vals @needs-sync)]
      (when-not (empty? objs)
        (log 'sync-to-server! (map :type objs))
-       (doall (for [o objs]
-                (case (:type o)
-                  :field-entry (<sync-field! o)
-                  :part-entry (<sync-part! o)
-                  (log 'no-sync-type o))))
-       (reset! needs-sync {})
+       (<!
+        (<chan-seq
+         (doall (for [o objs]
+                  (do
+                    (case (:type o)
+                          :field-entry (<sync-field! o)
+                          :part-entry (<sync-part! o)
+                          (go (log 'no-sync-type o))))))))
+       (reset! needs-sync {}) ; TODO: remove this line, when update through audittrail works
        )
      )))
+(defn <sync! []
+  (go
+    (when js/navigator.onLine
+      (go
+        (<! (<sync-to-server!))
+        (<! (<fetch))))
+    (<! (timeout 5000)))
+  )
 (defonce -sync-loop
   (go-loop []
-    (when js/navigator.onLine
-      (sync-to-server!)
-      #_(<fetch)
-      )
-    (<! (timeout 3000))
+    (<! (<sync!))
     (recur)))
-
-(<fetch)
