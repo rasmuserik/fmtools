@@ -8,8 +8,9 @@
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [clojure.set :as set]
-   [solsort.util :refer [log]]
-   [cljs.core.async :as async :refer [>!]]))
+   [solsort.util :refer [log <ajax]]
+   [cljs.core.async :as async :refer [>! timeout]]))
+
 
 (defn api-to-db! []
   (db! [:obj] (into (db [:obj]) @api-db)))
@@ -59,3 +60,49 @@
     (<! (<update-state))
     (when-not (empty? (set/intersection full-sync-types (updated-types)))
       (<! (<do-fetch)))))
+
+(defonce needs-sync (atom {}))
+(defn sync-obj! [o]
+  (when (and (:local o)
+             (:type o))
+    (swap! needs-sync assoc (:id o) o)))
+
+(defonce field-sync-fields
+  #{"FieldGuid" "PartGuid" "TemplateFieldGuid" "FieldId"
+    "StringValue1" "StringValue2" "BooleanValue1" "BooleanValue2"
+    "IntegerValue1" "IntegerValue2" "DoubleValue1" "DoubleValue2"
+    "DateTimeValue1" "TimeSpanValue1" ;"ModifiedAt" "ModifiedBy"
+    })
+(defn <sync-field! [o]
+  (let [payload (clj->js (into {} (filter #(field-sync-fields (first %)) (seq o))))]
+    (<ajax "https://fmproxy.solsort.com/api/v1/Report/Field"
+           :method "PUT" :data payload)))
+(defonce part-sync-fields
+  #{"PartGuid" "ReportGuid" "Performed" "Remarks" "Amount" "ObjectId"})
+(defn <sync-part! [o]
+  (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
+    (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
+           :method "PUT" :data payload)))
+(defn sync-to-server! []
+  (go
+    (let [objs (vals @needs-sync)]
+     (when-not (empty? objs)
+       (log 'sync-to-server! (map :type objs))
+       (doall (for [o objs]
+                (case (:type o)
+                  :field-entry (<sync-field! o)
+                  :part-entry (<sync-part! o)
+                  (log 'no-sync-type o))))
+       (reset! needs-sync {})
+       )
+     )))
+(defonce -sync-loop
+  (go-loop []
+    (when js/navigator.onLine
+      (sync-to-server!)
+      #_(<fetch)
+      )
+    (<! (timeout 3000))
+    (recur)))
+
+(<fetch)

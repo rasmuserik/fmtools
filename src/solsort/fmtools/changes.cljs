@@ -8,7 +8,7 @@
      <localforage fourth-first throttle tap-chan]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.disk-sync :refer [save-obj!]]
-   [solsort.fmtools.api-client]
+   [solsort.fmtools.api-client :refer [sync-obj!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cljsjs.localforage]
@@ -35,15 +35,16 @@
       (fn [o]
         (let [api-obj (get @api-db (:id o))]
           (when (= o (db [:obj (:id o)]))
-            (if-not
-                (or (= o api-obj)
+            (if (or (= o api-obj)
                     (:local o))
               (do
-                (db! [:obj (:id o)] (into o {:local true
-                                             "ModifiedAt" (.slice (.toISOString (js/Date.)) 0 19)})))
-              (do
                 (save-obj! o)
-                )))
+                (sync-obj! o))
+              (do
+                (log 'local)
+                (db! [:obj (:id o)] (into o {:local true
+                                             })))
+              ))
           ))
       objs))))
 
