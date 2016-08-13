@@ -102,7 +102,7 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     object))]
-    (for [o objects] (obj! o))
+    (doall (map obj! objects))
 
     (doall
      (for [[parent-id children] (group-by :parent objects)]
