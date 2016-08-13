@@ -1,5 +1,14 @@
 (ns solsort.fmtools.definitions)
 
+(def field-sync-fields
+  #{"FieldGuid" "PartGuid" "TemplateFieldGuid" "FieldId"
+    "StringValue1" "StringValue2" "BooleanValue1" "BooleanValue2"
+    "IntegerValue1" "IntegerValue2" "DoubleValue1" "DoubleValue2"
+    "DateTimeValue1" "TimeSpanValue1"
+    })
+(def part-sync-fields
+  #{"PartGuid" "ReportGuid" "Performed" "Remarks" "Amount" "ObjectId"})
+(def sync-fields (into field-sync-fields part-sync-fields))
 (def data-paths
   [[:camera nil [:images]]
    [:field "StringValue1" [:string]]
