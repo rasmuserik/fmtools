@@ -12,6 +12,7 @@
    [cljs.core.async :as async :refer [>! timeout]]))
 
 
+(defonce needs-sync (atom {}))
 (defn api-to-db! []
   (db! [:obj] (into (db [:obj]) @api-db)))
 
@@ -68,21 +69,22 @@
 (defn update-field-trail! [trail]
   (let [id (get trail "PrimaryGuid")
         o (db [:obj id])
-        trail-key (:type trail)
-        obj-key (clojure.string/replace trail-key #"Value[12]" "")
+        obj-key (:type trail)
+        trail-key (str "Field" (clojure.string/replace obj-key #"Value[12]" ""))
         updated (assoc o obj-key (get trail trail-key))
         new (dissoc updated :local)]
-    (log 'update-field-trail! trail trail-key obj-key o updated)
     (swap! api-db assoc id new)
-    (when (= o updated)
-        (db [:obj id] new))))
+    (when (or
+           (not (:local o))
+           (= o updated))
+      (swap! needs-sync dissoc id)
+        (db! [:obj id] new))))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
     (when-not (empty? (set/intersection full-sync-types (updated-types)))
       (<! (<do-fetch)))
     (when-not (empty? (db [:obj :state :trail]))
-      (log 'handle-trail (db [:obj :state :trail]))
       (doall
        (for [o (db [:obj :state :trail])]
          (if (string? (:type o))
@@ -95,18 +97,16 @@
       (db! [:obj :state :trail] #{}))
     ))
 
-(defonce needs-sync (atom {}))
 (defn sync-obj! [o]
   (when (and (:local o)
              (:type o))
     (swap! needs-sync assoc (:id o) o)))
 
 (defn <sync-field! [o]
-  (log 'sync-field o)
   (go
     (let [payload (clj->js (into {} (filter #(field-sync-fields (first %)) (seq o))))]
-      (log (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Field"
-                  :method "PUT" :data payload))))))
+      (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Field"
+                  :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
     (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
@@ -137,7 +137,7 @@
       (go
         (<! (<sync-to-server!))
         (<! (<fetch))))
-    (<! (timeout 5000)))
+    (<! (timeout 1000)))
   )
 (defonce -sync-loop
   (go-loop []

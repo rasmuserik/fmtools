@@ -323,10 +323,7 @@
       :remark [input id]
       :text-input-noframe [input id]
       :text-input [input id]
-      :date (do
-              (when (< 10 (count (str (db id))))
-                (db! id (.slice (str (db id)) 0 10)))
-             [input id :type "date"])
+      :date [input id :type "datetime"]
       :decimal-2-digit [input id :type "number"]
       :decimal-4-digit [input id :type "number"]
       :integer [input id :type "number"]
