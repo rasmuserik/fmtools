@@ -137,7 +137,7 @@
       (go
         (<! (<sync-to-server!))
         (<! (<fetch))))
-    (<! (timeout 1000)))
+    (<! (timeout 10000)))
   )
 (defonce -sync-loop
   (go-loop []

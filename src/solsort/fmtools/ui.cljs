@@ -40,6 +40,10 @@
     [:div.main-form
      "Under development, not functional yet"
      [loading]
+     (if (< 0 (db [:ui :disk]))
+       [:div {:style
+              {:position :absolute}} "Saving offline version to DB, do not turn off"]
+       "")
      [:h1 {:style {:text-align :center}} "FM-Tools"]
      [:hr]
 
@@ -450,9 +454,8 @@
     {:on-click
      #(go
        (try
-        (<? (<p (.clear lf/localforage-db)))
+        (<! (<p (.clear lf/localforage-db)))
         (db! [] {})
         (js/location.reload)
-        (<? (<do-fetch))
-        (catch js/Error e (log "Exception in settings" e))))}
+        (catch js/Error e (js/console.log e))))}
     "reset + reload"]])
