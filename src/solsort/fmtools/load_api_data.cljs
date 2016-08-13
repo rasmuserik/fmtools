@@ -102,7 +102,7 @@
                                       :id (get object "ObjectId")
                                       :type :object})]
                     object))]
-    (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objects)))
+    (for [o objects] (obj! o))
 
     (doall
      (for [[parent-id children] (group-by :parent objects)]
