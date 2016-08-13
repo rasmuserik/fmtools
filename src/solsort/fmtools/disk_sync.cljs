@@ -1,13 +1,17 @@
 (ns solsort.fmtools.disk-sync
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
-   [reagent.ratom :as ratom :refer  [reaction]])
+   [reagent.ratom :as ratom :refer  [reaction]]
+   [solsort.macros :refer [<?]])
   (:require
-   [solsort.fmtools.util :refer [clj->json json->clj third to-map delta empty-choice <chan-seq <localforage! <localforage fourth-first]]
+   [solsort.fmtools.util
+    :refer [clj->json json->clj third to-map delta
+                                 empty-choice <chan-seq fourth-first]]
    [solsort.fmtools.db :refer [db db! api-db]]
+   [solsort.fmtools.localforage
+    :refer [localforage-db <localforage-db!]]
    [devtools.core :as devtools]
    [cljs.pprint]
-   [cljsjs.localforage]
    [cognitect.transit :as transit]
    [solsort.misc :refer [<blob-url]]
    [solsort.util
@@ -34,7 +38,7 @@
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
-          (<! (<localforage! (prn-str (:id o)) (clj->json o)))
+          (<! (<localforage-db! (prn-str (:id o)) (clj->json o)))
           (when-not (empty? objs)
             (recur (first objs) (rest objs))))))))
 (defonce disk-writer
@@ -48,7 +52,7 @@
   []
   (let [c (chan)]
     (reset! disk-db {})
-    (js/localforage.iterate
+    (.iterate localforage-db
      (fn [v]
         (try
           (let [o (json->clj v)]

@@ -29,8 +29,7 @@
 (defonce dev-tools (devtools/install!))
 (defonce empty-choice "· · ·")
 (defn fourth-first [[v _ _ k]] [k v])
-(defn <localforage [k] (<p (.getItem js/localforage k)))
-(defn <localforage! [k v] (<p (.setItem js/localforage k v)))
+
 (defn delta
   "get changes from a to b"
   [from to]

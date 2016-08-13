@@ -12,13 +12,16 @@
    [solsort.util :refer [<ajax log js-obj-push]]
    [cljs.core.async :as async :refer [<!]]))
 
-(defn <api [endpoint]
+(defn <api [endpoint & {:keys [data method]
+                        :or {data nil method "GET"}}]
   (<ajax (str "https://"
               "fmproxy.solsort.com/api/v1/"
                                         ;"app.fmtools.dk/api/v1/"
                                         ;(js/location.hash.slice 1)
                                         ;"@fmproxy.solsort.com/api/v1/"
               endpoint)
+         :method method
+         :data data
          :credentials true))
 
 (defn obj [id] (get @api-db id {}))
