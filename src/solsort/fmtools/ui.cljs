@@ -117,8 +117,15 @@
 
 ;;; Camera button
 (defn handle-file [id file]
-  (go (let [image (<! (<blob-url file))]
-        (log 'TODO-images id image))))
+  (go (let [image (<! (<blob-url file))
+            [name extension]
+            (or (re-find #"^(.*)([.][^.]*)" (.-name file)) ["unnamed" ""])]
+        (db! id
+             (conj (db id) {"FileId" nil
+                       "FileName" name
+                       "FileExtension" extension
+                       "LinkedToGuid" (second id)
+                       :data image})))))
 
 (defn camera-button [id]
   (let [show-controls (get (db [:ui :show-controls]) id)
@@ -159,8 +166,8 @@
                       :top 0
                       :right 0
                       :background "rgba(255,255,255,0.7)"}
-              :on-click #(log 'todo [:remove-image id img])}]
-            [:img {:src img
+              :on-click #(db! id (doall (remove #{img} (db id []))))}]
+            [:img {:src (:data img)
                    :style {:max-height 150
                            :vertical-align :top
                            :max-width "100%"}}]]))]
