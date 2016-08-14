@@ -124,12 +124,16 @@
   (go (let [image (<! (<blob-url file))
             [name extension]
             (or (re-find #"^(.*)([.][^.]*)" (.-name file)) ["unnamed" ""])]
-        (db! )
+        (db! (butlast id)
+             (into (db (butlast id))
+                   {:local true
+                    :type :images}))
         (db! id
              (conj (db id) {"FileId" nil
                        "FileName" name
                        "FileExtension" extension
                        "LinkedToGuid" (last id)
+                       :local true
                        :data image})))))
 
 (defn camera-button [id]
@@ -360,7 +364,7 @@
         id (data-id id)]
     [:span.fmfield {:key id
                     :style {:width (- (* 12 @unit (/ columns cols)) (/ 50 cols))}
-                    :on-click (fn [] (log {:obj obj :id id :id-obj (db id)}) nil)}
+                    :on-click (fn [] (log 'debug {:obj obj :id id :id-obj (db id)}) nil)}
      (if double-field
        (let [obj (dissoc obj "DoubleField")]
          [:span (single-field obj cols id area 1)
@@ -411,7 +415,7 @@
      {:style
       {:padding-top 10}
       :key [obj-id line-id]
-      :on-click #(log debug-str)}
+      :on-click #(log 'debug debug-str)}
      (case line-type
        :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
        :basic [:h3 "" desc]
