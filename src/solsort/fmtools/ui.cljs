@@ -119,6 +119,19 @@
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 
+(defn db-add-image! [id image]
+  (go
+   (try
+    (let [
+          stored (js/parseInt (<? (lf/<localforage-images "image-id-counter")))
+          new-id (inc (if (js/isNaN stored) 0 stored))
+          existing-ids (db id [])]
+      (<? (lf/<localforage-images! (str new-id) image))
+      (<? (lf/<localforage-images! "image-id-counter" new-id))
+      (db! id (conj existing-ids new-id)))
+    (catch js/Error e
+           (log "Handle error" e)))))
+
 ;;; Camera button
 (defn handle-file [id file]
   (go (let [image (<! (<blob-url file))
