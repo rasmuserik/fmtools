@@ -128,7 +128,7 @@
              (conj (db id) {"FileId" nil
                        "FileName" name
                        "FileExtension" extension
-                       "LinkedToGuid" (second id)
+                       "LinkedToGuid" (last id)
                        :data image})))))
 
 (defn camera-button [id]
@@ -410,7 +410,7 @@
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc] fields]
-       :multi-field-line [:div.multifield desc [camera-button (conj id :images)]
+       :multi-field-line [:div.multifield desc [camera-button (conj (butlast id) :images (last id))]
                           fields]
        :description-line [:div desc [input  (conj id "Remarks") {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
