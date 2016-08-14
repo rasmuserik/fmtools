@@ -1,5 +1,7 @@
 (ns solsort.fmtools.api-client
-  (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
+  (:require-macros
+   [com.rpl.specter.macros :refer [select transform]]
+   [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.definitions :refer [trail-types full-sync-types field-sync-fields part-sync-fields sync-fields]]
    [solsort.fmtools.util :refer [str->timestamp timestamp->isostring]]
@@ -7,6 +9,7 @@
    [solsort.fmtools.load-api-data :refer [<load-api-db! init-root! <api]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
+   [com.rpl.specter :as s]
    [clojure.set :as set]
    [solsort.util :refer [log <ajax <chan-seq]]
    [cljs.core.async :as async :refer [>! timeout]]))
@@ -114,11 +117,24 @@
               :method "PUT" :data payload)))))
 (defn <sync-images! [o]
   (go
-    (let [o (dissoc o :image-change)]
-        (log 'sync-images o)
+    (log 'sync-images o)
+    (let [o (dissoc o :image-change)
+          o (transform
+             [(s/filterer #(coll? (second %))) s/ALL s/LAST]
+             (fn [imgs] (remove #(and (:image-change %) (:deleted %)) imgs))
+             o)
+          needs-update (select
+                        [(s/filterer #(coll? (second %))) s/ALL s/LAST
+                         (s/filterer #(:image-change %))]
+                        o)
+          ]
+        (log 'changes needs-update)
+        (log '-> o)
         (db! [:obj :images] o)
         (swap! api-db assoc :images o))
     ))
+
+
 
 (defn <sync-to-server! []
   (go

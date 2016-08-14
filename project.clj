@@ -7,6 +7,7 @@
    [cljsjs/localforage "1.3.1-0"]
    [com.cognitect/transit-cljs "0.8.237"]
    [reagent "0.6.0-rc"]
+   [com.rpl/specter "0.11.2"]
    [binaryage/devtools "0.6.1"]]
 
   :plugins
