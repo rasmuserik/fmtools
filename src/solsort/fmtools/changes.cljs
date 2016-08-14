@@ -28,7 +28,7 @@
 (defonce changes (mult change-chan))
 (defn handle-change! [objs]
   (go
-    #_(log 'handle-change (count objs))
+;    (log 'handle-change (count objs))
     (doall
      (map
       (fn [o]

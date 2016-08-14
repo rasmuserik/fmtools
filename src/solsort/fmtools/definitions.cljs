@@ -8,7 +8,7 @@
     })
 (def part-sync-fields
   #{"PartGuid" "ReportGuid" "Performed" "Remarks" "Amount" "ObjectId"})
-(def sync-fields (into field-sync-fields part-sync-fields))
+(def sync-fields (into field-sync-fields (conj part-sync-fields :image-change)))
 (def data-paths
   [[:camera nil [:images]]
    [:field "StringValue1" [:string]]

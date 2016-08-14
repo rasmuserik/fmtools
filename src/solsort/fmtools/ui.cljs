@@ -122,18 +122,20 @@
 ;;; Camera button
 (defn handle-file [id file]
   (go (let [image (<! (<blob-url file))
-            [name extension]
-            (or (re-find #"^(.*)([.][^.]*)" (.-name file)) ["unnamed" ""])]
+            [_ name extension]
+            (or (re-find #"^(.*)([.][^.]*)$" (.-name file)) [nil "unnamed" ""])]
+        (log 'handle-file id (db id) (butlast id) (db (butlast id)))
         (db! (butlast id)
-             (into (db (butlast id))
-                   {:local true
+             (into (db (butlast id) {})
+                   {:id :images
+                    :image-change true
                     :type :images}))
         (db! id
              (conj (db id) {"FileId" nil
                        "FileName" name
                        "FileExtension" extension
                        "LinkedToGuid" (last id)
-                       :local true
+                       :image-change true
                        :data image})))))
 
 (defn camera-button [id]
@@ -175,12 +177,14 @@
                       :top 0
                       :right 0
                       :background "rgba(255,255,255,0.7)"}
-              :on-click (fn [] (db!
+              :on-click (fn []
+                          (db! (concat (butlast id) [:image-change]) true)
+                          (db!
                                 id
                                 (doall
                                  (map #(if (= % img)
                                          (into % {:deleted true
-                                                    :local true
+                                                    :image-change true
                                                     :data ""})
                                          %) (db id [])))))}]
             [:img {:src (:data img)
@@ -422,7 +426,7 @@
        :simple-headline [:h3 desc]
        :vertical-headline [:div [:h3 desc] fields]
        :horizontal-headline [:div [:h3 desc] fields]
-       :multi-field-line [:div.multifield desc [camera-button (conj (butlast id) :images (last id))]
+       :multi-field-line [:div.multifield desc [camera-button (concat (butlast id) [:images] [(last id)])]
                           fields]
        :description-line [:div desc [input  (conj id "Remarks") {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))

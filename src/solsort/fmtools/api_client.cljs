@@ -112,6 +112,14 @@
     (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
       (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
               :method "PUT" :data payload)))))
+(defn <sync-images! [o]
+  (go
+    (let [o (dissoc o :image-change)]
+        (log 'sync-images o)
+        (db! [:obj :images] o)
+        (swap! api-db assoc :images o))
+    ))
+
 (defn <sync-to-server! []
   (go
     (let [objs (vals @needs-sync)]
@@ -126,6 +134,7 @@
                             (:type o))
                           :field-entry (<sync-field! o)
                           :part-entry (<sync-part! o)
+                          :images (<sync-images! o)
                           true (go)
                           (go (log 'no-sync-type o))))))))
        ;(reset! needs-sync {}) ; TODO: remove this line, when update through audittrail works
