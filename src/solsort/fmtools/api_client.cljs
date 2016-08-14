@@ -117,7 +117,6 @@
               :method "PUT" :data payload)))))
 (defn <sync-images! [o]
   (go
-    (log 'sync-images o)
     (let [o (dissoc o :image-change)
           o (transform
              [(s/filterer #(coll? (second %))) s/ALL s/LAST]
@@ -125,11 +124,25 @@
              o)
           needs-update (select
                         [(s/filterer #(coll? (second %))) s/ALL s/LAST
-                         (s/filterer #(:image-change %))]
+                         (s/filterer #(:image-change %)) s/ALL]
                         o)
           ]
-        (log 'changes needs-update)
-        (log '-> o)
+      (<!
+       (<chan-seq
+        (for [img needs-update]
+          (go
+            ;; not working yet, not clear how to submit the data to the api
+            #_(<! (<ajax
+                 (str "https://"
+                      "fmproxy.solsort.com/api/v1/Report/File"
+                      "?partGuid=" (get img "LinkedToGuid")
+                      "&fileName=" (get img "FileName")
+                      "&fileExtension=" (get img "FileExtension"))
+                 :method "POST"
+                 :data (TODO (:data img))
+                 ))
+            (log 'TODO-api-write img))
+             )))
         (db! [:obj :images] o)
         (swap! api-db assoc :images o))
     ))
@@ -162,7 +175,7 @@
       (go
         (<! (<sync-to-server!))
         (<! (<fetch))))
-    (<! (timeout 10000)))
+    (<! (timeout 3000)))
   )
 (defonce -sync-loop
   (go-loop []
