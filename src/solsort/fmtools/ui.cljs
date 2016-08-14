@@ -124,6 +124,7 @@
   (go (let [image (<! (<blob-url file))
             [name extension]
             (or (re-find #"^(.*)([.][^.]*)" (.-name file)) ["unnamed" ""])]
+        (db! )
         (db! id
              (conj (db id) {"FileId" nil
                        "FileName" name
@@ -158,7 +159,7 @@
         " \u00a0 "
         (into
          [:span.image-list]
-         (for [img images]
+         (for [img (remove :deleted images)]
            [:div {:style {:display :inline-block
                           :position :relative
                           :max-width "60%"
@@ -170,7 +171,14 @@
                       :top 0
                       :right 0
                       :background "rgba(255,255,255,0.7)"}
-              :on-click #(db! id (doall (remove #{img} (db id []))))}]
+              :on-click (fn [] (db!
+                                id
+                                (doall
+                                 (map #(if (= % img)
+                                         (into % {:deleted true
+                                                    :local true
+                                                    :data ""})
+                                         %) (db id [])))))}]
             [:img {:src (:data img)
                    :style {:max-height 150
                            :vertical-align :top
