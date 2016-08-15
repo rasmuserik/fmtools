@@ -145,13 +145,9 @@
                 {:id (get entry "FieldGuid")
                  :type :field-entry}))
         files
-        (for [entry (get table "ReportFiles")]
-          (into entry
-                {:id (str (get entry "LinkedToGuid")
-                          "-"
-                          (get entry "FileId"))
-                 :type :file-entry}))
-        objs (concat fields parts files)]
+        (group-by #(get % "LinkedToGuid") (get table "ReportFiles"))
+        objs (concat fields parts)]
+    (log 'files files)
     (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objs)))
     #_(log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]

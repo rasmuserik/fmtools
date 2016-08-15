@@ -74,7 +74,7 @@
       {:text-align :center}
 
       :.line
-      {;:min-height 44
+      {:min-height 44
 }
 
       :.main-form
@@ -87,6 +87,9 @@
        :position :absolute
        :right 0}
 
+      "h1" {:clear :none}
+      "h2" {:clear :none}
+      "h3" {:clear :none}
       :.fmfield
       {:vertical-align :top
        :display :inline-block
@@ -424,6 +427,7 @@
         debug-str (dissoc line :fields)
         debug-str (str [report-id obj-id (PartGuid line) id])
         data-id (db [:entries id])
+        cam  [camera-button (concat (butlast id) [:images] [(last id)])]
         fields (into
                 [:div.fields]
                 (map #(field % cols [report-id obj-id %] obj)
@@ -435,13 +439,12 @@
       :on-click #(log 'debug debug-str)}
      (case line-type
        :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
-       :basic [:h3 "" desc]
-       :simple-headline [:h3 desc]
-       :vertical-headline [:div [:h3 desc] fields]
-       :horizontal-headline [:div [:h3 desc] fields]
-       :multi-field-line [:div.multifield desc [camera-button (concat (butlast id) [:images] [(last id)])]
-                          fields]
-       :description-line [:div desc [input  (conj id "Remarks") {:type :text}]]
+       :basic [:h3 "" desc ]
+       :simple-headline [:h3 cam desc]
+       :vertical-headline [:div [:h3 cam desc] fields]
+       :horizontal-headline [:div [:h3 cam desc] fields]
+       :multi-field-line [:div.multifield cam desc fields]
+       :description-line [:div cam desc [input  (conj id "Remarks") {:type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 (defn render-section [lines report-id areas]
   (doall (for [obj areas]
