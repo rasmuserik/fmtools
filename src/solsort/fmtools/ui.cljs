@@ -17,7 +17,7 @@
    [solsort.fmtools.localforage :as lf]
    [solsort.util
     :refer
-    [<p <ajax <seq<! js-seq normalize-css load-style! put!close!
+    [throttle <p <ajax <seq<! js-seq normalize-css load-style! put!close!
      parse-json-or-nil log page-ready render dom->clj next-tick]]
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
@@ -154,6 +154,24 @@
                        :image-change true
                        :data image})))))
 
+(defonce img-cache (reagent/atom {}))
+(def img-base "https://fmproxy.solsort.com/api/v1/Report/File?fileId=")
+(defn update-images-fn []
+  (go
+    (<! (<chan-seq
+      (for [[k v] @img-cache]
+        (go
+          (when-not v
+            (let [base64 (get (<! (<ajax (str img-base k))) "Base64Image")]
+             (swap! img-cache assoc k
+                    (str "data:image/" (cond ; truncated base64 magic number of file
+                                         (= "/9" (.slice base64 0 2)) "jpg"
+                                         (= "iVBORw0KGg" (.slice base64 0 10)) "png"
+                                         :else "*")
+                         ";base64," base64)
+                    )))))))
+    (log 'update-images @img-cache (js/Date.now))))
+(def update-images (throttle update-images-fn 1000))
 (defn camera-button [id]
   (let [show-controls (get (db [:ui :show-controls]) id)
         images (db id)]
@@ -181,10 +199,11 @@
         " \u00a0 "
         (into
          [:span.image-list]
-         (for [img (remove :deleted images)]
+         (for [img (remove :deleted (log images id))]
            [:div {:style {:display :inline-block
                           :position :relative
                           :max-width "60%"
+                          :min-width 44
                           :margin 3
                           :vertical-align :top}}
             [:img.image-button
@@ -203,7 +222,15 @@
                                                     :image-change true
                                                     :data ""})
                                          %) (db id [])))))}]
-            [:img {:src (:data img)
+            [:img {:src
+                   (do
+                     (when (and (get img "FileId")
+                                (not (get @img-cache (get img "FileId"))))
+                       (swap! img-cache assoc (get img "FileId") false)
+                       (update-images 1000))
+                     (or (:data img)
+                         (get @img-cache (get img "FileId"))
+                         "assets/not-loaded.png"))
                    :style {:max-height 150
                            :vertical-align :top
                            :max-width "100%"}}]]))]
@@ -234,7 +261,8 @@
     (when (and (db [:ui :debug])
                (or (and children (not selected))
                    (and (not children) (:id o))))
-      (log 'choosen-area (choose-area-name o) o))
+      #_(log 'choosen-area (choose-area-name o) o)
+      )
     (if children
       [:div
        [select [:ui id]
@@ -273,7 +301,7 @@
 (defn create-report [obj-id template-id name]
   (go
     (db! [:ui :new-report-name] "")
-    (log 'create-report obj-id template-id name)
+    ;(log 'create-report obj-id template-id name)
     (let [creation-response (<! (<ajax
                                  (str "https://"
                                       "fmproxy.solsort.com/api/v1/"
@@ -289,13 +317,13 @@
         (warn "failed making new report" obj-id template-id name creation-response)))))
 (defn finish-report [report-id]
   (go
-    (log 'finish-report)
+    ;(log 'finish-report)
     (let [response (<! (<ajax ; TODO not absolute url
                         (str "https://"
                              "fmproxy.solsort.com/api/v1/"
                              "Report?ReportGuid=" report-id)
                         :method "PUT"))]
-      (log 'finish-report-response response))))
+      #_(log 'finish-report-response response))))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]

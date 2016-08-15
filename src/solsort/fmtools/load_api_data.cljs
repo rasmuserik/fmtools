@@ -24,7 +24,7 @@
          :data data
          :credentials true))
 
-(defn obj [id] (get @api-db id {}))
+(defn obj [id] (get @api-db id {:id id}))
 (defn obj! [o]
   (let [id (:id o)
         prev (get @api-db (:id o) {})
@@ -147,7 +147,7 @@
         files
         (group-by #(get % "LinkedToGuid") (get table "ReportFiles"))
         objs (concat fields parts)]
-    (log 'files files)
+    (obj! (into (obj :images) files))
     (reset! api-db (into @api-db (map (fn [o] [(:id o) o]) objs)))
     #_(log 'report (ReportName report) (- (js/Date.now) t0))))
 (defn <load-report [report]
