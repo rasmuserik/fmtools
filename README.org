@@ -9,15 +9,15 @@ Formålet er at lave en simpel app hvor det er let at udfylde rapporter fra FM-t
 
 Krav til app'en:
 
-- [ ] muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
+- [X] muligt at udfylde rapporterne, ud fra rapportskabelon bestående af linjer med felter
 - [X] understøtte dynamiske rapportskabeloner, hvor afsnit(linjer) af rapporten bliver gentaget for hver enhed på de forskellige niveauer. (eksempelvie projekt/tavle/anlæg/komponent)
 - [X] muligt at navigere mellem enheder på forskellige niveauer, og finde rapport for pågældende enhed
-- [ ] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
+- [X] forskellige former for felter, ie.: overskrifter/labels, tekstformulare, checkbokse, tal, dato, etc.
 - [X] muligt at vedhæfte/se billeder for hver linje i formularen
-- [ ] formater: håndholdt mobil, samt tablet
-- [ ] skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
-- [ ] skal fungere på nyere Android og iOS, - enten _som webapp_, eller +som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren+.
-- [ ] synkronisering med server
+- [X] formater: håndholdt mobil, samt tablet
+- [X] skal kunne funger/udfyldes offline, udfyldte formularer synkroniseres næste gang at der er internetforbindelse
+- [X] skal fungere på nyere Android og iOS, - enten _som webapp_, eller +som hybrid app hvis ikke al nødvendig funktionalitet er tilgængelig via webbrowseren+.
+- [X] synkronisering med server
 
 ** Flags in urlhash
 
