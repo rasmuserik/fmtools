@@ -22,12 +22,12 @@
 (defn <update-state []
   (go
     (let [prev-sync (db [:obj :state :prev-sync] "2000-01-01")
-          trail (->
+          api-trail (->
                  (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
                  (get "AuditTrails"))
           ;_ (log 'trail trail)
           trail (into (db [:obj :state :trail] #{})
-                      (map #(assoc % :type (trail-types (get % "AuditType"))) trail))
+                      (map #(assoc % :type (trail-types (get % "AuditType"))) api-trail))
           last-update (->> trail
                            (map #(get % "CreatedAt"))
                            (reduce max))
@@ -38,10 +38,11 @@
                          (timestamp->isostring (inc (str->timestamp last-update)))
                          0 -1)
                         prev-sync)]
-      (db! [:obj :state]
-           {:id :state
-            :prev-sync last-update
-            :trail trail}))))
+      (when-not (empty? api-trail)
+       (db! [:obj :state]
+            {:id :state
+             :prev-sync last-update
+             :trail trail})))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
