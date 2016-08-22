@@ -14,7 +14,6 @@
    [solsort.util :refer [log <ajax <chan-seq]]
    [cljs.core.async :as async :refer [>! timeout]]))
 
-
 (defonce needs-sync (atom {}))
 (defn api-to-db! []
   (db! [:obj] (into (db [:obj]) @api-db)))
@@ -23,8 +22,8 @@
   (go
     (let [prev-sync (db [:obj :state :prev-sync] "2000-01-01")
           api-trail (->
-                 (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
-                 (get "AuditTrails"))
+                     (<! (<api (str "AuditTrail?trailsAfter=" prev-sync)))
+                     (get "AuditTrails"))
           ;_ (log 'trail trail)
           trail (into (db [:obj :state :trail] #{})
                       (map #(assoc % :type (trail-types (get % "AuditType"))) api-trail))
@@ -39,10 +38,10 @@
                          0 -1)
                         prev-sync)]
       (when-not (empty? api-trail)
-       (db! [:obj :state]
-            {:id :state
-             :prev-sync last-update
-             :trail trail})))))
+        (db! [:obj :state]
+             {:id :state
+              :prev-sync last-update
+              :trail trail})))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
@@ -82,7 +81,7 @@
            (not (:local o))
            (= o updated))
       (swap! needs-sync dissoc id)
-        (db! [:obj id] new))))
+      (db! [:obj id] new))))
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
@@ -93,13 +92,10 @@
        (for [o (db [:obj :state :trail])]
          (if (string? (:type o))
            (update-field-trail! o)
-          (case (:type o)
-            :part-changed (update-part-trail! o)
-            (log (:type o) 'not 'handled)
-            ))
-         ))
-      (db! [:obj :state :trail] #{}))
-    ))
+           (case (:type o)
+             :part-changed (update-part-trail! o)
+             (log (:type o) 'not 'handled)))))
+      (db! [:obj :state :trail] #{}))))
 
 (defn sync-obj! [o]
   (when (and (:local o)
@@ -110,12 +106,12 @@
   (go
     (let [payload (clj->js (into {} (filter #(field-sync-fields (first %)) (seq o))))]
       (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Field"
-                  :method "PUT" :data payload)))))
+                 :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
     (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
       (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
-              :method "PUT" :data payload)))))
+                 :method "PUT" :data payload)))))
 (defn <sync-images! [o]
   (go
     (let [o (dissoc o :image-change)
@@ -129,8 +125,7 @@
           needs-update (select
                         [(s/filterer #(coll? (second %))) s/ALL s/LAST
                          (s/filterer #(:image-change %)) s/ALL]
-                        o)
-          ]
+                        o)]
       (log 'sync-images o needs-remove needs-update)
       (<!
        (<chan-seq
@@ -148,48 +143,42 @@
                   "https://fmproxy.solsort.com/api/v1/Report/File"
                   :method "PUT"
                   :data 
-                  {
-                   "LinkedToGuid" (get img "LinkedToGuid")
+                  {"LinkedToGuid" (get img "LinkedToGuid")
                    "FileName" (get img "FileName")
                    "FileExtension" (get img "FileExtension")
                    "Base64Image" (clojure.string/replace
                                   (:data img)
                                   #"^[^,]*,"
                                   "")})))))))
-        (db! [:obj :images] o)
-        (swap! api-db assoc :images o))
-    ))
-
-
+      (db! [:obj :images] o)
+      (swap! api-db assoc :images o))))
 
 (defn <sync-to-server! []
   (go
     (let [objs (vals @needs-sync)]
-     (when-not (empty? objs)
-       (<!
-        (<chan-seq
-         (doall (for [o objs]
-                  (do
-                    (case (or
+      (when-not (empty? objs)
+        (<!
+         (<chan-seq
+          (doall (for [o objs]
+                   (do
+                     (case (or
                             (= (select-keys o sync-fields)
                                (select-keys (get @api-db (:id o)) sync-fields))
                             (:type o))
-                          :field-entry (<sync-field! o)
-                          :part-entry (<sync-part! o)
-                          :images (<sync-images! o)
-                          true (go)
-                          (go (log 'no-sync-type o))))))))
+                       :field-entry (<sync-field! o)
+                       :part-entry (<sync-part! o)
+                       :images (<sync-images! o)
+                       true (go)
+                       (go (log 'no-sync-type o))))))))
        ;(reset! needs-sync {}) ; TODO: remove this line, when update through audittrail works
-       )
-     )))
+))))
 (defn <sync! []
   (go
     (when js/navigator.onLine
       (go
         (<! (<sync-to-server!))
         (<! (<fetch))))
-    (<! (timeout 3000)))
-  )
+    (<! (timeout 3000))))
 (defonce -sync-loop
   (go-loop []
     (<! (<sync!))

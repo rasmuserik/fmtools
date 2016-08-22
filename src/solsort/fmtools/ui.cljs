@@ -74,10 +74,7 @@
       {:text-align :center}
 
       :.line
-      {:min-height 44
-}
-
-      :.main-form
+      {:min-height 44}      :.main-form
       {:display :inline-block
        :text-align :left
        :width (* unit 12)}
@@ -124,16 +121,15 @@
 
 (defn db-add-image! [id image]
   (go
-   (try
-    (let [
-          stored (js/parseInt (<? (lf/<localforage-images "image-id-counter")))
-          new-id (inc (if (js/isNaN stored) 0 stored))
-          existing-ids (db id [])]
-      (<? (lf/<localforage-images! (str new-id) image))
-      (<? (lf/<localforage-images! "image-id-counter" new-id))
-      (db! id (conj existing-ids new-id)))
-    (catch js/Error e
-           (log "Handle error" e)))))
+    (try
+      (let [stored (js/parseInt (<? (lf/<localforage-images "image-id-counter")))
+            new-id (inc (if (js/isNaN stored) 0 stored))
+            existing-ids (db id [])]
+        (<? (lf/<localforage-images! (str new-id) image))
+        (<? (lf/<localforage-images! "image-id-counter" new-id))
+        (db! id (conj existing-ids new-id)))
+      (catch js/Error e
+        (log "Handle error" e)))))
 
 ;;; Camera button
 (defn handle-file [id file]
@@ -148,28 +144,27 @@
                     :type :images}))
         (db! id
              (conj (db id) {"FileId" nil
-                       "FileName" name
-                       "FileExtension" extension
-                       "LinkedToGuid" (last id)
-                       :image-change true
-                       :data image})))))
+                            "FileName" name
+                            "FileExtension" extension
+                            "LinkedToGuid" (last id)
+                            :image-change true
+                            :data image})))))
 
 (defonce img-cache (reagent/atom {}))
 (def img-base "https://fmproxy.solsort.com/api/v1/Report/File?fileId=")
 (defn update-images-fn []
   (go
     (<! (<chan-seq
-      (for [[k v] @img-cache]
-        (go
-          (when-not v
-            (let [base64 (get (<! (<ajax (str img-base k))) "Base64Image")]
-             (swap! img-cache assoc k
-                    (str "data:image/" (cond ; truncated base64 magic number of file
-                                         (= "/9" (.slice base64 0 2)) "jpg"
-                                         (= "iVBORw0KGg" (.slice base64 0 10)) "png"
-                                         :else "*")
-                         ";base64," base64)
-                    )))))))
+         (for [[k v] @img-cache]
+           (go
+             (when-not v
+               (let [base64 (get (<! (<ajax (str img-base k))) "Base64Image")]
+                 (swap! img-cache assoc k
+                        (str "data:image/" (cond ; truncated base64 magic number of file
+                                             (= "/9" (.slice base64 0 2)) "jpg"
+                                             (= "iVBORw0KGg" (.slice base64 0 10)) "png"
+                                             :else "*")
+                             ";base64," base64))))))))
     (log 'update-images @img-cache (js/Date.now))))
 (def update-images (throttle update-images-fn 1000))
 (defn camera-button [id]
@@ -215,13 +210,13 @@
               :on-click (fn []
                           (db! (concat (butlast id) [:image-change]) true)
                           (db!
-                                id
-                                (doall
-                                 (map #(if (= % img)
-                                         (into % {:deleted true
-                                                    :image-change true
-                                                    :data ""})
-                                         %) (db id [])))))}]
+                           id
+                           (doall
+                            (map #(if (= % img)
+                                    (into % {:deleted true
+                                             :image-change true
+                                             :data ""})
+                                    %) (db id [])))))}]
             [:img {:src
                    (do
                      (when (and (get img "FileId")
@@ -261,8 +256,7 @@
     (when (and (db [:ui :debug])
                (or (and children (not selected))
                    (and (not children) (:id o))))
-      #_(log 'choosen-area (choose-area-name o) o)
-      )
+      #_(log 'choosen-area (choose-area-name o) o))
     (if children
       [:div
        [select [:ui id]
@@ -354,7 +348,7 @@
            (render-report-list reports)
            #_[:div "Rapport: " ((first reports) "ReportName")])
        (render-report-list reports))
-     (if (or (not (empty? reports))(empty? available-templates))
+     (if (or (not (empty? reports)) (empty? available-templates))
        ""
        [:div.field
         [:label "Opret rapport"]
@@ -467,7 +461,7 @@
       :on-click #(log 'debug debug-str)}
      (case line-type
        :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
-       :basic [:h3 "" desc ]
+       :basic [:h3 "" desc]
        :simple-headline [:h3 cam desc]
        :vertical-headline [:div [:h3 cam desc] fields]
        :horizontal-headline [:div [:h3 cam desc] fields]
@@ -513,9 +507,9 @@
    [:span.red.ui.button
     {:on-click
      #(go
-       (try
-        (<! (<p (.clear lf/localforage-db)))
-        (db! [] {})
-        (js/location.reload)
-        (catch js/Error e (js/console.log e))))}
+        (try
+          (<! (<p (.clear lf/localforage-db)))
+          (db! [] {})
+          (js/location.reload)
+          (catch js/Error e (js/console.log e))))}
     "reset + reload"]])
