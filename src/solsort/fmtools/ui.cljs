@@ -194,7 +194,7 @@
         " \u00a0 "
         (into
          [:span.image-list]
-         (for [img (remove :deleted (log images id))]
+         (for [img (remove :deleted images)]
            [:div {:style {:display :inline-block
                           :position :relative
                           :max-width "60%"

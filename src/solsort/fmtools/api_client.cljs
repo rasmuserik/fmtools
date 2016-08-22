@@ -94,7 +94,7 @@
            (update-field-trail! o)
            (case (:type o)
              :part-changed (update-part-trail! o)
-             (log (:type o) 'not 'handled)))))
+             (log (:type o) "not handled")))))
       (db! [:obj :state :trail] #{}))))
 
 (defn sync-obj! [o]
@@ -156,6 +156,7 @@
 (defn <sync-to-server! []
   (go
     (let [objs (vals @needs-sync)]
+      (log 'sync-to-server objs)
       (when-not (empty? objs)
         (<!
          (<chan-seq
