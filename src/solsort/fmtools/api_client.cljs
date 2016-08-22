@@ -119,6 +119,9 @@
 (defn <sync-images! [o]
   (go
     (let [o (dissoc o :image-change)
+          needs-remove (select [(s/filterer #(coll? (second %))) s/ALL s/LAST
+                                (s/filterer #(:image-change %)) s/ALL]
+                               o)
           o (transform
              [(s/filterer #(coll? (second %))) s/ALL s/LAST]
              (fn [imgs] (remove #(and (:image-change %) (:deleted %)) imgs))
@@ -128,22 +131,31 @@
                          (s/filterer #(:image-change %)) s/ALL]
                         o)
           ]
+      (log 'sync-images o needs-remove needs-update)
       (<!
        (<chan-seq
-        (for [img needs-update]
-          (go
-            ;; not working yet, not clear how to submit the data to the api
-            #_(<! (<ajax
-                 (str "https://"
-                      "fmproxy.solsort.com/api/v1/Report/File"
-                      "?partGuid=" (get img "LinkedToGuid")
-                      "&fileName=" (get img "FileName")
-                      "&fileExtension=" (get img "FileExtension"))
-                 :method "POST"
-                 :data (TODO (:data img))
-                 ))
-            (log 'TODO-api-write img))
-             )))
+        (concat
+         (for [img needs-remove]
+           (go
+             (when (get img "FileId")
+               (<! (<ajax
+                    (str "https://fmproxy.solsort.com/api/v1/Report/File?fileId="
+                         (get img "FileId"))
+                    :method "DELETE")))))
+         (for [img needs-update]
+           (go
+             (<! (<ajax
+                  "https://fmproxy.solsort.com/api/v1/Report/File"
+                  :method "PUT"
+                  :data 
+                  {
+                   "LinkedToGuid" (get img "LinkedToGuid")
+                   "FileName" (get img "FileName")
+                   "FileExtension" (get img "FileExtension")
+                   "Base64Image" (clojure.string/replace
+                                  (:data img)
+                                  #"^[^,]*,"
+                                  "")})))))))
         (db! [:obj :images] o)
         (swap! api-db assoc :images o))
     ))

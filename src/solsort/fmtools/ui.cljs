@@ -354,7 +354,7 @@
            (render-report-list reports)
            #_[:div "Rapport: " ((first reports) "ReportName")])
        (render-report-list reports))
-     (if (or (not (empty? reports)) (empty? available-templates))
+     (if (or (not (empty? reports))(empty? available-templates))
        ""
        [:div.field
         [:label "Opret rapport"]
