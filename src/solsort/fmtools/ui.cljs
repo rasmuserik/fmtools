@@ -115,7 +115,8 @@
       :.fields
       {:text-align :center}}
      "fmstyling"))
-  (render [app]))
+  (defonce render-init
+    (render [app])))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 

@@ -28,22 +28,22 @@
 (defonce changes (mult change-chan))
 (defn handle-change! [objs]
   (go
-;    (log 'handle-change (count objs))
-    (doall
-     (map
-      (fn [o]
-        (let [api-obj (get @api-db (:id o))]
-          (when (= o (db [:obj (:id o)]))
-            (if (or (= o api-obj)
-                    (:local o)
-                    (not (:type o)))
-              (do
-                (save-obj! o)
-                (sync-obj! o))
-              (do
-                (db! [:obj (:id o)] (into o {:local true})))))
-          ))
-      objs))))
+    (log 'handle-change (count objs))
+     (doall
+      (map
+       (fn [o]
+         (let [api-obj (get @api-db (:id o))]
+           (when (= o (db [:obj (:id o)]))
+             (if (or (= o api-obj)
+                     (:local o)
+                     (not (:type o)))
+               (do
+                 (save-obj! o)
+                 (sync-obj! o))
+               (do
+                 (db! [:obj (:id o)] (into o {:local true})))))
+           ))
+       objs))))
 
 (defonce change-loop
   (let [c (tap-chan changes)]

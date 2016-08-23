@@ -33,4 +33,3 @@
    {}
    (filter #(entry-type (:type %))(vals (db [:obj])))))
   #_(log 'updated-entry-index))
-(update-entry-index!)

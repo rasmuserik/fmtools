@@ -103,6 +103,7 @@
       (db! [:obj :state :trail] #{}))))
 
 (defn sync-obj! [o]
+;  (log 'sync-obj o) ; expensive logging...
   (when (and (:local o)
              (:type o))
     (swap! needs-sync assoc (:id o) o)))
@@ -114,6 +115,7 @@
                  :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
+    (log 'sync-part o)
     (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
       (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
                  :method "PUT" :data payload)))))
@@ -166,10 +168,11 @@
          (<chan-seq
           (doall (for [o objs]
                    (do
-                     (case (or
+                     (case (identity ; sometimes replace with log while debugging
+                            (or
                              (= (select-keys o sync-fields)
                                 (select-keys (get @api-db (:id o)) sync-fields))
-                             (:type o))
+                             (:type o)))
                        :field-entry (<sync-field! o)
                        :part-entry (<sync-part! o)
                        :images (<sync-images! o)
