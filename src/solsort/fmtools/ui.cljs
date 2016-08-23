@@ -136,7 +136,7 @@
   (go (let [image (<! (<blob-url file))
             [_ name extension]
             (or (re-find #"^(.*)([.][^.]*)$" (.-name file)) [nil "unnamed" ""])]
-        (log 'handle-file id (db id) (butlast id) (db (butlast id)))
+        #_(log 'handle-file id (db id) (butlast id) (db (butlast id)))
         (db! (butlast id)
              (into (db (butlast id) {})
                    {:id :images
@@ -165,7 +165,7 @@
                                              (= "iVBORw0KGg" (.slice base64 0 10)) "png"
                                              :else "*")
                              ";base64," base64))))))))
-    (log 'update-images @img-cache (js/Date.now))))
+    #_(log 'update-images @img-cache (js/Date.now))))
 (def update-images (throttle update-images-fn 1000))
 (defn camera-button [id]
   (let [show-controls (get (db [:ui :show-controls]) id)

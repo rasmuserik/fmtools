@@ -82,6 +82,10 @@
            (= o updated))
       (swap! needs-sync dissoc id)
       (db! [:obj id] new))))
+(defn update-image-trail! [o]
+  (<do-fetch) ; TODO should be an incremental update, when API is updated...
+  ;(log 'update-image-trail o)
+  )
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
@@ -94,7 +98,8 @@
            (update-field-trail! o)
            (case (:type o)
              :part-changed (update-part-trail! o)
-             (log (:type o) "not handled")))))
+             :part-image (update-image-trail! o)
+             (log (:type o) "not handled" o)))))
       (db! [:obj :state :trail] #{}))))
 
 (defn sync-obj! [o]
@@ -126,7 +131,7 @@
                         [(s/filterer #(coll? (second %))) s/ALL s/LAST
                          (s/filterer #(:image-change %)) s/ALL]
                         o)]
-      (log 'sync-images o needs-remove needs-update)
+      ;(log 'sync-images o needs-remove needs-update)
       (<!
        (<chan-seq
         (concat
@@ -142,7 +147,7 @@
              (<! (<ajax
                   "https://fmproxy.solsort.com/api/v1/Report/File"
                   :method "PUT"
-                  :data 
+                  :data
                   {"LinkedToGuid" (get img "LinkedToGuid")
                    "FileName" (get img "FileName")
                    "FileExtension" (get img "FileExtension")
@@ -156,20 +161,19 @@
 (defn <sync-to-server! []
   (go
     (let [objs (vals @needs-sync)]
-      (log 'sync-to-server objs)
       (when-not (empty? objs)
         (<!
          (<chan-seq
           (doall (for [o objs]
                    (do
                      (case (or
-                            (= (select-keys o sync-fields)
-                               (select-keys (get @api-db (:id o)) sync-fields))
-                            (:type o))
+                             (= (select-keys o sync-fields)
+                                (select-keys (get @api-db (:id o)) sync-fields))
+                             (:type o))
                        :field-entry (<sync-field! o)
                        :part-entry (<sync-part! o)
                        :images (<sync-images! o)
-                       true (go)
+                       true (go (swap! needs-sync dissoc (:id o)))
                        (go (log 'no-sync-type o))))))))
        ;(reset! needs-sync {}) ; TODO: remove this line, when update through audittrail works
 ))))
