@@ -414,11 +414,29 @@
           " " double-separator " "
           (single-field obj cols id area 2)])
        (single-field obj cols id area 1))]))
+(get-obj "4c936387-0828-48c6-b7e2-110dbd56db80")
+(doall
+ (for [[k v] (db [:entries])]
+   (when (and
+          (= 4 (count k))
+          (= (first k)
+             "a08a05d5-903d-4d95-9425-96c0b260b23f"
+             ))
+     (log k v))
+   ))
 
-(defn template-control [id line-id position]
+(defn template-control [id line-id position report-id obj-id]
   (let [ctl (get-obj id)
         title (get ctl "Title")
-        series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))]
+        series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
+        line (get-obj line-id)
+        ]
+    (log 'template-control id line-id (db [:obj (second line-id)]))
+    (log 'a report-id obj-id (second line-id))
+    (log 'here (db [:entries [report-id obj-id (second line-id) 1001]])
+         line-id
+         (db [:entries line-id]))
+    (log (identity (first (seq (db [:entries])))))
     [:div
      [:h3 position " " title]
      (into
@@ -431,13 +449,15 @@
                         (ctl "XAxisMin")
                         (+ (ctl "XAxisMax") (ctl "XAxisStep"))
                         (ctl "XAxisStep"))]
-                 [:span {:style {:display :inline-block
-                                 :text-align :center
-                                 :width 60}}
-                  (if (= serie 0)
-                    (str i)
-                    [input (concat line-id [:control serie i])
-                     :type "number"])]))]))]))
+                 (let []
+                   (log 'serie serie i)
+                  [:span {:style {:display :inline-block
+                                  :text-align :center
+                                  :width 60}}
+                   (if (= serie 0)
+                     (str i)
+                     [input (concat line-id [:control serie i])
+                      :type "number"])])))]))]))
 (defn render-line [line-id report-id obj]
 
   (let [line (get-obj line-id)
@@ -461,7 +481,7 @@
       :key [obj-id line-id]
       :on-click #(log 'debug debug-str)}
      (case line-type
-       :template-control [template-control (get line "ControlGuid") id (get line "Position" "")]
+       :template-control [template-control (get line "ControlGuid") id (get line "Position" "") report-id obj-id]
        :basic [:h3 "" desc]
        :simple-headline [:h3 cam desc]
        :vertical-headline [:div [:h3 cam desc] fields]

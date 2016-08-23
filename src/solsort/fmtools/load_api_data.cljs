@@ -134,12 +134,12 @@
 
 (defn handle-report [report report-id data role table]
   (let [t0 (js/Date.now)
-        fields
+        parts
         (for [entry (get table "ReportParts")]
           (into entry
                 {:id (get entry "PartGuid")
                  :type :part-entry}))
-        parts
+        fields
         (for [entry (get table "ReportFields")]
           (into entry
                 {:id (get entry "FieldGuid")

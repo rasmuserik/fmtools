@@ -115,10 +115,19 @@
                  :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
-    (log 'sync-part o)
-    (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
-      (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
-                 :method "PUT" :data payload)))))
+    (let [api-obj (get @api-db (:id o))]
+     ;(log 'sync-part o)
+     (when-not (= (:control o)
+                  (:control api-obj))
+       ;(log 'update-control)
+       )
+     (when-not
+         (= (select-keys o part-sync-fields)
+            (select-keys api-obj part-sync-fields))
+       (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
+     ;    (log 'upload-part)
+         (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
+                    :method "PUT" :data payload)))))))
 (defn <sync-images! [o]
   (go
     (let [o (dissoc o :image-change)
