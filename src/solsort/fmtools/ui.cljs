@@ -430,13 +430,8 @@
         title (get ctl "Title")
         series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
         line (get-obj line-id)
+        data-id [report-id obj-id (second line-id)]
         ]
-    (log 'template-control id line-id (db [:obj (second line-id)]))
-    (log 'a report-id obj-id (second line-id))
-    (log 'here (db [:entries [report-id obj-id (second line-id) 1001]])
-         line-id
-         (db [:entries line-id]))
-    (log (identity (first (seq (db [:entries])))))
     [:div
      [:h3 position " " title]
      (into
@@ -449,14 +444,17 @@
                         (ctl "XAxisMin")
                         (+ (ctl "XAxisMax") (ctl "XAxisStep"))
                         (ctl "XAxisStep"))]
-                 (let [i (+ (* 1000 serie) (inc (/ (- x (ctl "XAxisMin")) (ctl "XAxisStep"))))]
-                   (log 'serie serie x i)
+                 (let [i (+ (* 1000 serie)
+                            (inc (/ (- x (ctl "XAxisMin"))
+                                    (ctl "XAxisStep"))))
+                       control-data-id (db [:entries (conj data-id i)])]
+                   ;(log 'serie serie x i (get-obj control-data-id))
                   [:span {:style {:display :inline-block
                                   :text-align :center
                                   :width 60}}
                    (if (= serie 0)
                      (str x)
-                     [input (concat line-id [:control serie x])
+                     [input [:obj control-data-id "IntegerValue1"]
                       :type "number"])])))]))]))
 (defn render-line [line-id report-id obj]
 
