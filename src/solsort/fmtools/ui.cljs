@@ -445,18 +445,18 @@
         [:div.multifield
          (get ctl (str "ChartSerieName" serie))
          (into [:div]
-               (for [i (range
+               (for [x (range
                         (ctl "XAxisMin")
                         (+ (ctl "XAxisMax") (ctl "XAxisStep"))
                         (ctl "XAxisStep"))]
-                 (let []
-                   (log 'serie serie i)
+                 (let [i (+ (* 1000 serie) (inc (/ (- x (ctl "XAxisMin")) (ctl "XAxisStep"))))]
+                   (log 'serie serie x i)
                   [:span {:style {:display :inline-block
                                   :text-align :center
                                   :width 60}}
                    (if (= serie 0)
-                     (str i)
-                     [input (concat line-id [:control serie i])
+                     (str x)
+                     [input (concat line-id [:control serie x])
                       :type "number"])])))]))]))
 (defn render-line [line-id report-id obj]
 
