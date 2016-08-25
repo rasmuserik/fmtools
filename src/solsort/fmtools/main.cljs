@@ -6,7 +6,7 @@
   (:require
    [cljs.core.async :as async :refer [<!]]
    [solsort.util :refer [<p log]]
-   [solsort.fmtools.util :as fmutil]
+   [solsort.toolbox.setup]
    [solsort.fmtools.db :as db]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.ui]
@@ -16,9 +16,6 @@
    [solsort.fmtools.disk-sync :as disk]
    [solsort.fmtools.localforage :as lf]))
 
-;; Primitive error handling for now
-(.addEventListener js/window "error"
-                   (fn [err] (log "Error" err)))
 
 (go
  (try

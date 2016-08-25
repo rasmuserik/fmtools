@@ -7,9 +7,8 @@
      ReportTables ReportTable Areas FieldGuid ReportFields Objects
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
-   [solsort.fmtools.util :refer [<chan-seq]]
    [solsort.fmtools.db :refer [api-db]]
-   [solsort.util :refer [<ajax log js-obj-push]]
+   [solsort.util :refer [<ajax log js-obj-push <chan-seq]]
    [cljs.core.async :as async :refer [<!]]))
 
 (defn <api [endpoint & {:keys [data method]

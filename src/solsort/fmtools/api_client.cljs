@@ -4,14 +4,13 @@
    [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.definitions :refer [trail-types full-sync-types field-sync-fields part-sync-fields sync-fields]]
-   [solsort.fmtools.util :refer [str->timestamp timestamp->isostring]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.load-api-data :refer [<load-api-db! init-root! <api]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
    [com.rpl.specter :as s]
    [clojure.set :as set]
-   [solsort.util :refer [log <ajax <chan-seq]]
+   [solsort.util :refer [str->timestamp timestamp->isostring log <ajax <chan-seq]]
    [cljs.core.async :as async :refer [>! timeout]]))
 
 (defonce needs-sync (atom {}))

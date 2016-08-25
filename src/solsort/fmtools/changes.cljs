@@ -3,9 +3,6 @@
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
-   [solsort.fmtools.util :refer
-    [clj->json json->clj third to-map delta empty-choice <chan-seq
-     fourth-first throttle tap-chan]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.disk-sync :refer [save-obj!]]
    [solsort.fmtools.api-client :refer [sync-obj!]]
@@ -15,7 +12,8 @@
    [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.util
     :refer
-    [run-once chan? <p <ajax <seq<! js-seq normalize-css load-style! put!close!
+    [tap-chan throttle
+     run-once chan? <p <ajax <seq<! js-seq normalize-css load-style! put!close!
      parse-json-or-nil log page-ready render dom->clj next-tick]]
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]

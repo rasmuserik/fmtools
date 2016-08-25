@@ -3,9 +3,6 @@
    [cljs.core.async.macros :refer [go go-loop alt!]]
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
-   [solsort.fmtools.util
-    :refer [clj->json json->clj third to-map delta
-                                 empty-choice <chan-seq fourth-first]]
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.localforage
     :refer [localforage-db <localforage-db!]]
@@ -13,6 +10,7 @@
    [cljs.pprint]
    [cognitect.transit :as transit]
    [solsort.toolbox.misc :refer [<blob-url]]
+   [solsort.toolbox.transit :refer [clj->json json->clj]]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!

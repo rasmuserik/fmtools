@@ -7,8 +7,6 @@
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
      TemplateGuid Description DoubleField]]
-   [solsort.fmtools.util
-    :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
    [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.toolbox.ui :refer [loading checkbox input select rot90]]
    [solsort.fmtools.db :refer [db-async! db! db]]
@@ -17,7 +15,7 @@
    [solsort.fmtools.localforage :as lf]
    [solsort.util
     :refer
-    [throttle <p <ajax <seq<! js-seq normalize-css load-style! put!close!
+    [<chan-seq throttle <p <ajax <seq<! js-seq normalize-css load-style! put!close!
      parse-json-or-nil log page-ready render dom->clj next-tick]]
    [reagent.core :as reagent :refer []]
    [cljs.reader :refer [read-string]]
@@ -25,6 +23,7 @@
    [clojure.string :as string :refer [replace split blank?]]
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
+(defonce empty-choice "· · ·")
 (defn warn [& args]
   (apply log "Warning:" args)
   nil)
