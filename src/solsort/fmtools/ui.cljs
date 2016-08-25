@@ -260,11 +260,12 @@
       #_(log 'choosen-area (choose-area-name o) o))
     (if children
       [:div
-       [select [:ui id]
-        (concat [[empty-choice]]
+       [select
+        {:db [:ui id]
+        :options (concat [[empty-choice]]
                 (for [child-id children]
                   [(choose-area-name (get-obj child-id))
-                   child-id]))]
+                   child-id]))}]
        [choose-area selected]]
       [:div])))
 (defn find-area [id]
@@ -322,11 +323,12 @@
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
-   [select [:ui :report-id]
-    (concat [[empty-choice]]
+   [select
+    {:db [:ui :report-id]
+    :options (concat [[empty-choice]]
             (for [report reports]
               [(report "ReportName")
-               (report "ReportGuid")]))]
+               (report "ReportGuid")]))}]
    (if ((into #{} (map :id reports)) (db [:ui :report-id]))
      [:p {:style {:text-align :right}}
       [:button.ui.red.button
@@ -353,7 +355,7 @@
        ""
        [:div.field
         [:label "Opret rapport"]
-        [:p [input [:ui :new-report-name]]]
+        [:p [input {:db [:ui :new-report-name]}]]
         (into [:div {:style {:text-align :right}}]
               (map
                (fn [template]
@@ -382,21 +384,22 @@
         id (conj id (str (field-name field-type) "Value" pos))]
     (case field-type
       :fetch-from (str (ObjectName area))
-      :approve-reject [select id {"" ""
+      :approve-reject [select {:db id
+                               :options {"" ""
                                   "Godkendt" "Approved"
                                   "Afvist" "Rejected"
-                                  "-" "None"}]
+                                  "-" "None"}}]
                                         ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
-      :time [input id :type :time]
-      :remark [input id]
-      :text-input-noframe [input id]
-      :text-input [input id]
-      :date [input id :type "datetime"]
-      :decimal-2-digit [input id :type "number"]
-      :decimal-4-digit [input id :type "number"]
-      :integer [input id :type "number"]
-      :checkbox [checkbox id]
+      :time [input {:db id :type :time}]
+      :remark [input {:db id}]
+      :text-input-noframe [input {:db id}]
+      :text-input [input {:db id}]
+      :date [input {:db id :type "datetime"}]
+      :decimal-2-digit [input {:db id :type "number"}]
+      :decimal-4-digit [input {:db id :type "number"}]
+      :integer [input {:db  id :type "number"}]
+      :checkbox [checkbox {:db id}]
       :text-fixed-noframe [:span value]
       [:strong "unhandled field:" (str field-type) " " value])))
 (defn field [obj-id cols id area]
@@ -444,8 +447,8 @@
                                   :width 60}}
                    (if (= serie 0)
                      (str x)
-                     [input [:obj control-data-id "IntegerValue1"]
-                      :type "number"])])))]))]))
+                     [input {:db  [:obj control-data-id "IntegerValue1"]
+                             :type "number"}])])))]))]))
 (defn render-line [line-id report-id obj]
 
   (let [line (get-obj line-id)
@@ -475,7 +478,7 @@
        :vertical-headline [:div [:h3 cam desc] fields]
        :horizontal-headline [:div [:h3 cam desc] fields]
        :multi-field-line [:div.multifield cam desc fields]
-       :description-line [:div cam desc [input  (conj id "Remarks") {:type :text}]]
+       :description-line [:div cam desc [input {:db (conj id "Remarks") :type :text}]]
        [:span {:key id} "unhandled line " (str line-type) " " debug-str])]))
 (defn render-section [lines report-id areas]
   (doall (for [obj areas]
