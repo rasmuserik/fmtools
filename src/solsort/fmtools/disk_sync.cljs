@@ -1,8 +1,7 @@
 (ns solsort.fmtools.disk-sync
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
-   [reagent.ratom :as ratom :refer  [reaction]]
-   [solsort.macros :refer [<?]])
+   [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.util
     :refer [clj->json json->clj third to-map delta
@@ -13,7 +12,7 @@
    [devtools.core :as devtools]
    [cljs.pprint]
    [cognitect.transit :as transit]
-   [solsort.misc :refer [<blob-url]]
+   [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.util
     :refer
     [<p <ajax <seq<! js-seq normalize-css load-style! put!close!

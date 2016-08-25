@@ -12,7 +12,7 @@
    [devtools.core :as devtools]
    [cljs.pprint]
    [cognitect.transit :as transit]
-   [solsort.misc :refer [<blob-url]]
+   [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.util
     :refer
     [run-once chan? <p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -21,7 +21,8 @@
    [cljs.reader :refer [read-string]]
    [clojure.data :refer [diff]]
    [clojure.string :as string :refer [replace split blank?]]
-   [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe mult tap]]))
+   [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe mult tap]]
+   ))
 
 (defonce prev-objs (atom #{}))
 (defonce change-chan (chan))

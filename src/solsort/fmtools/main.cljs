@@ -2,7 +2,7 @@
   (:require-macros
    [reagent.ratom :as ratom]
    [cljs.core.async.macros :refer [go]]
-   [solsort.macros :refer [<?]])
+   [solsort.toolbox.macros :refer [<?]])
   (:require
    [cljs.core.async :as async :refer [<!]]
    [solsort.util :refer [<p log]]

@@ -1,7 +1,7 @@
 (ns solsort.fmtools.ui
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop alt!]]
-   [solsort.macros :refer [<?]])
+   [solsort.toolbox.macros :refer [<?]])
   (:require
    [solsort.fmtools.definitions :refer
     [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
@@ -9,8 +9,8 @@
      TemplateGuid Description DoubleField]]
    [solsort.fmtools.util
     :refer [clj->json json->clj third to-map delta empty-choice <chan-seq fourth-first]]
-   [solsort.misc :refer [<blob-url]]
-   [solsort.ui :refer [loading checkbox input select rot90]]
+   [solsort.toolbox.misc :refer [<blob-url]]
+   [solsort.toolbox.ui :refer [loading checkbox input select rot90]]
    [solsort.fmtools.db :refer [db-async! db! db]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]

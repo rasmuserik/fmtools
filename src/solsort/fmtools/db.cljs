@@ -2,7 +2,7 @@
   (:require-macros
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
-   [solsort.appdb :as appdb]
+   [solsort.toolbox.appdb :as appdb]
    [solsort.util :refer [log next-tick]]
    [reagent.core :as reagent :refer []]))
 
