@@ -414,16 +414,6 @@
           " " double-separator " "
           (single-field obj cols id area 2)])
        (single-field obj cols id area 1))]))
-(get-obj "4c936387-0828-48c6-b7e2-110dbd56db80")
-(doall
- (for [[k v] (db [:entries])]
-   (when (and
-          (= 4 (count k))
-          (= (first k)
-             "a08a05d5-903d-4d95-9425-96c0b260b23f"
-             ))
-     (log k v))
-   ))
 
 (defn template-control [id line-id position report-id obj-id]
   (let [ctl (get-obj id)
