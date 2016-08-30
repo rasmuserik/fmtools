@@ -39,8 +39,10 @@
       (when-not (empty? api-trail)
         (db! [:obj :state]
              {:id :state
+              :local true
               :prev-sync last-update
-              :trail trail})))))
+              :trail trail})
+        ))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
