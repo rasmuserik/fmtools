@@ -37,7 +37,6 @@
    {:id parent
     :children (distinct (conj (get (obj parent) :children []) child))}))
 
-
 (defn group-by-part-guid [fields]
   (let [m #js {}]
     (doall (for [o fields] (js-obj-push m (PartGuid o) o)))
@@ -75,10 +74,10 @@
                    (assoc part :fields
                           (get fields (PartGuid part))))
                  (sort-by DisplayOrder parts))]
-      (obj! {:id (:id template) :children (map :id parts)})
+      (obj! {:id (:id template) :children (distinct (map :id parts))})
       (doall (map (fn [[id children]]
                                         ; TODO replace this with (db! ...)
-                    (obj! {:id id :children (map #(get % "FieldGuid") children)}))
+                    (obj! {:id id :children (distinct (map #(get % "FieldGuid") children))}))
                   fields))
       #_(log 'loaded-template
            (get template "Name")))))
@@ -89,7 +88,7 @@
                        (<load-template (get template "TemplateGuid")))))
       (obj! {:id :templates
              :type :root
-             :children (map #(get % "TemplateGuid") templates)})
+             :children (distinct (map #(get % "TemplateGuid") templates))})
       #_(log 'loaded-templates))))
 
 (defn handle-area [area objects]
@@ -109,8 +108,8 @@
     (doall
      (for [[parent-id children] (group-by :parent objects)]
        (obj! {:id parent-id
-              :children (into (or (:children (obj parent-id)) [])
-                              (map :id children))})))
+              :children (distinct (into (or (:children (obj parent-id)) [])
+                               (map :id children)))})))
     #_(log 'load-area (Name area))
     (obj! area)
     (add-child! :areas (:id area))))
@@ -122,7 +121,7 @@
                      {:id (get area "AreaGuid")
                       :parent :areas
                       :type :area
-                      :children (map #(get % "ObjectId") objects)})]
+                      :children (distinct (map #(get % "ObjectId") objects))})]
       (handle-area area objects))))
 (defn <load-objects []
   (go (let [areas (<! (<api "Area"))]

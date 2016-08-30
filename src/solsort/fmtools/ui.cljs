@@ -256,15 +256,16 @@
     (when (and (db [:ui :debug])
                (or (and children (not selected))
                    (and (not children) (:id o))))
-      #_(log 'choosen-area (choose-area-name o) o))
+      #_(log 'choosen-area (choose-area-name o) o (count children)))
     (if children
       [:div
        [select
         {:db [:ui id]
-        :options (concat [[empty-choice]]
-                (for [child-id children]
-                  [(choose-area-name (get-obj child-id))
-                   child-id]))}]
+         :options (concat
+                   [[empty-choice]]
+                   (doall (for [child-id children]
+                            [(choose-area-name (get-obj child-id))
+                             child-id])))}]
        [choose-area selected]]
       [:div])))
 (defn find-area [id]
