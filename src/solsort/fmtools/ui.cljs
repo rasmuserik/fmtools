@@ -263,7 +263,7 @@
         {:db [:ui id]
          :options (concat
                    [[empty-choice]]
-                   (doall (for [child-id children]
+                   (sort (for [child-id children]
                             [(choose-area-name (get-obj child-id))
                              child-id])))}]
        [choose-area selected]]
@@ -325,10 +325,11 @@
    [:label "Rapport"]
    [select
     {:db [:ui :report-id]
-    :options (concat [[empty-choice]]
-            (for [report reports]
-              [(report "ReportName")
-               (report "ReportGuid")]))}]
+     :options (concat
+               [[empty-choice]]
+               (sort (for [report reports]
+                        [(report "ReportName")
+                         (report "ReportGuid")])))}]
    (if ((into #{} (map :id reports)) (db [:ui :report-id]))
      [:p {:style {:text-align :right}}
       [:button.ui.red.button
