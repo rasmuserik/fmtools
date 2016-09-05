@@ -7,21 +7,23 @@
      ReportTables ReportTable Areas FieldGuid ReportFields Objects
      AreaGuid
      LineType PartType Name ReportGuid ReportName FieldType DisplayOrder PartGuid]]
-   [solsort.fmtools.db :refer [api-db]]
+   [solsort.toolbox.appdb :refer [db db!]]
+   [solsort.fmtools.db :refer [api-db server-host]]
    [solsort.util :refer [<ajax log js-obj-push <chan-seq]]
    [cljs.core.async :as async :refer [<!]]))
 
 (defn <api [endpoint & {:keys [data method]
                         :or {data nil method "GET"}}]
-  (<ajax (str "https://"
-              "fmproxy.solsort.com/api/v1/"
+  (go
+    (<! (<ajax (str "https://" (server-host)
+                 "/api/v1/"
                                         ;"app.fmtools.dk/api/v1/"
                                         ;(js/location.hash.slice 1)
                                         ;"@fmproxy.solsort.com/api/v1/"
-              endpoint)
-         :method method
-         :data data
-         :credentials true))
+                 endpoint)
+            :method method
+            :data data
+            :credentials true))))
 
 (defn obj [id] (get @api-db id {:id id}))
 (defn obj! [o]

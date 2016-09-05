@@ -4,7 +4,7 @@
    [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
    [solsort.fmtools.definitions :refer [trail-types full-sync-types field-sync-fields part-sync-fields sync-fields]]
-   [solsort.fmtools.db :refer [db db! api-db]]
+   [solsort.fmtools.db :refer [db db! api-db server-host]]
    [solsort.fmtools.load-api-data :refer [<load-api-db! init-root! <api]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
    [solsort.fmtools.disk-sync :as disk]
@@ -112,7 +112,10 @@
 (defn <sync-field! [o]
   (go
     (let [payload (clj->js (into {} (filter #(field-sync-fields (first %)) (seq o))))]
-      (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Field"
+      (<! (<ajax
+           (str
+            "https://" (server-host)
+            "/api/v1/Report/Field")
                  :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
@@ -127,7 +130,9 @@
             (select-keys api-obj part-sync-fields))
        (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
      ;    (log 'upload-part)
-         (<! (<ajax "https://fmproxy.solsort.com/api/v1/Report/Part"
+         (<! (<ajax (str
+                     "https://" (server-host)
+                     "/api/v1/Report/Part")
                     :method "PUT" :data payload)))))))
 (defn <sync-images! [o]
   (go
@@ -151,13 +156,17 @@
            (go
              (when (get img "FileId")
                (<! (<ajax
-                    (str "https://fmproxy.solsort.com/api/v1/Report/File?fileId="
+                    (str
+                     "https://" (server-host)
+                     "/api/v1/Report/File?fileId="
                          (get img "FileId"))
                     :method "DELETE")))))
          (for [img needs-update]
            (go
              (<! (<ajax
-                  "https://fmproxy.solsort.com/api/v1/Report/File"
+                  (str
+                   "https://" (server-host)
+                   "/api/v1/Report/File")
                   :method "PUT"
                   :data
                   {"LinkedToGuid" (get img "LinkedToGuid")

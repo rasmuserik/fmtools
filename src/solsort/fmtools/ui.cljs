@@ -9,7 +9,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.toolbox.ui :refer [loading checkbox input select rot90]]
-   [solsort.fmtools.db :refer [db-async! db! db]]
+   [solsort.fmtools.db :refer [db-async! db! db server-host update-server-settings]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.fmtools.localforage :as lf]
@@ -150,7 +150,9 @@
                             :data image})))))
 
 (defonce img-cache (reagent/atom {}))
-(def img-base "https://fmproxy.solsort.com/api/v1/Report/File?fileId=")
+(def img-base
+  (str "https://" (server-host)
+       "api/v1/Report/File?fileId="))
 (defn update-images-fn []
   (go
     (<! (<chan-seq
@@ -299,7 +301,8 @@
     ;(log 'create-report obj-id template-id name)
     (let [creation-response (<! (<ajax
                                  (str "https://"
-                                      "fmproxy.solsort.com/api/v1/"
+                                      (server-host)
+                                      "/api/v1/"
                                       "Report?objectId=" obj-id
                                       "&templateGuid=" template-id
                                       "&reportName=" name)
@@ -315,7 +318,8 @@
     ;(log 'finish-report)
     (let [response (<! (<ajax ; TODO not absolute url
                         (str "https://"
-                             "fmproxy.solsort.com/api/v1/"
+                             (server-host)
+                             "/api/v1/"
                              "Report?ReportGuid=" report-id)
                         :method "PUT"))]
       #_(log 'finish-report-response response))))
@@ -511,10 +515,17 @@
        (render-lines (map get-obj (:children template)) (:id report) areas)))))
 
 ;;;; Settings
+(when-not (db [:obj :settings :server]) (update-server-settings))
+
 (defn settings []
   [:div
    [:h1 "Indstillinger"]
-   [:p "Server: " (db [:obj :config :server]) " " [:span.blue.ui.button "Ændr server"]
+   [:p "Server: "
+    [:code (server-host)] [:br] [:span.blue.ui.button
+                                                 {:on-click
+                                                  (fn []
+                                                    )}
+                                                 "Ændr server"]
     #_[input {:db [:obj :config :server]}]]
    [:p [checkbox [:ui :debug]] "debug enabled"]
    [:span.blue.ui.button {:on-click #(<do-fetch)} "reload"]
