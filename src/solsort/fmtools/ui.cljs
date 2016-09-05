@@ -114,8 +114,7 @@
       :.fields
       {:text-align :center}}
      "fmstyling"))
-  (defonce render-init
-    (render [app])))
+  (render [app]))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
 
@@ -515,6 +514,8 @@
 (defn settings []
   [:div
    [:h1 "Indstillinger"]
+   [:p "Server: " (db [:obj :config :server]) " " [:span.blue.ui.button "Ændr server"]
+    #_[input {:db [:obj :config :server]}]]
    [:p [checkbox [:ui :debug]] "debug enabled"]
    [:span.blue.ui.button {:on-click #(<do-fetch)} "reload"]
    [:span.red.ui.button
