@@ -15,6 +15,7 @@
 (defn <api [endpoint & {:keys [data method]
                         :or {data nil method "GET"}}]
   (go
+    #_(js/console.log "<api" endpoint)
     (<! (<ajax (str "https://" (server-host)
                     "/api/v1/"
                                         ;"app.fmtools.dk/api/v1/"

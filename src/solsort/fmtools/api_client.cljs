@@ -210,7 +210,8 @@
         (<! (<sync-to-server!))
         (<! (<fetch))))
     (<! (timeout 3000))))
-(defonce -sync-loop
-  (go-loop []
-    (<! (<sync!))
-    (recur)))
+(defn init []
+  (defonce -sync-loop
+    (go-loop []
+      (<! (<sync!))
+      (recur))))

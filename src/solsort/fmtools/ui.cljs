@@ -504,8 +504,6 @@
        (render-lines (map get-obj (:children template)) (:id report) areas)))))
 
 ;;;; Settings
-(when-not (db [:obj :settings :server]) (update-server-settings))
-
 (defn settings []
   [:div
    [:h1 "Indstillinger"]

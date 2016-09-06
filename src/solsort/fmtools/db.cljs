@@ -22,5 +22,9 @@
 (defn update-server-settings []
   (set-server (js/prompt "Indtast servernavn, i.e.: \"app.fmtools.dk\"")))
 (defn server-host []
-  (while (not @server-name) (update-server-settings))
+  (while
+    (not @server-name)
+    (if (db [:obj :settings :server])
+      (reset! server-name (db [:obj :settings :server]))
+      (update-server-settings)))
   @server-name)

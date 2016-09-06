@@ -26,6 +26,7 @@
       (<! (disk/<restore)))
     (db/db! [:loading] false)
     (db/db! [:loaded] true)
+    (api/init)
     (when (= -1 (.indexOf js/location.hash "noload"))
       (<? (api/<fetch)))
     (when (empty? (db/db [:entries]))
