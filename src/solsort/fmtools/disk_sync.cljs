@@ -5,8 +5,6 @@
   (:require
    [solsort.fmtools.db :refer [db db! api-db]]
    [solsort.fmtools.kvdb :as kvdb]
-   [solsort.fmtools.localforage
-    :refer [localforage-db <localforage-db!]]
    [devtools.core :as devtools]
    [cljs.pprint]
    [cognitect.transit :as transit]
@@ -37,7 +35,7 @@
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
-          (<! (kvdb/<put (prn-str (:id o)) (clj->json o)))
+          (<! (kvdb/<put (prn-str (:id o)) (prn-str o)))
           (when-not (empty? objs)
             (recur (first objs) (rest objs)))))
       (db! [:ui :disk] (dec (db [:ui :disk]))))))
@@ -47,26 +45,22 @@
     (<! (timeout 100))
     (recur)))
 
-(defn <restore
-  "load current template/reports from disk"
+(defn <restore "load current template/reports from disk"
   []
-  (let [c (chan)]
-    (reset! disk-db {})
-    (.iterate localforage-db
-              (fn [v]
-                (try
-                  (let [o (json->clj v)]
-                    (swap! disk-db assoc (:id o) o))
-                  (catch js/Object e (js/console.log e)))
-                js/undefined)
-              (fn []
-                (db! [:obj] @disk-db)
-                (reset!
-                 api-db
-                 (into {}
-                       (remove
-                        (fn [_ o] (:local o))
-                        @disk-db)))
-                (log 'restore (count (db [:obj])))
-                (close! c)))
-    c))
+  (go
+    (let [o (->>
+             (<! (kvdb/<all))
+             (map second)
+             (map read-string)
+             (map (fn [o] [(:id o) o]))
+             (into {}))]
+      (reset! disk-db o)
+      (db! [:obj] @disk-db)
+      (reset!
+       api-db
+       (into {}
+             (remove
+              (fn [_ o] (:local o))
+              @disk-db)))
+      (log 'restore (count (db [:obj])))
+      )))
