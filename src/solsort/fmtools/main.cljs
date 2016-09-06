@@ -25,6 +25,7 @@
     (defonce restore-data
       (<! (disk/<restore)))
     (db/db! [:loading] false)
+    (db/db! [:loaded] true)
     (when (= -1 (.indexOf js/location.hash "noload"))
       (<? (api/<fetch)))
     (when (empty? (db/db [:entries]))

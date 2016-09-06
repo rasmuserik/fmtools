@@ -46,21 +46,23 @@
      [:h1 {:style {:text-align :center}} "FM-Tools"]
      [:hr]
 
-     [:div.ui.container
-      [:div.ui.form
-       [:div.field
-        [:label "Område"]
-        [choose-area (if (db [:ui :debug]) :root :areas)]]
-       [choose-report]
-       [:hr]
-       [render-template report]
-       [:hr]
-       [settings]
-       (if (db [:ui :debug])
-         [:div
-          [:h1 "DEBUG Log"]
-          [:div (str (db [:ui :debug-log]))]]
-         [:div])]]]))
+     (if-not (db [:loaded])
+       [:div]
+      [:div.ui.container
+       [:div.ui.form
+        [:div.field
+         [:label "Område"]
+         [choose-area (if (db [:ui :debug]) :root :areas)]]
+        [choose-report]
+        [:hr]
+        [render-template report]
+        [:hr]
+        [settings]
+        (if (db [:ui :debug])
+          [:div
+           [:h1 "DEBUG Log"]
+           [:div (str (db [:ui :debug-log]))]]
+          [:div])]])]))
 (aset js/window "onerror" (fn [err] (db! [:ui :debug-log] (str err))))
 
 ;;;; Styling
@@ -138,7 +140,7 @@
                             :data image})))))
 
 (defonce img-cache (reagent/atom {}))
-(def img-base
+(defn img-base []
   (str "https://" (server-host)
        "api/v1/Report/File?fileId="))
 (defn update-images-fn []
@@ -147,7 +149,7 @@
          (for [[k v] @img-cache]
            (go
              (when-not v
-               (let [base64 (get (<! (<ajax (str img-base k))) "Base64Image")]
+               (let [base64 (get (<! (<ajax (str (img-base) k))) "Base64Image")]
                  (swap! img-cache assoc k
                         (str "data:image/" (cond ; truncated base64 magic number of file
                                              (= "/9" (.slice base64 0 2)) "jpg"
