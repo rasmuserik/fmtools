@@ -4,6 +4,7 @@
    [reagent.ratom :as ratom :refer  [reaction]])
   (:require
    [solsort.fmtools.db :refer [db db! api-db]]
+   [solsort.fmtools.kvdb :as kvdb]
    [solsort.fmtools.localforage
     :refer [localforage-db <localforage-db!]]
    [devtools.core :as devtools]
@@ -36,7 +37,7 @@
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
-          (<! (<localforage-db! (prn-str (:id o)) (clj->json o)))
+          (<! (kvdb/<put (prn-str (:id o)) (clj->json o)))
           (when-not (empty? objs)
             (recur (first objs) (rest objs)))))
       (db! [:ui :disk] (dec (db [:ui :disk]))))))

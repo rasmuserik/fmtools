@@ -12,7 +12,7 @@
    [solsort.fmtools.db :refer [db-async! db! db server-host update-server-settings]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
-   [solsort.fmtools.localforage :as lf]
+   [solsort.fmtools.kvdb :as kvdb]
    [solsort.util
     :refer
     [<chan-seq throttle <p <ajax <seq<! js-seq normalize-css load-style! put!close!
@@ -117,18 +117,6 @@
   (render [app]))
 (aset js/window "onresize" style)
 (js/setTimeout style 0)
-
-(defn db-add-image! [id image]
-  (go
-    (try
-      (let [stored (js/parseInt (<? (lf/<localforage-images "image-id-counter")))
-            new-id (inc (if (js/isNaN stored) 0 stored))
-            existing-ids (db id [])]
-        (<? (lf/<localforage-images! (str new-id) image))
-        (<? (lf/<localforage-images! "image-id-counter" new-id))
-        (db! id (conj existing-ids new-id)))
-      (catch js/Error e
-        (log "Handle error" e)))))
 
 ;;; Camera button
 (defn handle-file [id file]
@@ -531,7 +519,7 @@
     {:on-click
      #(go
         (try
-          (<! (<p (.clear lf/localforage-db)))
+          (<! (kvdb/clear))
           (db! [] {})
           (js/location.reload)
           (catch js/Error e (js/console.log e))))}

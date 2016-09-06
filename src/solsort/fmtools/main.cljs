@@ -4,6 +4,7 @@
    [cljs.core.async.macros :refer [go]]
    [solsort.toolbox.macros :refer [<?]])
   (:require
+   [solsort.fmtools.kvdb :as kvdb]
    [cljs.core.async :as async :refer [<!]]
    [solsort.util :refer [<p log]]
    [solsort.toolbox.setup]
@@ -14,12 +15,12 @@
    [solsort.fmtools.changes :as changes]
    [solsort.fmtools.api-client :as api]
    [solsort.fmtools.disk-sync :as disk]
-   [solsort.fmtools.localforage :as lf]))
+   [solsort.fmtools.kvdb :as kvdb]))
 
 (go
   (try
     (when (not= -1 (.indexOf js/location.hash "reset"))
-      (<! (<p (.clear lf/localforage-db))))
+      (<! (kvdb/clear)))
     (db/db! [:loading] true)
     (defonce restore-data
       (<! (disk/<restore)))
