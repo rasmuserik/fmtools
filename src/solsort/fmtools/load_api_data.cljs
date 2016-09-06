@@ -16,14 +16,14 @@
                         :or {data nil method "GET"}}]
   (go
     (<! (<ajax (str "https://" (server-host)
-                 "/api/v1/"
+                    "/api/v1/"
                                         ;"app.fmtools.dk/api/v1/"
                                         ;(js/location.hash.slice 1)
                                         ;"@fmproxy.solsort.com/api/v1/"
-                 endpoint)
-            :method method
-            :data data
-            :credentials true))))
+                    endpoint)
+               :method method
+               :data data
+               :credentials true))))
 
 (defn obj [id] (get @api-db id {:id id}))
 (defn obj! [o]
@@ -82,7 +82,7 @@
                     (obj! {:id id :children (distinct (map #(get % "FieldGuid") children))}))
                   fields))
       #_(log 'loaded-template
-           (get template "Name")))))
+             (get template "Name")))))
 (defn <load-templates []
   (go
     (let [templates (get (<! (<api "ReportTemplate")) "ReportTemplateTables")]
@@ -111,7 +111,7 @@
      (for [[parent-id children] (group-by :parent objects)]
        (obj! {:id parent-id
               :children (distinct (into (or (:children (obj parent-id)) [])
-                               (map :id children)))})))
+                                        (map :id children)))})))
     #_(log 'load-area (Name area))
     (obj! area)
     (add-child! :areas (:id area))))
@@ -195,5 +195,4 @@
          [(<load-templates)
           (<load-objects)
           (<load-reports)
-          (<load-controls)]))
-    ))
+          (<load-controls)]))))

@@ -16,22 +16,21 @@
    [solsort.fmtools.disk-sync :as disk]
    [solsort.fmtools.localforage :as lf]))
 
-
 (go
- (try
-  (when (not= -1 (.indexOf js/location.hash "reset"))
-    (<! (<p (.clear lf/localforage-db))))
-  (db/db! [:loading] true)
-  (defonce restore-data
-    (<! (disk/<restore)))
-  (db/db! [:loading] false)
-  (when (= -1 (.indexOf js/location.hash "noload"))
-    (<? (api/<fetch)))
-  (when (empty? (db/db [:entries]))
-    (update-entry-index!))
-  (defonce initialisation
-    (do
-      (changes/init)
-      nil))
-  (catch js/Error e
-         (log "Exception in main" e (.-stack e)))))
+  (try
+    (when (not= -1 (.indexOf js/location.hash "reset"))
+      (<! (<p (.clear lf/localforage-db))))
+    (db/db! [:loading] true)
+    (defonce restore-data
+      (<! (disk/<restore)))
+    (db/db! [:loading] false)
+    (when (= -1 (.indexOf js/location.hash "noload"))
+      (<? (api/<fetch)))
+    (when (empty? (db/db [:entries]))
+      (update-entry-index!))
+    (defonce initialisation
+      (do
+        (changes/init)
+        nil))
+    (catch js/Error e
+      (log "Exception in main" e (.-stack e)))))

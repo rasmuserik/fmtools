@@ -265,8 +265,8 @@
          :options (concat
                    [[empty-choice]]
                    (sort (for [child-id children]
-                            [(choose-area-name (get-obj child-id))
-                             child-id])))}]
+                           [(choose-area-name (get-obj child-id))
+                            child-id])))}]
        [choose-area selected]]
       [:div])))
 (defn find-area [id]
@@ -331,8 +331,8 @@
      :options (concat
                [[empty-choice]]
                (sort (for [report reports]
-                        [(report "ReportName")
-                         (report "ReportGuid")])))}]
+                       [(report "ReportName")
+                        (report "ReportGuid")])))}]
    (if ((into #{} (map :id reports)) (db [:ui :report-id]))
      [:p {:style {:text-align :right}}
       [:button.ui.red.button
@@ -390,9 +390,9 @@
       :fetch-from (str (ObjectName area))
       :approve-reject [select {:db id
                                :options {"" ""
-                                  "Godkendt" "Approved"
-                                  "Afvist" "Rejected"
-                                  "-" "None"}}]
+                                         "Godkendt" "Approved"
+                                         "Afvist" "Rejected"
+                                         "-" "None"}}]
                                         ; TODO: not checkbox - string value "Approved" "Rejected" "None" ""
       :text-fixed (if do-rot90 [rot90 [:span value]] [:span value])
       :time [input {:db id :type :time}]
@@ -427,8 +427,7 @@
         title (get ctl "Title")
         series (filter #(not= "" (get ctl (str "ChartSerieName" %))) (range 1 6))
         line (get-obj line-id)
-        data-id [report-id obj-id (second line-id)]
-        ]
+        data-id [report-id obj-id (second line-id)]]
     [:div
      [:h3 position " " title]
      (into
@@ -446,13 +445,13 @@
                                     (ctl "XAxisStep"))))
                        control-data-id (db [:entries (conj data-id i)])]
                    ;(log 'serie serie x i (get-obj control-data-id))
-                  [:span {:style {:display :inline-block
-                                  :text-align :center
-                                  :width 60}}
-                   (if (= serie 0)
-                     (str x)
-                     [input {:db  [:obj control-data-id "IntegerValue1"]
-                             :type "number"}])])))]))]))
+                   [:span {:style {:display :inline-block
+                                   :text-align :center
+                                   :width 60}}
+                    (if (= serie 0)
+                      (str x)
+                      [input {:db  [:obj control-data-id "IntegerValue1"]
+                              :type "number"}])])))]))]))
 (defn render-line [line-id report-id obj]
 
   (let [line (get-obj line-id)
@@ -522,10 +521,9 @@
    [:h1 "Indstillinger"]
    [:p "Server: "
     [:code (server-host)] [:br] [:span.blue.ui.button
-                                                 {:on-click
-                                                  (fn []
-                                                    )}
-                                                 "Ændr server"]
+                                 {:on-click
+                                  (fn [])}
+                                 "Ændr server"]
     #_[input {:db [:obj :config :server]}]]
    [:p [checkbox [:ui :debug]] "debug enabled"]
    [:span.blue.ui.button {:on-click #(<do-fetch)} "reload"]

@@ -24,7 +24,7 @@
 (defonce disk-db (atom {}))
 (defonce needs-sync (atom {}))
 (defn save-obj! [o]
-  (when-not (= o(get @disk-db (:id o)))
+  (when-not (= o (get @disk-db (:id o)))
     (swap! disk-db assoc (:id o) o)
     (swap! needs-sync assoc (:id o) o)))
 
@@ -52,20 +52,20 @@
   (let [c (chan)]
     (reset! disk-db {})
     (.iterate localforage-db
-     (fn [v]
-        (try
-          (let [o (json->clj v)]
-           (swap! disk-db assoc (:id o) o))
-          (catch js/Object e (js/console.log e)))
-       js/undefined)
-     (fn []
-       (db! [:obj] @disk-db)
-       (reset!
-        api-db
-        (into {}
-              (remove
-               (fn [_ o] (:local o))
-               @disk-db)))
-       (log 'restore (count (db [:obj])))
-       (close! c)))
+              (fn [v]
+                (try
+                  (let [o (json->clj v)]
+                    (swap! disk-db assoc (:id o) o))
+                  (catch js/Object e (js/console.log e)))
+                js/undefined)
+              (fn []
+                (db! [:obj] @disk-db)
+                (reset!
+                 api-db
+                 (into {}
+                       (remove
+                        (fn [_ o] (:local o))
+                        @disk-db)))
+                (log 'restore (count (db [:obj])))
+                (close! c)))
     c))

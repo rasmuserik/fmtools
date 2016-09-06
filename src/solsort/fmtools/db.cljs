@@ -16,9 +16,9 @@
 (defn set-server [server]
   (reset! server-name server)
   (db-async! [:obj :settings]
-       (into (db [:obj :settings] {:id :settings
-                                   :local :true})
-             {:server server})))
+             (into (db [:obj :settings] {:id :settings
+                                         :local :true})
+                   {:server server})))
 (defn update-server-settings []
   (set-server (js/prompt "Indtast servernavn, i.e.: \"app.fmtools.dk\"")))
 (defn server-host []

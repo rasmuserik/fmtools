@@ -1,23 +1,19 @@
 (ns solsort.fmtools.localforage
   (:require
-   [solsort.util :refer [ <p log ]]
+   [solsort.util :refer [<p log]]
    [cljsjs.localforage]))
 
 (def localforage-db
   (.createInstance js/localforage
-                   #js {
-                        :name "JsonData"
+                   #js {:name "JsonData"
                         :storeName "JsonData"
-                        :description "JSON data store"
-                        }))
+                        :description "JSON data store"}))
 
 (def localforage-images
   (.createInstance js/localforage
-                   #js {
-                        :name "ImageData"
+                   #js {:name "ImageData"
                         :storeName "ImageData"
-                        :description "Image store"
-                        }))
+                        :description "Image store"}))
 
 ;; TODO We should be nice and use the async interface of localforage
 

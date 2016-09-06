@@ -20,8 +20,7 @@
         (into
          (db [:obj])
          @api-db)
-        (filter (fn [[k v]] (:local v))(db [:obj]))
-        )))
+        (filter (fn [[k v]] (:local v)) (db [:obj])))))
 
 (defn <update-state []
   (go
@@ -47,8 +46,7 @@
              {:id :state
               :local true
               :prev-sync last-update
-              :trail trail})
-        ))))
+              :trail trail})))))
 (defn updated-types []
   (into #{} (map :type (db [:obj :state :trail]))))
 
@@ -92,7 +90,7 @@
 (defn update-image-trail! [o]
   (<do-fetch) ; TODO should be an incremental update, when API is updated...
   ;(log 'update-image-trail o)
-  )
+)
 (defn <fetch [] "conditionally update db"
   (go
     (<! (<update-state))
@@ -122,24 +120,24 @@
            (str
             "https://" (server-host)
             "/api/v1/Report/Field")
-                 :method "PUT" :data payload)))))
+           :method "PUT" :data payload)))))
 (defn <sync-part! [o]
   (go
     (let [api-obj (get @api-db (:id o))]
      ;(log 'sync-part o)
-     (when-not (= (:control o)
-                  (:control api-obj))
+      (when-not (= (:control o)
+                   (:control api-obj))
        ;(log 'update-control)
-       )
-     (when-not
-         (= (select-keys o part-sync-fields)
-            (select-keys api-obj part-sync-fields))
-       (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
+)
+      (when-not
+       (= (select-keys o part-sync-fields)
+          (select-keys api-obj part-sync-fields))
+        (let [payload (clj->js (into {} (filter #(part-sync-fields (first %)) (seq o))))]
      ;    (log 'upload-part)
-         (<! (<ajax (str
-                     "https://" (server-host)
-                     "/api/v1/Report/Part")
-                    :method "PUT" :data payload)))))))
+          (<! (<ajax (str
+                      "https://" (server-host)
+                      "/api/v1/Report/Part")
+                     :method "PUT" :data payload)))))))
 (defn <sync-images! [o]
   (go
     (let [o (dissoc o :image-change)
@@ -165,7 +163,7 @@
                     (str
                      "https://" (server-host)
                      "/api/v1/Report/File?fileId="
-                         (get img "FileId"))
+                     (get img "FileId"))
                     :method "DELETE")))))
          (for [img needs-update]
            (go
