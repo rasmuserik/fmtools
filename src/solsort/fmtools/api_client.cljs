@@ -15,7 +15,13 @@
 
 (defonce needs-sync (atom {}))
 (defn api-to-db! []
-  (db! [:obj] (into (db [:obj]) @api-db)))
+  (db! [:obj]
+       (into
+        (into
+         (db [:obj])
+         @api-db)
+        (filter (fn [[k v]] (:local v))(db [:obj]))
+        )))
 
 (defn <update-state []
   (go
