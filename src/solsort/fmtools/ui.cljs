@@ -89,7 +89,8 @@
       "h2" {:clear :none}
       "h3" {:clear :none}
       :.fmfield
-      {:vertical-align :top
+      {:outline "1px solid #fafafa"
+       :vertical-align :top
        :display :inline-block
        :text-align :center
        :clear :right}
