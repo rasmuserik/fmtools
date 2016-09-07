@@ -9,7 +9,7 @@
      TemplateGuid Description DoubleField]]
    [solsort.toolbox.misc :refer [<blob-url]]
    [solsort.toolbox.ui :refer [loading checkbox input select rot90]]
-   [solsort.fmtools.db :refer [db-async! db! db server-host update-server-settings]]
+   [solsort.fmtools.db :refer [db-async! db! db server-host update-server-settings warn]]
    [solsort.fmtools.api-client :as api :refer [<fetch <do-fetch]]
    [solsort.fmtools.definitions :refer [field-types]]
    [solsort.fmtools.kvdb :as kvdb]
@@ -24,26 +24,31 @@
    [cljs.core.async :as async :refer [>! <! chan put! take! timeout close! pipe]]))
 
 (defonce empty-choice "· · ·")
-(defn warn [& args]
-  (apply log "Debug info:" args)
-  (db-async! [:warning] {:message args})
-  nil)
+
 (defn warning []
   [:div
    {:style
     {:position :fixed
-     :bottom 0
+     :bottom 0 ; (if (db [:warning :message]) 0 "-100%")
      :background-color "#ff0"
      :width "100%"
-     :height (if (db [:warning :message])
-               "auto"
-               0)
+     :height "auto"
+     :transition "all 1s"
+     :-webkit-transition "all 1s"
      :z-index 10
-     :left 0}}
-   [:h3 "Debug info:"]
+     :left (if (db [:warning :message]) 0 "-100%")
+     }}
+   [:h3 {:style {:clear :none}} "Debug info:"
+    [:span {:style {:float :right
+                    :padding-right "1ex"
+                    :padding-left "1ex"
+                    :font-weight :normal}
+            :on-click #(db! [:warning] nil)}"x"]
+    ]
    (prn-str (db [:warning :message] ""))
    ]
 )
+
 (defn get-obj [id] (db [:obj id]))
 ;;;; Main entrypoint
 (declare choose-area)

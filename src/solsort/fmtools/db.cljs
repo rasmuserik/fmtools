@@ -6,6 +6,7 @@
    [solsort.util :refer [log next-tick]]
    [reagent.core :as reagent :refer []]))
 
+
 (defonce api-db (atom nil))
 (def db! appdb/db!)
 (def db-async! appdb/db-async!)
@@ -28,3 +29,8 @@
       (reset! server-name (db [:obj :settings :server]))
       (update-server-settings)))
   @server-name)
+
+(defn warn [& args]
+  (apply log "Debug info:" args)
+  (db-async! [:warning] {:message args})
+  nil)
