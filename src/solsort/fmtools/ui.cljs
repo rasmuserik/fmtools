@@ -26,27 +26,28 @@
 (defonce empty-choice "· · ·")
 
 (defn warning []
-  [:div
-   {:style
-    {:position :fixed
-     :bottom 0 ; (if (db [:warning :message]) 0 "-100%")
-     :background-color "#ff0"
-     :width "100%"
-     :height "auto"
-     :transition "all 1s"
-     :-webkit-transition "all 1s"
-     :z-index 10
-     :left (if (db [:warning :message]) 0 "-100%")
-     }}
-   [:h3 {:style {:clear :none}} "Debug info:"
-    [:span {:style {:float :right
-                    :padding-right "1ex"
-                    :padding-left "1ex"
-                    :font-weight :normal}
-            :on-click #(db! [:warning] nil)}"x"]
+  (into
+   [:div
+    {:style
+     {:position :fixed
+      :bottom 0 ; (if (db [:warning :message]) 0 "-100%")
+      :background-color "#ff0"
+      :width "100%"
+      :height "auto"
+      :transition "all 1s"
+      :-webkit-transition "all 1s"
+      :z-index 10
+      :left (if (db [:warning :message]) 0 "-100%")
+      }}
+    [:h3 {:style {:clear :none}} "Debug info:"
+     [:span {:style {:float :right
+                     :padding-right "1ex"
+                     :padding-left "1ex"
+                     :font-weight :normal}
+             :on-click #(db! [:warning] nil)}"x"]
+     ]
     ]
-   (prn-str (db [:warning :message] ""))
-   ]
+   (interpose [:br] (map #(if (string? %) % (prn-str %)) (db [:warning :message] []))))
 )
 
 (defn get-obj [id] (db [:obj id]))
@@ -328,14 +329,21 @@
         (warn "failed making new report" obj-id template-id name creation-response)))))
 (defn finish-report [report-id]
   (go
-    ;(log 'finish-report)
-    (let [response (<! (<ajax ; TODO not absolute url
-                        (str "https://"
-                             (server-host)
-                             "/api/v1/"
-                             "Report?ReportGuid=" report-id)
-                        :method "PUT"))]
-      #_(log 'finish-report-response response))))
+    (try
+      (let [response (<? (<ajax ; TODO not absolute url
+                         (str "https://"
+                              (server-host)
+                              "/api/v1/"
+                              "Report?ReportGuid=" report-id)
+                         :method "PUT"))]
+        (log response)
+       (db-async! [:ui :areas] nil)
+       (db-async! [:ui :report-id] nil))
+      (catch js/Error e
+        (warn "Fejl ved forsøg på at afslutte rapporten på serveren."
+              "Tjek internetforbindelsen og prøv igen.")
+        (log e)
+        ))))
 (defn render-report-list [reports]
   [:div.field
    [:label "Rapport"]
