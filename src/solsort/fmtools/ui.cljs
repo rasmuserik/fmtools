@@ -25,28 +25,26 @@
 
 (defonce empty-choice "· · ·")
 (defn warn [& args]
-  (apply log "Warning:" args)
-  (db! [:warning] {:time (js/Date.now)
-                   :message args})
+  (apply log "Debug info:" args)
+  (db-async! [:warning] {:message args})
   nil)
 (defn warning []
   [:div
    {:style
-    {:position :absolute
+    {:position :fixed
      :bottom 0
      :background-color "#ff0"
      :width "100%"
-     :height (if (> 10000 (- (js/Date.now) (db [:warning :time] 0)))
+     :height (if (db [:warning :message])
                "auto"
                0)
      :z-index 10
      :left 0}}
-   [:h3 "Warning:"]
-   (prn-str (db [:warning :message]) "")
+   [:h3 "Debug info:"]
+   (prn-str (db [:warning :message] ""))
    ]
 )
 (defn get-obj [id] (db [:obj id]))
-
 ;;;; Main entrypoint
 (declare choose-area)
 (declare choose-report)
@@ -57,7 +55,7 @@
     [:div.main-form
      "Under development, not functional yet"
      [loading]
-     [warning]
+     (warning)
      (if (< 0 (db [:ui :disk]))
        [:div {:style
               {:position :absolute}} "Saving offline version to DB, do not turn off"]
