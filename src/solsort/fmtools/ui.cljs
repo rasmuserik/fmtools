@@ -26,7 +26,25 @@
 (defonce empty-choice "· · ·")
 (defn warn [& args]
   (apply log "Warning:" args)
+  (db! [:warning] {:time (js/Date.now)
+                   :message args})
   nil)
+(defn warning []
+  [:div
+   {:style
+    {:position :absolute
+     :bottom 0
+     :background-color "#ff0"
+     :width "100%"
+     :height (if (> 10000 (- (js/Date.now) (db [:warning :time] 0)))
+               "auto"
+               0)
+     :z-index 10
+     :left 0}}
+   [:h3 "Warning:"]
+   (prn-str (db [:warning :message]) "")
+   ]
+)
 (defn get-obj [id] (db [:obj id]))
 
 ;;;; Main entrypoint
@@ -39,6 +57,7 @@
     [:div.main-form
      "Under development, not functional yet"
      [loading]
+     [warning]
      (if (< 0 (db [:ui :disk]))
        [:div {:style
               {:position :absolute}} "Saving offline version to DB, do not turn off"]
