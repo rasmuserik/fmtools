@@ -526,9 +526,9 @@
   [:div
    [:h1 "Indstillinger"]
    [:p "Server: "
-    [:code (server-host)] [:br] [:span.blue.ui.button
-                                 {:on-click
-                                  (fn [])}
+
+    [:code (db [:obj :settings :server])] [:br] [:span.blue.ui.button
+                                 {:on-click update-server-settings}
                                  "Ændr server"]
     #_[input {:db [:obj :config :server]}]]
    [:p [checkbox [:ui :debug]] "debug enabled"]
