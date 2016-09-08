@@ -24,3 +24,4 @@ window.openDatabase = function() {};
 Object.prototype.transaction = function() {};
 Object.prototype.readTransaction = function() {};
 Object.prototype.executeSql = function() {};
+Object.prototype.rows = [];

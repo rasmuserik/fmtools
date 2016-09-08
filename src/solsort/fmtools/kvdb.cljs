@@ -71,7 +71,7 @@
             (let [o (into {}
                           (for [i (range (.-length (.-rows result)))]
                             (let [o (aget (.-rows result) i)]
-                              [(.-k o) (.-v o)])))]
+                              [(aget o "k") (aget o "v")])))]
               (put! c o)))
           (fn [& args]
             (warn 'sql-error args)
@@ -108,6 +108,7 @@
     (if (empty? @puts)
       (<! (timeout 200))
       (<! (<write-all)))))
+;(go (log (:settings (<! (<all)))))
 
 (defonce write-loop
   (go-loop []
