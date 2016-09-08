@@ -3,7 +3,7 @@
    [com.rpl.specter.macros :refer [select transform]]
    [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require
-   [solsort.fmtools.definitions :refer [trail-types full-sync-types field-sync-fields part-sync-fields sync-fields]]
+   [solsort.fmtools.definitions :refer [trail-types full-sync-types field-sync-fields part-sync-fields sync-fields saving-message]]
    [solsort.fmtools.db :refer [db db! api-db server-host]]
    [solsort.fmtools.load-api-data :refer [<load-api-db! init-root! <api]]
    [solsort.fmtools.data-index :refer [update-entry-index!]]
@@ -57,13 +57,13 @@
   []
   (if (db [:loading])
     (go nil)
-    (go (db! [:loading] true)
+    (go (db! [:loading] "Loading from API")
         (<! (<load-api-db!))
         (api-to-db!)
         (db! [:obj :state :trail]
              (filter #(nil? (full-sync-types (:type %))) (db [:obj :state :trail])))
         (update-entry-index!)
-        (db! [:loading] false))))
+        (db! [:loading] saving-message))))
 (defn update-part-trail! [trail]
   (let [id (get trail "PrimaryGuid")
         o (db [:obj id])

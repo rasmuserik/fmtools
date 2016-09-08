@@ -1,5 +1,5 @@
 (ns solsort.fmtools.definitions)
-
+(defonce saving-message "Gemmer offline database")
 (def field-sync-fields
   #{"FieldGuid" "PartGuid" "TemplateFieldGuid" "FieldId"
     "StringValue1" "StringValue2" "BooleanValue1" "BooleanValue2"

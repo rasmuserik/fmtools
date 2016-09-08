@@ -4,7 +4,8 @@
    [solsort.toolbox.macros :refer [<?]])
   (:require
    [solsort.fmtools.definitions :refer
-    [ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
+    [saving-message
+     ObjectName FieldType Columns DoubleFieldSeperator FieldValue LineType
      TaskDescription AreaGuid ObjectId PartGuid FieldGuid ColumnHeader
      TemplateGuid Description DoubleField]]
    [solsort.toolbox.misc :refer [<blob-url]]
@@ -57,8 +58,6 @@
 (declare choose-report)
 (declare render-template)
 (declare settings)
-(defonce saving-message "Gemmer offline database")
-
 (defn save-indicator []
   (if (< 0 (db [:ui :disk]))
     (db! [:loading] saving-message)
