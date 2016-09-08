@@ -29,7 +29,7 @@
           (let [o (into {}
                         (for [i (range (.-length (.-rows result)))]
                           (let [o (aget (.-rows result) i)]
-                            [(.-k o) (.-v o)])))]
+                            [(aget o "k") (aget o "v")])))]
             (log '<all (.-length (.-rows result)) (- (js/Date.now) start-time))
             (put! c o)))
         (fn [& args]
