@@ -18,3 +18,8 @@ Object.prototype.parseFromString = function() {};
 window.onSolsortReady = function() {};
 window.applicationCache = {};
 window.applicattionCache.onupdateready = function() {};
+
+// WebSQL
+window.openDatabase = function() {};
+Object.prototype.transaction = function() {};
+Object.prototype.executeSql = function() {};
