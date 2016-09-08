@@ -35,9 +35,10 @@
         (reset! needs-sync {})
         (loop [[k o] (first objs)
                objs (rest objs)]
-          (<! (kvdb/<put (prn-str (:id o)) (prn-str o)))
+          (kvdb/put (prn-str (:id o)) (prn-str o))
           (when-not (empty? objs)
             (recur (first objs) (rest objs)))))
+      (<! (kvdb/<sync))
       (db! [:ui :disk] (dec (db [:ui :disk]))))))
 (defonce disk-writer
   (go-loop []

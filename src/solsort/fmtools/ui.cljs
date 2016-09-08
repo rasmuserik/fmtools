@@ -51,11 +51,22 @@
 )
 
 (defn get-obj [id] (db [:obj id]))
+
 ;;;; Main entrypoint
 (declare choose-area)
 (declare choose-report)
 (declare render-template)
 (declare settings)
+(defonce saving-message "Gemmer offline database")
+
+(defn save-indicator []
+  (if (< 0 (db [:ui :disk]))
+    (db! [:loading] saving-message)
+    (when (= saving-message (db [:loading]))
+      (db! [:loading] nil))))
+
+(defonce init-save-indicator
+  (js/setInterval #(save-indicator) 200))
 (defn app []
   (let [report (get-obj (db [:ui :report-id]))]
     [:div.main-form
@@ -64,7 +75,7 @@
      (warning)
      (if (< 0 (db [:ui :disk]))
        [:div {:style
-              {:position :absolute}} "Saving offline version to DB, do not turn off"]
+              {:position :absolute}} ]
        "")
      [:h1 {:style {:text-align :center}} "FM-Tools"]
      [:hr]
