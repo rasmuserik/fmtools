@@ -540,8 +540,12 @@
    [:h1 "Indstillinger"]
    [:p "Server: "
 
-    [:code (db [:obj :settings :server])] [:br] [:span.blue.ui.button
-                                 {:on-click update-server-settings}
+    [:code (db [:obj :settings :server])] [:br]
+    [:span.blue.ui.button
+     {:on-click
+      (fn []
+        (update-server-settings)
+        (<do-fetch))}
                                  "Ændr server"]
     #_[input {:db [:obj :config :server]}]]
    [:p [checkbox [:ui :debug]] "debug enabled"]
